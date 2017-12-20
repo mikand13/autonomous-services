@@ -43,12 +43,22 @@ val projectName = project.name
 val projectVersion = project.version
 val nameOfArchive = "$projectName-$projectVersion-fat.jar"
 val dockerImageName = "autonomous_services/$projectName"
+val dockerFileLocation = "src/main/docker/Dockerfile"
 
 if (System.getProperty("os.name").toLowerCase().contains("windows")) {
     doOnChange = "..\\gradlew :gateway:classes"
 } else {
     doOnChange = "../gradlew :gateway:classes"
 }
+
+val vertx_version : String = project.parent?.ext?.get("vertx_version") as String
+val kotlin_version : String = project.parent?.ext?.get("kotlin_version") as String
+val hazelcast_version : String = project.parent?.ext?.get("hazelcast_version") as String
+val log4j_version  : String= project.parent?.ext?.get("log4j_version") as String
+val junit_version  : String= project.parent?.ext?.get("junit_version") as String
+val com_lmax_version  : String= project.parent?.ext?.get("com_lmax_version") as String
+val rest_assured_version  : String= project.parent?.ext?.get("rest_assured_version") as String
+val logger_factory_version  : String= project.parent?.ext?.get("logger_factory_version") as String
 
 buildscript {
     var kotlin_version: String by extra
@@ -88,28 +98,24 @@ apply {
 }
 
 dependencies {
-    var kotlin_version: String by extra
-    kotlin_version = "1.2.10"
-    val vertx_version = "3.5.0"
-
     compile(kotlin("stdlib"))
     compile(kotlin("stdlib-jdk8", kotlin_version))
     compile("io.vertx:vertx-core:$vertx_version")
-    compile("com.hazelcast:hazelcast-all:3.8.2")
+    compile("com.hazelcast:hazelcast-all:$hazelcast_version")
     compile("io.vertx:vertx-hazelcast:$vertx_version")
     compile("io.vertx:vertx-lang-ruby:$vertx_version")
     compile("io.vertx:vertx-lang-js:$vertx_version")
-    compile(group = "org.apache.logging.log4j", name = "log4j-api", version = "2.9.1")
-    compile(group = "org.apache.logging.log4j", name = "log4j-core", version = "2.9.1")
-    compile(group = "com.lmax", name = "disruptor", version = "3.3.4")
+    compile(group = "org.apache.logging.log4j", name = "log4j-api", version = log4j_version)
+    compile(group = "org.apache.logging.log4j", name = "log4j-core", version = log4j_version)
+    compile(group = "com.lmax", name = "disruptor", version = com_lmax_version)
     compile("org.jetbrains.kotlin:kotlin-reflect")
 
-    testCompile("junit:junit:4.12")
+    testCompile("junit:junit:$junit_version")
     testCompile("org.jetbrains.kotlin:kotlin-test")
     testCompile("org.jetbrains.kotlin:kotlin-test-junit")
-    testCompile("io.vertx:vertx-config:3.4.2")
+    testCompile("io.vertx:vertx-config:$vertx_version")
     testCompile("io.vertx:vertx-unit:$vertx_version")
-    testCompile("io.rest-assured:rest-assured:3.0.3")
+    testCompile("io.rest-assured:rest-assured:$rest_assured_version")
 }
 
 configure<ApplicationPluginConvention> {
@@ -126,7 +132,7 @@ configure<DockerExtension> {
     tags("latest", "" + now)
 
     buildArgs(mapOf("jarName" to nameOfArchive))
-    setDockerfile(file("src/main/docker/Dockerfile"))
+    setDockerfile(file(dockerFileLocation))
     files("build/libs/$nameOfArchive")
     pull(true)
 }
@@ -179,6 +185,6 @@ tasks {
     }
 
     withType<Test> {
-        System.setProperty("vertx.logger-delegate-factory-class-name", "io.vertx.core.logging.Log4j2LogDelegateFactory")
+        System.setProperty("vertx.logger-delegate-factory-class-name", logger_factory_version)
     }
 }

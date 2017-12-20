@@ -24,17 +24,26 @@
 
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val kotlin_version: String by extra
-buildscript {
-    var kotlin_version: String by extra
-    kotlin_version = "1.2.10"
+val groupValue : String = "org.mikand.autonomous.services"
+val versionValue : String = "1.0.0-SNAPSHOT"
+val jvmTargetValue : String = "1.8"
 
+ext.set("vertx_version", "3.5.0")
+ext.set("kotlin_version", "1.2.10")
+ext.set("hazelcast_version", "3.8.2")
+ext.set("log4j_version", "2.9.1")
+ext.set("junit_version", "4.12")
+ext.set("com_lmax_version", "3.3.4")
+ext.set("rest_assured_version", "3.0.3")
+ext.set("logger_factory_version", "io.vertx.core.logging.Log4j2LogDelegateFactory")
+
+buildscript {
     repositories {
         mavenCentral()
     }
 
     dependencies {
-        classpath(kotlinModule("gradle-plugin", kotlin_version))
+        classpath(kotlin("gradle-plugin", "1.2.10"))
     }
 }
 
@@ -49,8 +58,8 @@ apply {
 }
 
 allprojects {
-    group = "org.mikand.autonomous.services"
-    version = "1.0.0-SNAPSHOT"
+    group = groupValue
+    version = versionValue
 
     repositories {
         jcenter()
@@ -62,7 +71,7 @@ subprojects {
         println("Configuring $name in project ${project.name}...")
 
         kotlinOptions {
-            jvmTarget = "1.8"
+            jvmTarget = jvmTargetValue
         }
     }
 }
