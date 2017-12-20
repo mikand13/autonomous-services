@@ -1,0 +1,33 @@
+<Configuration>
+    <Appenders>
+        <RollingRandomAccessFile name="vertx_logs_file"
+                                 fileName="build/logs/vertx.log"
+                                 filePattern="build/log/vertx/$${date:yyyy-MM}/vertx-%d{MM-dd-yyyy}-%i.log.gz">
+            <PatternLayout pattern="[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n"/>
+
+            <Policies>
+                <SizeBasedTriggeringPolicy size="1 KB"/>
+            </Policies>
+
+            <DefaultRolloverStrategy max="30"/>
+        </RollingRandomAccessFile >
+
+        <Console name="vertx_console" target="SYSTEM_OUT">
+            <PatternLayout>
+                <pattern>
+                    [%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                </pattern>>
+            </PatternLayout>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <AsyncLogger name="FILE" level="DEBUG">
+            <AppenderRef ref="vertx_logs_file" />
+        </AsyncLogger>
+
+        <AsyncRoot level="DEBUG">
+            <AppenderRef ref="vertx_console" />
+        </AsyncRoot>
+    </Loggers>
+</Configuration>
