@@ -51,14 +51,14 @@ if (System.getProperty("os.name").toLowerCase().contains("windows")) {
     doOnChange = "../gradlew :gateway:classes"
 }
 
-val vertx_version : String = project.parent?.ext?.get("vertx_version") as String
-val kotlin_version : String = project.parent?.ext?.get("kotlin_version") as String
-val hazelcast_version : String = project.parent?.ext?.get("hazelcast_version") as String
-val log4j_version  : String= project.parent?.ext?.get("log4j_version") as String
-val junit_version  : String= project.parent?.ext?.get("junit_version") as String
-val com_lmax_version  : String= project.parent?.ext?.get("com_lmax_version") as String
-val rest_assured_version  : String= project.parent?.ext?.get("rest_assured_version") as String
-val logger_factory_version  : String= project.parent?.ext?.get("logger_factory_version") as String
+val kotlin_version by project
+val vertx_version by project
+val hazelcast_version by project
+val log4j_version by project
+val com_lmax_version by project
+val junit_version by project
+val rest_assured_version by project
+val logger_factory_version by project
 
 buildscript {
     var kotlin_version: String by extra
@@ -99,15 +99,15 @@ apply {
 
 dependencies {
     compile(kotlin("stdlib"))
-    compile(kotlin("stdlib-jdk8", kotlin_version))
+    compile(kotlin("stdlib-jdk8", kotlin_version.toString()))
     compile("io.vertx:vertx-core:$vertx_version")
     compile("com.hazelcast:hazelcast-all:$hazelcast_version")
     compile("io.vertx:vertx-hazelcast:$vertx_version")
     compile("io.vertx:vertx-lang-ruby:$vertx_version")
     compile("io.vertx:vertx-lang-js:$vertx_version")
-    compile(group = "org.apache.logging.log4j", name = "log4j-api", version = log4j_version)
-    compile(group = "org.apache.logging.log4j", name = "log4j-core", version = log4j_version)
-    compile(group = "com.lmax", name = "disruptor", version = com_lmax_version)
+    compile(group = "org.apache.logging.log4j", name = "log4j-api", version = log4j_version.toString())
+    compile(group = "org.apache.logging.log4j", name = "log4j-core", version = log4j_version.toString())
+    compile(group = "com.lmax", name = "disruptor", version = com_lmax_version.toString())
     compile("org.jetbrains.kotlin:kotlin-reflect")
 
     testCompile("junit:junit:$junit_version")
@@ -150,8 +150,7 @@ tasks {
                 "--redeploy=$watchForChange",
                 "--launcher-class=$mainClass",
                 "--on-redeploy=$doOnChange",
-                "-conf $confFile",
-                "-cluster")
+                "-conf $confFile")
     }
 
     "shadowJar"(ShadowJar::class) {
@@ -185,6 +184,6 @@ tasks {
     }
 
     withType<Test> {
-        System.setProperty("vertx.logger-delegate-factory-class-name", logger_factory_version)
+        System.setProperty("vertx.logger-delegate-factory-class-name", logger_factory_version.toString())
     }
 }

@@ -39,6 +39,10 @@ class DeploymentVerticle : AbstractVerticle() {
     override fun start(startFuture: Future<Void>?) {
         logger.info("DeploymentVerticle is running!")
 
+        vertx.setPeriodic(30000L, {
+            logger.info(it)
+        })
+
         startFuture?.complete()
     }
 }
