@@ -20,11 +20,9 @@ pipeline {
   stages {
     stage("Build AS") {
       steps {
-        dir("$WORKSPACE/android") {
-          script {
-            sh "./gradlew clean test"
-          } 
-        }
+        script {
+          sh "./gradlew clean test"
+        } 
       }
     }
   }
