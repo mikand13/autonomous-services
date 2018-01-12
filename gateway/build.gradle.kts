@@ -45,10 +45,10 @@ val nameOfArchive = "$projectName-$projectVersion-fat.jar"
 val dockerImageName = "autonomous_services/$projectName"
 val dockerFileLocation = "src/main/docker/Dockerfile"
 
-if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-    doOnChange = "..\\gradlew :gateway:classes"
+doOnChange = if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+    "..\\gradlew :gateway:classes"
 } else {
-    doOnChange = "../gradlew :gateway:classes"
+    "../gradlew :gateway:classes"
 }
 
 val kotlin_version by project
@@ -59,6 +59,7 @@ val com_lmax_version by project
 val junit_version by project
 val rest_assured_version by project
 val logger_factory_version by project
+val nannoq_tools_version by project
 
 buildscript {
     var kotlin_version: String by extra
@@ -109,8 +110,9 @@ dependencies {
     compile(group = "org.apache.logging.log4j", name = "log4j-core", version = log4j_version.toString())
     compile(group = "com.lmax", name = "disruptor", version = com_lmax_version.toString())
     compile("org.jetbrains.kotlin:kotlin-reflect")
-    
-    compile("com.nannoq:cluster:1.0.3")
+
+    // Nannoq
+    compile("com.nannoq:cluster:$nannoq_tools_version")
 
     testCompile("junit:junit:$junit_version")
     testCompile("org.jetbrains.kotlin:kotlin-test")
@@ -148,6 +150,9 @@ configure<DockerRunExtension> {
 
 tasks {
     "run"(JavaExec::class) {
+        jvmArgs("-Xdebug",
+                "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005")
+
         args("run", mainVerticleName,
                 "--redeploy=$watchForChange",
                 "--launcher-class=$mainClass",

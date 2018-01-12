@@ -25,6 +25,7 @@
 package org.mikand.autonomous.services.gateway
 
 import io.vertx.core.AbstractVerticle
+import io.vertx.core.DeploymentOptions
 import io.vertx.core.Future
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
@@ -39,10 +40,19 @@ class DeploymentVerticle : AbstractVerticle() {
     override fun start(startFuture: Future<Void>?) {
         logger.info("DeploymentVerticle is running!")
 
-        vertx.setPeriodic(30000L, {
-            logger.info(it)
-        })
+        val bridgeVerticle = "org.mikand.autonomous.services.gateway.bridge.BridgeVerticle"
+        val coreCount = Runtime.getRuntime().availableProcessors()
+        val deploymentOptions = DeploymentOptions()
+                .setInstances(coreCount * 2)
 
-        startFuture?.complete()
+        vertx.deployVerticle(bridgeVerticle, deploymentOptions, { deploymentID ->
+            if (deploymentID.succeeded()) {
+                logger.info("Deployed bridge: ${deploymentID.result()}")
+
+                startFuture?.complete()
+            } else {
+                startFuture?.fail(deploymentID.cause())
+            }
+        })
     }
 }

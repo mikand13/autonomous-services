@@ -28,6 +28,11 @@ val groupValue : String = "org.mikand.autonomous.services"
 val versionValue : String = "1.0.0-SNAPSHOT"
 val jvmTargetValue : String = "1.8"
 
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
 buildscript {
     repositories {
         mavenCentral()
@@ -59,7 +64,7 @@ allprojects {
 
 subprojects {
     tasks.withType<KotlinCompile> {
-        println("Configuring $name in project ${project.name}...")
+        println("Compiling kotlin $name in project ${project.name}...")
 
         kotlinOptions {
             jvmTarget = jvmTargetValue
@@ -71,9 +76,4 @@ dependencies {
     subprojects.forEach {
         archives(it)
     }
-}
-
-repositories {
-    mavenCentral()
-    jcenter()
 }
