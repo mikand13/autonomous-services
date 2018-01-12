@@ -109,6 +109,8 @@ dependencies {
     compile(group = "org.apache.logging.log4j", name = "log4j-core", version = log4j_version.toString())
     compile(group = "com.lmax", name = "disruptor", version = com_lmax_version.toString())
     compile("org.jetbrains.kotlin:kotlin-reflect")
+    
+    compile("com.nannoq:cluster:1.0.3")
 
     testCompile("junit:junit:$junit_version")
     testCompile("org.jetbrains.kotlin:kotlin-test")
