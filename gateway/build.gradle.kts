@@ -79,6 +79,7 @@ buildscript {
 
 repositories {
     mavenCentral()
+    mavenLocal()
     jcenter()
 }
 
@@ -112,6 +113,7 @@ dependencies {
     compile("org.jetbrains.kotlin:kotlin-reflect")
 
     // Nannoq
+    compile("com.nannoq:tools:$nannoq_tools_version")
     compile("com.nannoq:cluster:$nannoq_tools_version")
 
     testCompile("junit:junit:$junit_version")

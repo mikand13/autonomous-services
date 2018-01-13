@@ -30,6 +30,7 @@ val jvmTargetValue : String = "1.8"
 
 repositories {
     mavenCentral()
+    mavenLocal()
     jcenter()
 }
 
