@@ -24,22 +24,28 @@
 
 package org.mikand.autonomous.services.gateway.bridge
 
+import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.Future
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerOptions
-import java.util.ArrayList
 import io.vertx.core.json.Json
+import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.bridge.BridgeEventType.*
 import io.vertx.ext.bridge.PermittedOptions
+import io.vertx.ext.healthchecks.HealthCheckHandler
+import io.vertx.ext.healthchecks.Status
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.handler.CookieHandler
 import io.vertx.ext.web.handler.sockjs.BridgeEvent
 import io.vertx.ext.web.handler.sockjs.BridgeOptions
 import io.vertx.ext.web.handler.sockjs.SockJSHandler
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions
+import org.mikand.autonomous.services.gateway.GatewayHeartbeatService
+import java.util.*
+
 
 class BridgeVerticle() : AbstractVerticle() {
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
@@ -158,6 +164,8 @@ class BridgeVerticle() : AbstractVerticle() {
                 .setCompressionSupported(true)
                 .setTcpKeepAlive(true)
 
+        addHealthCheck(router)
+
         vertx.createHttpServer(options)
                 .requestHandler(router::accept)
                 .listen(bridgePort, { server ->
@@ -169,6 +177,28 @@ class BridgeVerticle() : AbstractVerticle() {
                         startFuture?.fail(server.cause())
                     }
                 })
+    }
+
+    private fun addHealthCheck(router: Router) {
+        val healthCheckHandler = HealthCheckHandler.create(vertx)
+
+        healthCheckHandler.register("bridge-is-live", { future ->
+            ServiceManager.getInstance().consumeService(GatewayHeartbeatService::class.java, {
+                if (it.succeeded()) {
+                    it.result().ping({
+                        if (it.succeeded() && it.result()) {
+                            future.complete(Status.OK(JsonObject().put("bridge", "UP")))
+                        } else {
+                            future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
+                        }
+                    })
+                } else {
+                    future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
+                }
+            })
+        })
+
+        router.get("/eventbus-health").handler(healthCheckHandler)
     }
 
     private fun authorize(bridgeEvent: BridgeEvent) {

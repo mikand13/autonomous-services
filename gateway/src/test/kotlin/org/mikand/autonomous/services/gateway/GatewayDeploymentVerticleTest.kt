@@ -22,65 +22,30 @@
  * SOFTWARE.
  */
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+package org.mikand.autonomous.services.gateway
 
-val groupValue : String = "org.mikand.autonomous.services"
-val versionValue : String = "1.0.0-SNAPSHOT"
-val jvmTargetValue : String = "1.8"
+import io.vertx.core.DeploymentOptions
+import io.vertx.ext.unit.TestContext
+import io.vertx.ext.unit.junit.RunTestOnContext
+import io.vertx.ext.unit.junit.VertxUnitRunner
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.mikand.autonomous.services.gateway.utils.ConfigSupport
 
-repositories {
-    mavenCentral()
-    mavenLocal()
-    jcenter()
-}
+/**
+ * @author Anders Mikkelsen
+ * @version 20.12.17 11:41
+ */
+@RunWith(VertxUnitRunner::class)
+class GatewayDeploymentVerticleTest : ConfigSupport {
+    @JvmField
+    @Rule
+    val rule = RunTestOnContext()
 
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath(kotlin("gradle-plugin", "1.2.21"))
-    }
-}
-
-plugins {
-    base
-
-    kotlin("jvm") version "1.2.21" apply false
-    id("com.github.ksoichiro.console.reporter") version("0.5.0")
-}
-
-apply {
-    plugin("kotlin")
-    plugin("jacoco")
-    plugin("idea")
-}
-
-allprojects {
-    group = groupValue
-    version = versionValue
-
-    repositories {
-        jcenter()
-    }
-}
-
-subprojects {
-    tasks.withType<KotlinCompile> {
-        println("Compiling kotlin $name in project ${project.name}...")
-
-        kotlinOptions {
-            jvmTarget = jvmTargetValue
-            incremental = true
-            suppressWarnings = true
-            freeCompilerArgs = listOf("-Xskip-runtime-version-check")
-        }
-    }
-}
-
-dependencies {
-    subprojects.forEach {
-        archives(it)
+    @Test
+    fun shouldDeployDeploymentVerticleWithSuccess(context : TestContext) {
+        val deploymentOptions = DeploymentOptions().setConfig(getTestConfig())
+        rule.vertx().deployVerticle(GatewayDeploymentVerticle(), deploymentOptions, context.asyncAssertSuccess())
     }
 }

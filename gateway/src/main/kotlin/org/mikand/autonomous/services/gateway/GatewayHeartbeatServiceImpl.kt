@@ -22,20 +22,19 @@
  * SOFTWARE.
  */
 
-package org.mikand.autonomous.services.gateway;
+package org.mikand.autonomous.services.gateway
 
-import org.junit.After;
-import org.junit.Before;
+import io.vertx.codegen.annotations.Fluent
+import io.vertx.core.AsyncResult
+import io.vertx.core.Future
+import io.vertx.core.Handler
+import io.vertx.core.Vertx
 
-import static org.junit.Assert.*;
+class GatewayHeartbeatServiceImpl(private val vertx: Vertx, private val bridgeDeploymentId: String) : GatewayHeartbeatService {
+    @Fluent
+    override fun ping(resultHandler: Handler<AsyncResult<Boolean>>?): GatewayHeartbeatService {
+        resultHandler?.handle(Future.succeededFuture(vertx.deploymentIDs().contains(bridgeDeploymentId)))
 
-public class VertxLauncherTest {
-
-    @Before
-    public void setUp() throws Exception {
-    }
-
-    @After
-    public void tearDown() throws Exception {
+        return this
     }
 }

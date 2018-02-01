@@ -31,10 +31,12 @@ import org.gradle.kotlin.dsl.*
 import org.gradle.script.lang.kotlin.*
 import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
+import org.jetbrains.kotlin.gradle.plugin.KaptAnnotationProcessorOptions
+import org.jetbrains.kotlin.gradle.plugin.KaptJavacOptionsDelegate
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val mainClass = "org.mikand.autonomous.services.gateway.VertxLauncher"
-val mainVerticleName = "org.mikand.autonomous.services.gateway.DeploymentVerticle"
+val mainVerticleName = "org.mikand.autonomous.services.gateway.GatewayDeploymentVerticle"
 
 val watchForChange = "src/**/*"
 val confFile = "src/main/resources/app-conf.json"
@@ -63,7 +65,7 @@ val nannoq_tools_version by project
 
 buildscript {
     var kotlin_version: String by extra
-    kotlin_version = "1.2.10"
+    kotlin_version = "1.2.21"
 
     repositories {
         mavenCentral()
@@ -97,25 +99,34 @@ apply {
     plugin("com.palantir.docker")
     plugin("com.palantir.docker-run")
     plugin("com.palantir.docker-compose")
+    plugin("kotlin-kapt")
+    plugin("idea")
 }
 
 dependencies {
-    compile(kotlin("stdlib"))
+    // Kotlin
+    compile(kotlin("stdlib", kotlin_version.toString()))
     compile(kotlin("stdlib-jdk8", kotlin_version.toString()))
-    compile("io.vertx:vertx-core:$vertx_version")
-    compile("com.hazelcast:hazelcast-all:$hazelcast_version")
-    compile("io.vertx:vertx-hazelcast:$vertx_version")
-    compile("io.vertx:vertx-lang-ruby:$vertx_version")
-    compile("io.vertx:vertx-lang-js:$vertx_version")
-    compile(group = "org.apache.logging.log4j", name = "log4j-api", version = log4j_version.toString())
-    compile(group = "org.apache.logging.log4j", name = "log4j-core", version = log4j_version.toString())
-    compile(group = "com.lmax", name = "disruptor", version = com_lmax_version.toString())
     compile("org.jetbrains.kotlin:kotlin-reflect")
 
     // Nannoq
     compile("com.nannoq:tools:$nannoq_tools_version")
     compile("com.nannoq:cluster:$nannoq_tools_version")
 
+    // Vert.x
+    compile("io.vertx:vertx-health-check:$vertx_version")
+    compile("io.vertx:vertx-lang-kotlin-coroutines:$vertx_version")
+
+    // Kapt
+    kapt("io.vertx:vertx-codegen:$vertx_version:processor")
+    kapt("io.vertx:vertx-service-proxy:$vertx_version:processor")
+
+    // Log4j2
+    compile(group = "org.apache.logging.log4j", name = "log4j-api", version = log4j_version.toString())
+    compile(group = "org.apache.logging.log4j", name = "log4j-core", version = log4j_version.toString())
+    compile(group = "com.lmax", name = "disruptor", version = com_lmax_version.toString())
+
+    // Test
     testCompile("junit:junit:$junit_version")
     testCompile("org.jetbrains.kotlin:kotlin-test")
     testCompile("org.jetbrains.kotlin:kotlin-test-junit")
@@ -150,10 +161,26 @@ configure<DockerRunExtension> {
     clean = true
 }
 
+kapt {
+    javacOptions({
+        option("-proc:only")
+        option("-processor", "io.vertx.codegen.CodeGenProcessor")
+        option("-AoutputDirectory", "$projectDir/src/main")
+        option("-Acodegen.output", "$projectDir/src/main")
+    })
+
+    arguments({
+        arg("destinationDir", "$buildDir/generated/source/kapt/main")
+    })
+}
+
+java {
+    sourceSets.getByName("main").java.srcDirs("${project.buildDir}/generated/source/kapt/main")
+}
+
 tasks {
     "run"(JavaExec::class) {
-        jvmArgs("-Xdebug",
-                "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005")
+        jvmArgs("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005")
 
         args("run", mainVerticleName,
                 "--redeploy=$watchForChange",

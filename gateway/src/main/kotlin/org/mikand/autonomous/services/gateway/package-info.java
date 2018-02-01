@@ -22,37 +22,13 @@
  * SOFTWARE.
  */
 
-package org.mikand.autonomous.services.gateway
-
-import io.vertx.core.AbstractVerticle
-import io.vertx.core.DeploymentOptions
-import io.vertx.core.Future
-import io.vertx.core.logging.Logger
-import io.vertx.core.logging.LoggerFactory
-
 /**
+ * Auto-Gen Module descriptor for Vert.x
+ *
  * @author Anders Mikkelsen
- * @version 20.12.17 11:41
+ * @version 17.11.2017
  */
-class DeploymentVerticle : AbstractVerticle() {
-    private val logger : Logger = LoggerFactory.getLogger(DeploymentVerticle::class.java.simpleName)
+@ModuleGen(name = "gatewayHeartbeatModule", groupPackage="org.mikand.autonomous.services.gateway")
+package org.mikand.autonomous.services.gateway;
 
-    override fun start(startFuture: Future<Void>?) {
-        logger.info("DeploymentVerticle is running!")
-
-        val bridgeVerticle = "org.mikand.autonomous.services.gateway.bridge.BridgeVerticle"
-        val coreCount = Runtime.getRuntime().availableProcessors()
-        val deploymentOptions = DeploymentOptions()
-                .setInstances(coreCount * 2)
-
-        vertx.deployVerticle(bridgeVerticle, deploymentOptions, { deploymentID ->
-            if (deploymentID.succeeded()) {
-                logger.info("Deployed bridge: ${deploymentID.result()}")
-
-                startFuture?.complete()
-            } else {
-                startFuture?.fail(deploymentID.cause())
-            }
-        })
-    }
-}
+import io.vertx.codegen.annotations.ModuleGen;

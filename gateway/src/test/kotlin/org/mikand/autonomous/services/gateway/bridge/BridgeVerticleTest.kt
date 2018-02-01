@@ -22,65 +22,39 @@
  * SOFTWARE.
  */
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+package org.mikand.autonomous.services.gateway.bridge
 
-val groupValue : String = "org.mikand.autonomous.services"
-val versionValue : String = "1.0.0-SNAPSHOT"
-val jvmTargetValue : String = "1.8"
+import io.vertx.ext.unit.TestContext
+import io.vertx.ext.unit.junit.RunTestOnContext
+import io.vertx.ext.unit.junit.VertxUnitRunner
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
 
-repositories {
-    mavenCentral()
-    mavenLocal()
-    jcenter()
-}
 
-buildscript {
-    repositories {
-        mavenCentral()
-    }
 
-    dependencies {
-        classpath(kotlin("gradle-plugin", "1.2.21"))
-    }
-}
+@RunWith(VertxUnitRunner::class)
+class BridgeVerticleTest {
 
-plugins {
-    base
+    @JvmField
+    @Rule
+    val rule = RunTestOnContext()
 
-    kotlin("jvm") version "1.2.21" apply false
-    id("com.github.ksoichiro.console.reporter") version("0.5.0")
-}
+    @Test
+    fun testBridgeDeploymentToStandardParameters(context: TestContext) {
+        val async = context.async()
+        val vertx = rule.vertx()
 
-apply {
-    plugin("kotlin")
-    plugin("jacoco")
-    plugin("idea")
-}
+        vertx.deployVerticle(BridgeVerticle(), {
+            context.assertTrue(it.succeeded())
 
-allprojects {
-    group = groupValue
-    version = versionValue
-
-    repositories {
-        jcenter()
-    }
-}
-
-subprojects {
-    tasks.withType<KotlinCompile> {
-        println("Compiling kotlin $name in project ${project.name}...")
-
-        kotlinOptions {
-            jvmTarget = jvmTargetValue
-            incremental = true
-            suppressWarnings = true
-            freeCompilerArgs = listOf("-Xskip-runtime-version-check")
-        }
-    }
-}
-
-dependencies {
-    subprojects.forEach {
-        archives(it)
+            vertx.createHttpClient()
+                    .getAbs("http://localhost:5443/eventbus")
+                    .handler({
+                        context.assertTrue(it.statusCode() == 200)
+                        async.complete()
+                    })
+                    .end()
+        })
     }
 }
