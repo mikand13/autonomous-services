@@ -141,7 +141,7 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
                             }
                         })
                     } else {
-                        logger.info("Health Check OK")
+                        logger.trace("Health Check OK")
                     }
                 }
             })
