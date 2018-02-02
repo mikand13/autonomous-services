@@ -24,6 +24,8 @@
 
 package org.mikand.autonomous.services.gateway.bridge
 
+import io.vertx.core.logging.Logger
+import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
 import io.vertx.ext.unit.junit.RunTestOnContext
 import io.vertx.ext.unit.junit.VertxUnitRunner
@@ -35,6 +37,8 @@ import org.junit.runner.RunWith
 
 @RunWith(VertxUnitRunner::class)
 class BridgeVerticleTest {
+    @Suppress("unused")
+    private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
     @JvmField
     @Rule

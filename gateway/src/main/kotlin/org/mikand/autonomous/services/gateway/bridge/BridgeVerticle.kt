@@ -24,6 +24,7 @@
 
 package org.mikand.autonomous.services.gateway.bridge
 
+import com.nannoq.tools.cluster.services.HeartbeatService
 import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.Future
@@ -43,19 +44,21 @@ import io.vertx.ext.web.handler.sockjs.BridgeEvent
 import io.vertx.ext.web.handler.sockjs.BridgeOptions
 import io.vertx.ext.web.handler.sockjs.SockJSHandler
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions
-import org.mikand.autonomous.services.gateway.GatewayHeartbeatService
+import org.mikand.autonomous.services.gateway.GatewayDeploymentVerticle.Companion.GATEWAY_HEARTBEAT_ADDRESS
 import java.util.*
 
-
 class BridgeVerticle() : AbstractVerticle() {
+    @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    private val DEFAULT_BRIDGE_BASE = "org.mikand.autonomous.services.gateway.bridge"
-    private val DEFAULT_BRIDGE_PATH = "/eventbus/*"
-    private val DEFAULT_BRIDGE_PORT = 5443
-    private val DEFAULT_BRIDGE_BASE_API = ".api"
-    private val DEFAULT_BRIDGE_BASE_DATA = ".data"
-    private val DEFAULT_BRIDGE_BASE_STORAGE = ".storage"
+    companion object {
+        const val DEFAULT_BRIDGE_BASE = "org.mikand.autonomous.services.gateway.bridge"
+        const val DEFAULT_BRIDGE_PATH = "/eventbus/*"
+        const val DEFAULT_BRIDGE_PORT = 5443
+        const val DEFAULT_BRIDGE_BASE_API = ".api"
+        const val DEFAULT_BRIDGE_BASE_DATA = ".data"
+        const val DEFAULT_BRIDGE_BASE_STORAGE = ".storage"
+    }
 
     private var bridgeHandlerOptions: SockJSHandlerOptions? = null
     private var router: Router? = null
@@ -63,8 +66,11 @@ class BridgeVerticle() : AbstractVerticle() {
 
     private var server: HttpServer? = null
 
+    @Suppress("unused")
     constructor(bridgeHandlerOptions: SockJSHandlerOptions) : this(null, bridgeHandlerOptions, null)
+    @Suppress("unused")
     constructor(router: Router) : this(router, null, null)
+    @Suppress("unused")
     constructor(httpServerOptions: HttpServerOptions) : this(null, null, httpServerOptions)
 
     constructor(router: Router?,
@@ -76,8 +82,10 @@ class BridgeVerticle() : AbstractVerticle() {
     }
 
     override fun start(startFuture: Future<Void>?) {
+        val customBridgePath = config().getString("bridgePath")
+
         val bridgeBase = config().getString("bridgeBase") ?: DEFAULT_BRIDGE_BASE
-        val bridgePath = config().getString("bridgePath") ?: DEFAULT_BRIDGE_PATH
+        val bridgePath = if (customBridgePath == null) DEFAULT_BRIDGE_PATH else customBridgePath + DEFAULT_BRIDGE_PATH
         val bridgePort = config().getInteger("bridgePort") ?: DEFAULT_BRIDGE_PORT
 
         startBridge(bridgeBase, bridgePath, bridgePort, startFuture)
@@ -88,6 +96,7 @@ class BridgeVerticle() : AbstractVerticle() {
         val router = router ?: Router.router(vertx)
         val ebHandler = SockJSHandler.create(vertx, options)
 
+        addHealthCheck(router, bridgePath)
         addEventBusBridge(ebHandler, router, bridgeBase, bridgePath)
         deployBridge(router, bridgePort, startFuture)
     }
@@ -164,8 +173,6 @@ class BridgeVerticle() : AbstractVerticle() {
                 .setCompressionSupported(true)
                 .setTcpKeepAlive(true)
 
-        addHealthCheck(router)
-
         vertx.createHttpServer(options)
                 .requestHandler(router::accept)
                 .listen(bridgePort, { server ->
@@ -179,11 +186,11 @@ class BridgeVerticle() : AbstractVerticle() {
                 })
     }
 
-    private fun addHealthCheck(router: Router) {
+    private fun addHealthCheck(router: Router, bridgePath: String) {
         val healthCheckHandler = HealthCheckHandler.create(vertx)
 
         healthCheckHandler.register("bridge-is-live", { future ->
-            ServiceManager.getInstance().consumeService(GatewayHeartbeatService::class.java, {
+            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, {
                 if (it.succeeded()) {
                     it.result().ping({
                         if (it.succeeded() && it.result()) {
@@ -198,7 +205,7 @@ class BridgeVerticle() : AbstractVerticle() {
             })
         })
 
-        router.get("/eventbus-health").handler(healthCheckHandler)
+        router.get(bridgePath.removeSuffix("/*") + "-health").handler(healthCheckHandler)
     }
 
     private fun authorize(bridgeEvent: BridgeEvent) {

@@ -161,23 +161,6 @@ configure<DockerRunExtension> {
     clean = true
 }
 
-kapt {
-    javacOptions({
-        option("-proc:only")
-        option("-processor", "io.vertx.codegen.CodeGenProcessor")
-        option("-AoutputDirectory", "$projectDir/src/main")
-        option("-Acodegen.output", "$projectDir/src/main")
-    })
-
-    arguments({
-        arg("destinationDir", "$buildDir/generated/source/kapt/main")
-    })
-}
-
-java {
-    sourceSets.getByName("main").java.srcDirs("${project.buildDir}/generated/source/kapt/main")
-}
-
 tasks {
     "run"(JavaExec::class) {
         jvmArgs("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005")

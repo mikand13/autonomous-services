@@ -24,6 +24,7 @@
 
 package org.mikand.autonomous.services.gateway
 
+import com.nannoq.tools.cluster.services.HeartbeatService
 import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.CompositeFuture
@@ -38,61 +39,133 @@ import io.vertx.servicediscovery.Record
  * @version 20.12.17 11:41
  */
 class GatewayDeploymentVerticle : AbstractVerticle() {
-    private val logger : Logger = LoggerFactory.getLogger(GatewayDeploymentVerticle::class.java.simpleName)
+    @Suppress("unused")
+    private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    private lateinit var heartbeatServiceImpl: GatewayHeartbeatService
+    private lateinit var heartbeatServiceImpl: GatewayHeartbeatServiceImpl
     private lateinit var heartBeatRecord: Record
+    private var periodicTimerId: Long = 0
+
+    private var coreCount = Runtime.getRuntime().availableProcessors()
+    private val deploymentOptions = DeploymentOptions()
+            .setInstances(coreCount * 2)
+
+    companion object {
+        const val GATEWAY_HEARTBEAT_ADDRESS : String = "GatewayHeartbeat"
+        private const val BRIDGE_VERTICLE = "org.mikand.autonomous.services.gateway.bridge.BridgeVerticle"
+    }
 
     override fun start(startFuture: Future<Void>?) {
         logger.info("GatewayDeploymentVerticle is running!")
 
-        val bridgeVerticle = "org.mikand.autonomous.services.gateway.bridge.BridgeVerticle"
-        val coreCount = Runtime.getRuntime().availableProcessors()
-        val deploymentOptions = DeploymentOptions()
-                .setInstances(coreCount * 2)
-
-        val bridgeFuture = Future.future<Void>()
+        val bridgeFuture = Future.future<String>()
         val heartBeatFuture = Future.future<Record>()
 
-        vertx.deployVerticle(bridgeVerticle, deploymentOptions, { deploymentID ->
-            if (deploymentID.succeeded()) {
-                val result = deploymentID.result()
-                logger.info("Deployed bridge: $result")
-
-                heartbeatServiceImpl = GatewayHeartbeatServiceImpl(vertx, result)
-
-                ServiceManager.getInstance()
-                        .publishService(GatewayHeartbeatService::class.java, heartbeatServiceImpl, {
-                            if (it.succeeded()) {
-                                heartBeatRecord = it.result()
-
-                                heartBeatFuture.complete()
-                            } else {
-                                heartBeatFuture.fail(it.cause())
-                            }
-                        })
-
-                bridgeFuture.complete()
-            } else {
-                bridgeFuture.fail(deploymentID.cause())
-            }
-        })
+        deployBridgeAndHealthCheck(BRIDGE_VERTICLE, deploymentOptions, bridgeFuture, heartBeatFuture)
 
         CompositeFuture.all(bridgeFuture, heartBeatFuture).setHandler({
             logger.info("GatewayDeploymentVerticle has deployed: ${it.succeeded()}")
 
             if (it.succeeded()) {
                 startFuture?.complete()
+
+                periodicTimerId = deployPeriodicCheck()
             } else {
                 startFuture?.fail(it.cause())
             }
         })
     }
 
-    override fun stop(stopFuture: Future<Void>?) {
-        if (stopFuture == null) return
+    private fun deployBridgeAndHealthCheck(bridgeVerticle: String,
+                                           deploymentOptions: DeploymentOptions?,
+                                           bridgeFuture: Future<String>,
+                                           heartBeatFuture: Future<Record>) {
+        vertx.deployVerticle(bridgeVerticle, deploymentOptions, { deploymentID ->
+            if (deploymentID.succeeded()) {
+                val result = deploymentID.result()
+                logger.info("Deployed bridge: $result")
 
-        ServiceManager.getInstance()
-                .unPublishService(GatewayHeartbeatService::class.java, heartBeatRecord, stopFuture.completer())
+                deployHeartbeat(heartBeatFuture)
+
+                bridgeFuture.complete(result)
+            } else {
+                bridgeFuture.fail(deploymentID.cause())
+            }
+        })
+    }
+
+    private fun deployHeartbeat(heartBeatFuture: Future<Record>) {
+        heartbeatServiceImpl = GatewayHeartbeatServiceImpl(vertx, config())
+
+        ServiceManager.getInstance().publishService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS,
+                heartbeatServiceImpl, {
+            if (it.succeeded()) {
+                logger.info("GatewayHeartbeat is live!")
+
+                heartBeatRecord = it.result()
+
+                heartBeatFuture.complete(heartBeatRecord)
+            } else {
+                logger.error("GatewayHeartbeat deployment failed...", it.cause())
+
+                heartBeatFuture.fail(it.cause())
+            }
+        })
+    }
+
+    private fun deployPeriodicCheck(): Long {
+        return vertx.setPeriodic(10000L, {
+            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, {
+                if (it.failed()) {
+                    heartbeatDown()
+                } else {
+                    if (it.succeeded() && it.failed()) {
+                        logger.error("GatewayHeartbeat reports bridge down, redeploying!", it.cause())
+
+                        killHeartBeat()
+
+                        val bridgeFuture = Future.future<String>()
+                        val heartBeatFuture = Future.future<Record>()
+
+                        deployBridgeAndHealthCheck(BRIDGE_VERTICLE, deploymentOptions, bridgeFuture, heartBeatFuture)
+
+                        CompositeFuture.all(bridgeFuture, heartBeatFuture).setHandler({
+                            logger.info("GatewayDeploymentVerticle has deployed: ${it.succeeded()}")
+
+                            if (it.succeeded()) {
+                                logger.info("Bridge redeployed!")
+                            } else {
+                                logger.error("Unable to deploy bridge, killing application!")
+
+                                vertx.close()
+                            }
+                        })
+                    } else {
+                        logger.info("Health Check OK")
+                    }
+                }
+            })
+        })
+    }
+
+    private fun heartbeatDown() {
+        logger.error("GatewayHeartbeat is unavailable, relaunching!")
+
+        killHeartBeat()
+
+        val heartbeatFuture = Future.future<Record>()
+        heartbeatFuture.setHandler({
+            if (it.succeeded()) {
+                logger.info("GatewayHeartbeat backup is live!")
+            } else {
+                logger.error("GatewayHeartbeat backup failed...", it.cause())
+            }
+        })
+
+        deployHeartbeat(heartbeatFuture)
+    }
+
+    private fun killHeartBeat() {
+        ServiceManager.getInstance().unPublishService(GATEWAY_HEARTBEAT_ADDRESS, heartBeatRecord)
     }
 }

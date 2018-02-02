@@ -24,16 +24,55 @@
 
 package org.mikand.autonomous.services.gateway
 
+import com.nannoq.tools.cluster.services.HeartbeatService
 import io.vertx.codegen.annotations.Fluent
 import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
 import io.vertx.core.Vertx
+import io.vertx.core.json.JsonObject
+import io.vertx.core.logging.Logger
+import io.vertx.core.logging.LoggerFactory
+import org.mikand.autonomous.services.gateway.bridge.BridgeVerticle.Companion.DEFAULT_BRIDGE_PATH
+import org.mikand.autonomous.services.gateway.bridge.BridgeVerticle.Companion.DEFAULT_BRIDGE_PORT
 
-class GatewayHeartbeatServiceImpl(private val vertx: Vertx, private val bridgeDeploymentId: String) : GatewayHeartbeatService {
+class GatewayHeartbeatServiceImpl : HeartbeatService {
+    @Suppress("unused")
+    private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
+
+    private val vertx: Vertx
+    private val config: JsonObject
+
+    private val bridgePath: String
+    private val bridgePort: Int
+
+    @Suppress("ConvertSecondaryConstructorToPrimary")
+    constructor(vertx: Vertx, config: JsonObject) {
+        this.vertx = vertx
+        this.config = config
+
+        val customBridgePath = config.getString("bridgePath")
+
+        bridgePath = if (customBridgePath == null) DEFAULT_BRIDGE_PATH else customBridgePath + DEFAULT_BRIDGE_PATH
+        bridgePort = config.getInteger("bridgePort") ?: DEFAULT_BRIDGE_PORT
+    }
+
     @Fluent
-    override fun ping(resultHandler: Handler<AsyncResult<Boolean>>?): GatewayHeartbeatService {
-        resultHandler?.handle(Future.succeededFuture(vertx.deploymentIDs().contains(bridgeDeploymentId)))
+    override fun ping(resultHandler: Handler<AsyncResult<Boolean>>?): GatewayHeartbeatServiceImpl {
+        val ssl = if (config.getBoolean("ssl") == true) "s" else ""
+        val path = "http$ssl://localhost:$bridgePort${bridgePath.removeSuffix("/*")}"
+
+        vertx.createHttpClient()
+                .getAbs(path)
+                .handler({
+                    if (it.statusCode() == 200) {
+                        resultHandler?.handle(Future.succeededFuture(true))
+                    } else {
+                        resultHandler?.handle(Future.failedFuture(it.statusMessage()))
+                    }
+                })
+                .exceptionHandler({ resultHandler?.handle(Future.failedFuture(it.cause)) })
+                .end()
 
         return this
     }

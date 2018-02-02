@@ -24,7 +24,11 @@
 
 package org.mikand.autonomous.services.gateway
 
+import io.vertx.core.CompositeFuture
 import io.vertx.core.DeploymentOptions
+import io.vertx.core.Future
+import io.vertx.core.logging.Logger
+import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
 import io.vertx.ext.unit.junit.RunTestOnContext
 import io.vertx.ext.unit.junit.VertxUnitRunner
@@ -39,6 +43,9 @@ import org.mikand.autonomous.services.gateway.utils.ConfigSupport
  */
 @RunWith(VertxUnitRunner::class)
 class GatewayDeploymentVerticleTest : ConfigSupport {
+    @Suppress("unused")
+    private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
+
     @JvmField
     @Rule
     val rule = RunTestOnContext()
@@ -46,6 +53,38 @@ class GatewayDeploymentVerticleTest : ConfigSupport {
     @Test
     fun shouldDeployDeploymentVerticleWithSuccess(context : TestContext) {
         val deploymentOptions = DeploymentOptions().setConfig(getTestConfig())
-        rule.vertx().deployVerticle(GatewayDeploymentVerticle(), deploymentOptions, context.asyncAssertSuccess())
+        val async = context.async()
+        val vertx = rule.vertx()
+
+        vertx.deployVerticle(GatewayDeploymentVerticle(), deploymentOptions, {
+            context.assertTrue(it.succeeded())
+
+            val busFuture = Future.future<Void>()
+            val healthFuture = Future.future<Void>()
+
+            vertx.createHttpClient()
+                    .getAbs("http://localhost:5443/eventbus")
+                    .handler({
+                        context.assertTrue(it.statusCode() == 200)
+                        busFuture.complete()
+                    })
+                    .end()
+
+            vertx.createHttpClient()
+                    .getAbs("http://localhost:5443/eventbus-health")
+                    .handler({
+                        context.assertTrue(it.statusCode() == 200)
+                        healthFuture.complete()
+                    })
+                    .end()
+
+            CompositeFuture.all(busFuture, healthFuture).setHandler({
+                if (it.succeeded()) {
+                    async.complete()
+                } else {
+                    context.fail(it.cause())
+                }
+            })
+        })
     }
 }
