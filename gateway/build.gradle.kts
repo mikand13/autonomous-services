@@ -22,6 +22,7 @@
  * SOFTWARE.
  */
 
+import com.craigburke.gradle.KarmaPlugin
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.palantir.gradle.docker.DockerComponent
 import com.palantir.gradle.docker.DockerExtension
@@ -89,6 +90,7 @@ plugins {
     id("java")
     id("kotlin")
     id("application")
+    id("com.craigburke.karma") version("1.4.4")
 }
 
 apply {
@@ -159,6 +161,23 @@ configure<DockerRunExtension> {
     image = dockerImageName
     daemonize = false
     clean = true
+}
+
+karma {
+    basePath = "../src"
+    colors = true
+
+    dependencies(listOf(
+            "sockjs-client@^1.1.4",
+            "vertx3-eventbus-client@^3.4.2",
+            "vertx3-min@^3.4.2"
+    ))
+
+    files = listOf("test/js/**/*_test.js")
+
+    browsers = listOf("PhantomJS")
+    frameworks = listOf("jasmine")
+    reporters = listOf("junit")
 }
 
 tasks {

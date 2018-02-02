@@ -39,47 +39,48 @@ import java.util.Arrays;
  * @author Anders Mikkelsen
  * @version 20.12.17 11:41
  */
-public class VertxLauncher extends VertxCommandLauncher implements VertxLifecycleHooks {
+public class GatewayLauncher extends VertxCommandLauncher implements VertxLifecycleHooks {
     static {
-        System.getProperties().setProperty("vertx.logger-delegate-factory-class-name", "io.vertx.core.logging.Log4j2LogDelegateFactory");
+        System.getProperties().setProperty(
+                "vertx.logger-delegate-factory-class-name", "io.vertx.core.logging.Log4j2LogDelegateFactory");
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(VertxLauncher.class.getSimpleName());
+    private static final Logger logger = LoggerFactory.getLogger(GatewayLauncher.class.getSimpleName());
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         logger.info("Running from main with: " + Arrays.toString(args));
 
-        new VertxLauncher().dispatch(args);
+        new GatewayLauncher().dispatch(args);
     }
 
-    public static void executeCommand(String cmd, String... args) {
+    public static void executeCommand(final String cmd, final String... args) {
         logger.info("Running from executeCommand with cmd: " + cmd + " and args: " + Arrays.toString(args));
 
-        new VertxLauncher().execute(cmd, args);
+        new GatewayLauncher().execute(cmd, args);
     }
 
     @Override
-    public void afterConfigParsed(JsonObject config) {
-
-    }
-
-    @Override
-    public void beforeStartingVertx(VertxOptions options) {
+    public void afterConfigParsed(final JsonObject config) {
 
     }
 
     @Override
-    public void afterStartingVertx(Vertx vertx) {
+    public void beforeStartingVertx(final VertxOptions options) {
 
     }
 
     @Override
-    public void beforeDeployingVerticle(DeploymentOptions deploymentOptions) {
+    public void afterStartingVertx(final Vertx vertx) {
 
     }
 
     @Override
-    public void beforeStoppingVertx(Vertx vertx) {
+    public void beforeDeployingVerticle(final DeploymentOptions deploymentOptions) {
+
+    }
+
+    @Override
+    public void beforeStoppingVertx(final Vertx vertx) {
 
     }
 
@@ -89,7 +90,10 @@ public class VertxLauncher extends VertxCommandLauncher implements VertxLifecycl
     }
 
     @Override
-    public void handleDeployFailed(Vertx vertx, String mainVerticle, DeploymentOptions deploymentOptions, Throwable cause) {
+    public void handleDeployFailed(final Vertx vertx,
+                                   final String mainVerticle,
+                                   final DeploymentOptions deploymentOptions,
+                                   final Throwable cause) {
 
     }
 }

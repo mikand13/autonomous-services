@@ -101,6 +101,28 @@ class BridgeVerticle() : AbstractVerticle() {
         deployBridge(router, bridgePort, startFuture)
     }
 
+    private fun addHealthCheck(router: Router, bridgePath: String) {
+        val healthCheckHandler = HealthCheckHandler.create(vertx)
+
+        healthCheckHandler.register("bridge-is-live", { future ->
+            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, {
+                if (it.succeeded()) {
+                    it.result().ping({
+                        if (it.succeeded() && it.result()) {
+                            future.complete(Status.OK(JsonObject().put("bridge", "UP")))
+                        } else {
+                            future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
+                        }
+                    })
+                } else {
+                    future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
+                }
+            })
+        })
+
+        router.get(bridgePath.removeSuffix("/*") + "-health").handler(healthCheckHandler)
+    }
+
     private fun addEventBusBridge(ebHandler: SockJSHandler, router: Router,
                                   bridgeBase: String, bridgePath: String) {
         ebHandler.bridge(createBridgeOptions(bridgeBase), { bridgeEvent ->
@@ -168,46 +190,6 @@ class BridgeVerticle() : AbstractVerticle() {
         router.route(bridgePath).handler(ebHandler)
     }
 
-    private fun deployBridge(router: Router, bridgePort: Int, startFuture: Future<Void>?) {
-        val options = httpServerOptions ?: HttpServerOptions()
-                .setCompressionSupported(true)
-                .setTcpKeepAlive(true)
-
-        vertx.createHttpServer(options)
-                .requestHandler(router::accept)
-                .listen(bridgePort, { server ->
-                    if (server.succeeded()) {
-                        this.server = server.result()
-
-                        startFuture?.complete()
-                    } else {
-                        startFuture?.fail(server.cause())
-                    }
-                })
-    }
-
-    private fun addHealthCheck(router: Router, bridgePath: String) {
-        val healthCheckHandler = HealthCheckHandler.create(vertx)
-
-        healthCheckHandler.register("bridge-is-live", { future ->
-            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, {
-                if (it.succeeded()) {
-                    it.result().ping({
-                        if (it.succeeded() && it.result()) {
-                            future.complete(Status.OK(JsonObject().put("bridge", "UP")))
-                        } else {
-                            future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
-                        }
-                    })
-                } else {
-                    future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
-                }
-            })
-        })
-
-        router.get(bridgePath.removeSuffix("/*") + "-health").handler(healthCheckHandler)
-    }
-
     private fun authorize(bridgeEvent: BridgeEvent) {
         val rawMessage = bridgeEvent.rawMessage
         val address = rawMessage.getString("address")
@@ -243,5 +225,23 @@ class BridgeVerticle() : AbstractVerticle() {
         permissions.add(PermittedOptions().setAddressRegex("^($bridgeBase$DEFAULT_BRIDGE_BASE_STORAGE).*$"))
 
         return permissions
+    }
+
+    private fun deployBridge(router: Router, bridgePort: Int, startFuture: Future<Void>?) {
+        val options = httpServerOptions ?: HttpServerOptions()
+                .setCompressionSupported(true)
+                .setTcpKeepAlive(true)
+
+        vertx.createHttpServer(options)
+                .requestHandler(router::accept)
+                .listen(bridgePort, { server ->
+                    if (server.succeeded()) {
+                        this.server = server.result()
+
+                        startFuture?.complete()
+                    } else {
+                        startFuture?.fail(server.cause())
+                    }
+                })
     }
 }

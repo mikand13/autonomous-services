@@ -46,11 +46,11 @@
     </Appenders>
 
     <Loggers>
-        <AsyncLogger name="FILE" level="DEBUG">
+        <AsyncLogger name="FILE" level="ALL">
             <AppenderRef ref="vertx_logs_file" />
         </AsyncLogger>
 
-        <AsyncRoot level="DEBUG">
+        <AsyncRoot level="ALL">
             <AppenderRef ref="vertx_console" />
         </AsyncRoot>
     </Loggers>
