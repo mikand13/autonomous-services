@@ -221,7 +221,58 @@ tasks {
         dependsOn("docker")
     }
 
+    "copyJsServiceProxies"(Copy::class) {
+        delete("${projectDir}/src/test/js/extractedProxies")
+
+        configurations.getByName("compile").resolvedConfiguration.resolvedArtifacts.forEach({
+            if (isExtract(it.id.componentIdentifier.displayName)) {
+                println("Copying JS/TS proxies from: ${it.name}")
+
+                copy {
+                    from(zipTree(it.file))
+                    into(file("${buildDir}/nannoq-artifacts/${it.name}"))
+                }
+
+                copy {
+                    from("${buildDir}/nannoq-artifacts/${it.name}/nannoqHeartbeatService-js")
+                    into("${projectDir}/src/test/js/extractedProxies/js")
+                }
+
+                copy {
+                    from("${buildDir}/nannoq-artifacts/${it.name}/nannoqHeartbeatService-ts")
+                    into("${projectDir}/src/test/js/extractedProxies/ts")
+                }
+            }
+        })
+    }
+
+    "copyRubyServiceProxies"(Copy::class) {
+        delete("${projectDir}/src/test/rb/extractedProxies")
+
+        configurations.getByName("compile").resolvedConfiguration.resolvedArtifacts.forEach({
+            if (isExtract(it.id.componentIdentifier.displayName)) {
+                println("Copying Ruby proxies from: ${it.name}")
+
+                copy {
+                    from(zipTree(it.file))
+                    into(file("${buildDir}/nannoq-artifacts/${it.name}"))
+                }
+
+                copy {
+                    from("${buildDir}/nannoq-artifacts/${it.name}/nannoqHeartbeatService")
+                    into("${projectDir}/src/test/rb/extractedProxies")
+                }
+            }
+        })
+    }
+
     withType<Test> {
+        dependsOn("copyJsServiceProxies", "copyRubyServiceProxies")
+
         System.setProperty("vertx.logger-delegate-factory-class-name", logger_factory_version.toString())
     }
+}
+
+fun isExtract(componentIdentifier: String) : Boolean {
+    return componentIdentifier.contains("com.nannoq:cluster")
 }

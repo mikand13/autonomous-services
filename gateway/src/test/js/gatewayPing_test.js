@@ -23,7 +23,7 @@
  */
 
 const EventBus = require("vertx3-eventbus-client");
-const HeartBeatService = require("./nannoqHeartbeatService-js/heartbeat_service-proxy.js");
+const HeartBeatService = require("extractedProxies/js/heartbeat_service-proxy.js");
 
 describe('NotNull', function() {
     const eb = new EventBus("http://localhost:5443/eventbus");

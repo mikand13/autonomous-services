@@ -68,8 +68,6 @@ allprojects {
 
 subprojects {
     tasks.withType<KotlinCompile> {
-        println("Compiling kotlin $name in project ${project.name}...")
-
         kotlinOptions {
             jvmTarget = jvmTargetValue
             incremental = true
