@@ -49,6 +49,8 @@ describe('HeartBeatService should return true', function() {
                 expect(result).to.equal(true);
 
                 done();
+
+                eb.close();
             })
         };
     });

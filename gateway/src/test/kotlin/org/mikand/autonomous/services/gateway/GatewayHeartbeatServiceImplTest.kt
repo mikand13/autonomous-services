@@ -79,22 +79,24 @@ class GatewayHeartbeatServiceImplTest : ConfigSupport {
     }
 
     @Test
-    fun testFailedPing(context: TestContext) {
+    fun testFailedPingRuby(context: TestContext) {
         val async = context.async()
+        val verticle = BridgeVerticle()
         val vertx = rule.vertx()
 
-        ServiceManager.getInstance(vertx).publishService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS,
-                GatewayHeartbeatServiceImpl(vertx, getTestConfig()), {
+        vertx.deployVerticle(verticle, {
             context.assertTrue(it.succeeded())
 
-            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, {
+            ServiceManager.getInstance(vertx).publishService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS,
+                    GatewayHeartbeatServiceImpl(vertx, getTestConfig()), {
                 context.assertTrue(it.succeeded())
 
-                it.result().ping({
-                    context.assertTrue(it.failed())
-                    context.assertNull(it.result())
-
-                    async.complete()
+                vertx.deployVerticle("rb/gateway_heartbeat_service_impl_test.rb", {
+                    if (it.succeeded()) {
+                        async.complete()
+                    } else {
+                        context.fail(it.cause())
+                    }
                 })
             })
         })
