@@ -79,7 +79,38 @@ class GatewayHeartbeatServiceImplTest : ConfigSupport {
     }
 
     @Test
-    fun testFailedPingRuby(context: TestContext) {
+    fun testFailedPing(context: TestContext) {
+        val async = context.async()
+        val vertx = rule.vertx()
+
+        ServiceManager.getInstance(vertx).publishService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS,
+                GatewayHeartbeatServiceImpl(vertx, getTestConfig()), {
+            context.assertTrue(it.succeeded())
+
+            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, {
+                context.assertTrue(it.succeeded())
+
+                it.result().ping({
+                    context.assertTrue(it.failed())
+                    context.assertNull(it.result())
+
+                    async.complete()
+                })
+            })
+        })
+    }
+
+    @Test
+    fun testPingRuby(context: TestContext) {
+        testLang(context, "rb/gateway_heartbeat_service_impl_test.rb")
+    }
+
+    @Test
+    fun testPingJs(context: TestContext) {
+        testLang(context, "js/gatewayHeartbeatServiceImplTest.js")
+    }
+
+    fun testLang(context: TestContext, langVerticle: String) {
         val async = context.async()
         val verticle = BridgeVerticle()
         val vertx = rule.vertx()
@@ -91,7 +122,7 @@ class GatewayHeartbeatServiceImplTest : ConfigSupport {
                     GatewayHeartbeatServiceImpl(vertx, getTestConfig()), {
                 context.assertTrue(it.succeeded())
 
-                vertx.deployVerticle("rb/gateway_heartbeat_service_impl_test.rb", {
+                vertx.deployVerticle(langVerticle, {
                     if (it.succeeded()) {
                         async.complete()
                     } else {

@@ -170,7 +170,8 @@ karma {
     dependencies(listOf(
             "sockjs-client@^1.1.4",
             "vertx3-eventbus-client@^3.4.2",
-            "vertx3-min@^3.4.2"
+            "vertx3-min@^3.4.2",
+            "karma-phantomjs-launcher@^1.0.4"
     ))
 
     files = listOf("test/resources/js/**/*_test.js")
@@ -234,13 +235,11 @@ tasks {
                 }
 
                 copy {
-                    from("${buildDir}/nannoq-artifacts/${it.name}/nannoqHeartbeatService-js")
-                    into("${projectDir}/src/test/resources/js/extractedProxies/js")
-                }
+                    from("${buildDir}/nannoq-artifacts/${it.name}/nannoqHeartbeatService-js") {
+                        include("*-proxy.js")
+                    }
 
-                copy {
-                    from("${buildDir}/nannoq-artifacts/${it.name}/nannoqHeartbeatService-ts")
-                    into("${projectDir}/src/test/resources/js/extractedProxies/ts")
+                    into("${projectDir}/src/test/resources/js/extractedProxies/js")
                 }
             }
         })

@@ -206,3 +206,4 @@ gradle-app.setting
 node_modules/
 TESTS-*
 extractedProxies/
+.vertx/
