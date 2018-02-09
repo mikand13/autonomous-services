@@ -27,6 +27,8 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.palantir.gradle.docker.DockerComponent
 import com.palantir.gradle.docker.DockerExtension
 import com.palantir.gradle.docker.DockerRunExtension
+import com.wiredforcode.gradle.spawn.KillProcessTask
+import com.wiredforcode.gradle.spawn.SpawnProcessTask
 import org.gradle.api.tasks.JavaExec
 import org.gradle.kotlin.dsl.*
 import org.gradle.script.lang.kotlin.*
@@ -36,7 +38,7 @@ import org.jetbrains.kotlin.gradle.plugin.KaptAnnotationProcessorOptions
 import org.jetbrains.kotlin.gradle.plugin.KaptJavacOptionsDelegate
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-val mainClass = "org.mikand.autonomous.services.gateway.VertxLauncher"
+val mainClass = "org.mikand.autonomous.services.gateway.GatewayLauncher"
 val mainVerticleName = "org.mikand.autonomous.services.gateway.GatewayDeploymentVerticle"
 
 val watchForChange = "src/**/*"
@@ -71,11 +73,13 @@ buildscript {
     repositories {
         mavenCentral()
         jcenter()
+        maven(url = "http://dl.bintray.com/vermeulen-mp/gradle-plugins")
     }
 
     dependencies {
         classpath("gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.13.0")
         classpath("com.github.jengelman.gradle.plugins:shadow:2.0.2")
+        classpath("com.wiredforcode:gradle-spawn-plugin:0.8.0")
         classpath(kotlin("gradle-plugin", kotlin_version))
     }
 }
@@ -91,6 +95,7 @@ plugins {
     id("kotlin")
     id("application")
     id("com.craigburke.karma") version("1.4.4")
+    id("com.wiredforcode.spawn") version("0.8.0")
 }
 
 apply {
@@ -171,14 +176,18 @@ karma {
             "sockjs-client@^1.1.4",
             "vertx3-eventbus-client@^3.4.2",
             "vertx3-min@^3.4.2",
-            "karma-phantomjs-launcher@^1.0.4"
+            "karma-browserify@^5.2.0",
+            "browserify@^16.0.0"
     ))
 
-    files = listOf("test/resources/js/**/*_test.js")
+    files = listOf("test/resources/js/karma/**/*_test.js")
 
     browsers = listOf("PhantomJS")
-    frameworks = listOf("jasmine")
-    reporters = listOf("junit")
+    frameworks = listOf("browserify", "jasmine")
+    reporters = listOf("progress")
+
+    preprocessors = mapOf(Pair("test/resources/js/karma/**/*_test.js", listOf("browserify")))
+    propertyMissing("logLevel", "WARN")
 }
 
 tasks {
@@ -203,7 +212,7 @@ tasks {
             )
         }
 
-        files("/src/main")
+        files(listOf("/src/main/java", "/src/main/kotlin"))
 
         mergeServiceFiles {
             include("META-INF/services/io.vertx.core.spi.VerticleFactory")
@@ -239,7 +248,7 @@ tasks {
                         include("*-proxy.js")
                     }
 
-                    into("${projectDir}/src/test/resources/js/extractedProxies/js")
+                    into("${projectDir}/src/test/resources/js/karma/extractedProxies")
                 }
             }
         })
@@ -247,6 +256,20 @@ tasks {
 
     "processResources" {
         dependsOn("copyJsServiceProxies")
+    }
+
+    "startServer"(SpawnProcessTask::class) {
+        dependsOn("shadowJar")
+        command = "java -jar ${projectDir}/build/libs/$nameOfArchive"
+        ready = "Succeeded in deploying verticle"
+    }
+
+    "stopServer"(KillProcessTask::class)
+
+    "karmaRun" {
+        dependsOn("startServer")
+        delete("${buildDir}/karma.conf.js")
+        finalizedBy("stopServer")
     }
 
     withType<Test> {
