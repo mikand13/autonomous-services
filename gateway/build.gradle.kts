@@ -79,7 +79,7 @@ buildscript {
     dependencies {
         classpath("gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.13.0")
         classpath("com.github.jengelman.gradle.plugins:shadow:2.0.2")
-        classpath("com.wiredforcode:gradle-spawn-plugin:0.8.0")
+        classpath("com.wiredforcode:gradle-spawn-plugin:0.6.0")
         classpath(kotlin("gradle-plugin", kotlin_version))
     }
 }
@@ -95,7 +95,7 @@ plugins {
     id("kotlin")
     id("application")
     id("com.craigburke.karma") version("1.4.4")
-    id("com.wiredforcode.spawn") version("0.8.0")
+    id("com.wiredforcode.spawn") version("0.6.0")
 }
 
 apply {
@@ -261,7 +261,7 @@ tasks {
     "startServer"(SpawnProcessTask::class) {
         dependsOn("shadowJar")
         command = "java -jar ${projectDir}/build/libs/$nameOfArchive"
-        ready = "Succeeded in deploying verticle"
+        ready = "Succeeded in deploying vert"
     }
 
     "stopServer"(KillProcessTask::class)

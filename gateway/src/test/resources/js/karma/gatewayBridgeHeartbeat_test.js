@@ -27,10 +27,14 @@ const HeartBeatService = require("./extractedProxies/heartbeat_service-proxy.js"
 
 describe('NotNull', function() {
     const eb = new EventBus("http://localhost:5443/eventbus");
+    const HeartbeatService = new HeartBeatService("GatewayHeartbeat");
 
-    it('Is not Null', function() {
-        eb.should.not.equal(null);
-        HeartbeatService.should.not.equal(null);
+    it('Eb Is not Null', function() {
+        expect(eb).not.toBe(null);
+    });
+
+    it('Heartbeat Service Is not Null', function() {
+        expect(HeartbeatService).not.toBe(null);
     });
 
     eb.close();
@@ -40,18 +44,18 @@ describe('HeartBeatService should return true', function() {
     const eb = new EventBus("http://localhost:5443/eventbus");
     const HeartbeatService = new HeartBeatService("GatewayHeartbeat");
 
-    it('HeartBeatService should return true!', function() {
-        this.timeout(5000);
+    beforeEach(function(done) {
+        it('HeartBeatService should return true!', function () {
+            eb.onopen = function () {
+                HeartbeatService.ping(function (error, result) {
+                    expect(error).to.equal('undefined');
+                    expect(result).to.equal(true);
 
-        eb.onopen = function() {
-            HeartbeatService.ping(function (error, result) {
-                expect(error).to.equal('undefined');
-                expect(result).to.equal(true);
+                    done();
 
-                done();
-
-                eb.close();
-            })
-        };
+                    eb.close();
+                })
+            };
+        });
     });
 });
