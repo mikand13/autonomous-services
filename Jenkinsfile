@@ -15,6 +15,7 @@ pipeline {
   
   tools {
     jdk "jdk8"
+    node "node"
   }
   
   stages {
