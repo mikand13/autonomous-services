@@ -207,3 +207,5 @@ node_modules/
 TESTS-*
 extractedProxies/
 .vertx/
+
+*.iml
