@@ -59,6 +59,8 @@ internal class GatewayHeartbeatServiceImpl : HeartbeatService {
 
     @Fluent
     override fun ping(resultHandler: Handler<AsyncResult<Boolean>>?): GatewayHeartbeatServiceImpl {
+        logger.debug("Ping!")
+
         val ssl = if (config.getBoolean("ssl") == true) "s" else ""
         val path = "http$ssl://localhost:$bridgePort${bridgePath.removeSuffix("/*")}"
 

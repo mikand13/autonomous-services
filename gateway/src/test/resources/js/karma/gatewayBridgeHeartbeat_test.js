@@ -22,9 +22,9 @@
  * SOFTWARE.
  */
 
-const appConf = require('../../../../../build/tmp/app-conf-test');
 const EventBus = require("vertx3-eventbus-client");
 const HeartBeatService = require("./extractedProxies/heartbeat_service-proxy.js");
+const appConf = require('../../../../../build/tmp/app-conf-test');
 
 localStorage.debug = '*';
 
@@ -33,28 +33,21 @@ describe('NotNull', function() {
     console.info("Now connecting to eventbus @ " + url);
 
     const eb = new EventBus(url);
-    const HeartbeatService = new HeartBeatService("GatewayHeartbeat");
+    const HeartbeatService = new HeartBeatService(eb, "GatewayHeartbeat");
 
-    console.log(eb);
-
-
-    beforeEach(function(done) {});
+    beforeEach(function(done) {
+        setTimeout(function() {
+            done();
+        }, 2000);
+    });
 
     it('Eb Is not Null', function() {
-        eb.onopen = function () {
-            expect(eb).not.toBe(null);
-            expect(eb.state).toBe(EventBus.OPEN);
-
-            done();
-        }
+        expect(eb).not.toBe(null);
+        expect(eb.state).toBe(EventBus.OPEN);
     });
 
     it('Heartbeat Service Is not Null', function() {
-        eb.onopen = function () {
-            expect(HeartbeatService).not.toBe(null);
-
-            done();
-        }
+        expect(HeartbeatService).not.toBe(null);
     });
 
     eb.close();
@@ -65,21 +58,20 @@ describe('HeartBeatService should return true', function() {
     console.info("Now connecting to eventbus @ " + url);
 
     const eb = new EventBus("http://localhost:" + appConf.bridgePort + "/eventbus");
-    const HeartbeatService = new HeartBeatService("GatewayHeartbeat");
+    const HeartbeatService = new HeartBeatService(eb, "GatewayHeartbeat");
 
     beforeEach(function(done) {
+        setTimeout(function() {
+            done();
+        }, 2000);
     });
 
     it('HeartBeatService should return true!', function () {
-        eb.onopen = function () {
-            HeartbeatService.ping(function (error, result) {
-                expect(error).to.equal('undefined');
-                expect(result).to.equal(true);
+        HeartbeatService.ping(function (error, result) {
+            expect(error).to.equal('undefined');
+            expect(result).to.equal(true);
 
-                eb.close();
-
-                done();
-            });
-        }
+            eb.close();
+        });
     });
 });

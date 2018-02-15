@@ -222,6 +222,7 @@ internal class BridgeVerticle() : AbstractVerticle() {
         permissions.add(PermittedOptions().setAddressRegex("^($bridgeBase$DEFAULT_BRIDGE_BASE_API).*$"))
         permissions.add(PermittedOptions().setAddressRegex("^($bridgeBase$DEFAULT_BRIDGE_BASE_DATA).*$"))
         permissions.add(PermittedOptions().setAddressRegex("^($bridgeBase$DEFAULT_BRIDGE_BASE_STORAGE).*$"))
+        permissions.add(PermittedOptions().setAddress(GATEWAY_HEARTBEAT_ADDRESS))
 
         return permissions
     }
@@ -231,13 +232,14 @@ internal class BridgeVerticle() : AbstractVerticle() {
         permissions.add(PermittedOptions().setAddressRegex("^($bridgeBase$DEFAULT_BRIDGE_BASE_API).*$"))
         permissions.add(PermittedOptions().setAddressRegex("^($bridgeBase$DEFAULT_BRIDGE_BASE_DATA).*$"))
         permissions.add(PermittedOptions().setAddressRegex("^($bridgeBase$DEFAULT_BRIDGE_BASE_STORAGE).*$"))
+        permissions.add(PermittedOptions().setAddress(GATEWAY_HEARTBEAT_ADDRESS))
 
         return permissions
     }
 
     private fun deployBridge(router: Router, bridgePort: Int, startFuture: Future<Void>?) {
         val options = httpServerOptions ?: HttpServerOptions()
-                .setCompressionSupported(true)
+                .setCompressionSupported(false)
                 .setTcpKeepAlive(true)
 
         vertx.createHttpServer(options)
