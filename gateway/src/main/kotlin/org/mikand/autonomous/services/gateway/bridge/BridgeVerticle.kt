@@ -127,10 +127,6 @@ internal class BridgeVerticle() : AbstractVerticle() {
 
     private fun addEventBusBridge(ebHandler: SockJSHandler, router: Router,
                                   bridgeBase: String, bridgePath: String) {
-        ebHandler.socketHandler({ socket ->
-            logger.info("Incoming socket!")
-        })
-
         ebHandler.bridge(createBridgeOptions(bridgeBase), { bridgeEvent ->
             logger.info("Event received from external client!")
 
