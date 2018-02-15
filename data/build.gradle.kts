@@ -30,9 +30,7 @@ import com.palantir.gradle.docker.DockerRunExtension
 import com.wiredforcode.gradle.spawn.KillProcessTask
 import com.wiredforcode.gradle.spawn.SpawnProcessTask
 import groovy.json.JsonBuilder
-import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
-import groovy.util.Eval
 import org.gradle.api.tasks.JavaExec
 import org.gradle.kotlin.dsl.*
 import org.gradle.script.lang.kotlin.*
@@ -41,12 +39,11 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 import org.jetbrains.kotlin.gradle.plugin.KaptAnnotationProcessorOptions
 import org.jetbrains.kotlin.gradle.plugin.KaptJavacOptionsDelegate
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 import java.net.ServerSocket
 
-val mainClass = "org.mikand.autonomous.services.gateway.GatewayLauncher"
-val mainVerticleName = "org.mikand.autonomous.services.gateway.GatewayDeploymentVerticle"
+val mainClass = "org.mikand.autonomous.services.data.DataLauncher"
+val mainVerticleName = "org.mikand.autonomous.services.data.DataDeploymentVerticle"
 
 val watchForChange = "src/**/*"
 val confFile = "src/main/resources/app-conf.json"
@@ -62,9 +59,9 @@ val vertxPort = findFreePort()
 println("Test Port for Vertx is: $vertxPort")
 
 doOnChange = if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-    "..\\gradlew :gateway:classes"
+    "..\\gradlew :data:classes"
 } else {
-    "../gradlew :gateway:classes"
+    "../gradlew :data:classes"
 }
 
 val kotlin_version by project
@@ -185,8 +182,8 @@ karma {
 
     dependencies(listOf(
             "sockjs-client@^1.1.4",
-            "vertx3-eventbus-client@^3.5.1",
-            "vertx3-min@^3.5.1",
+            "vertx3-eventbus-client@^3.4.2",
+            "vertx3-min@^3.4.2",
             "karma-browserify@^5.2.0",
             "browserify@^16.0.0"
     ))
@@ -242,45 +239,18 @@ tasks {
         dependsOn("docker")
     }
 
-    "copyJsServiceProxies"(Copy::class) {
-        delete("${projectDir}/src/test/resources/js/extractedProxies")
-
-        configurations.getByName("compile").resolvedConfiguration.resolvedArtifacts.forEach({
-            if (isExtract(it.id.componentIdentifier.displayName)) {
-                println("Copying JS/TS proxies from: ${it.name}")
-
-                copy {
-                    from(zipTree(it.file))
-                    into(file("${buildDir}/nannoq-artifacts/${it.name}"))
-                }
-
-                copy {
-                    from("${buildDir}/nannoq-artifacts/${it.name}/nannoqHeartbeatService-js") {
-                        include("*-proxy.js")
-                    }
-
-                    into("${projectDir}/src/test/resources/js/karma/extractedProxies")
-                }
-            }
-        })
-    }
-
-    "processResources" {
-        dependsOn("copyJsServiceProxies")
-    }
-
     "startServer"(SpawnProcessTask::class) {
         dependsOn("shadowJar")
         val confFilePath = writePortToConf(vertxPort)
         command = "java -jar ${projectDir}/build/libs/$nameOfArchive -conf $confFilePath"
         ready = "running"
-        directory = "gateway"
-        pidLockFileName = ".gateway.pid.lock"
+        directory = "data"
+        pidLockFileName = ".data.pid.lock"
     }
 
     "stopServer"(KillProcessTask::class) {
-        directory = "gateway"
-        pidLockFileName = ".gateway.pid.lock"
+        directory = "data"
+        pidLockFileName = ".data.pid.lock"
     }
 
     "karmaRun" {

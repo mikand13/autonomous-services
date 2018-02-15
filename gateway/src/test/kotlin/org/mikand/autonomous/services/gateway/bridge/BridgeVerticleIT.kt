@@ -22,8 +22,10 @@
  * SOFTWARE.
  */
 
-package org.mikand.autonomous.services.gateway
+package org.mikand.autonomous.services.gateway.bridge
 
+import io.vertx.core.DeploymentOptions
+import io.vertx.core.json.Json
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
@@ -35,12 +37,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mikand.autonomous.services.gateway.utils.ConfigSupport
 
-/**
- * @author Anders Mikkelsen
- * @version 20.12.17 11:41
- */
+
 @RunWith(VertxUnitRunner::class)
-class GatewayHeartbeatServiceImplTest : ConfigSupport {
+class BridgeVerticleIT : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
@@ -53,14 +52,24 @@ class GatewayHeartbeatServiceImplTest : ConfigSupport {
     val timeout = Timeout.seconds(5)
 
     @Test
-    fun testPing(context: TestContext) {
+    fun testBridgeDeploymentToStandardParameters(context: TestContext) {
         val async = context.async()
-        val heartbeat = GatewayHeartbeatServiceImpl(rule.vertx(), getTestConfig())
+        val config = getTestConfig().put("bridgePort", Integer.parseInt(System.getProperty("vertx.port")))
+        val depOptions = DeploymentOptions().setConfig(config)
+        val verticle = BridgeVerticle()
+        val vertx = rule.vertx()
 
-        heartbeat.ping({
-            context.assertTrue(it.failed())
+        vertx.deployVerticle(verticle, depOptions, {
+            context.assertTrue(it.succeeded())
 
-            async.complete()
+            vertx.createHttpClient()
+                    .getAbs("http://localhost:${config.getInteger("bridgePort")}/eventbus")
+                    .handler({
+                        context.assertTrue(it.statusCode() == 200)
+                        async.complete()
+                    })
+                    .exceptionHandler({ context.fail(it) })
+                    .end()
         })
     }
 }

@@ -22,64 +22,40 @@
  * SOFTWARE.
  */
 
-const appConf = require('../../../../../build/tmp/app-conf-test');
 const EventBus = require("vertx3-eventbus-client");
 const HeartBeatService = require("./extractedProxies/heartbeat_service-proxy.js");
 
-localStorage.debug = '*';
-
 describe('NotNull', function() {
-    const url = "http://localhost:" + appConf.bridgePort + "/eventbus";
-    console.info("Now connecting to eventbus @ " + url);
-
-    const eb = new EventBus(url);
+    const eb = new EventBus("http://localhost:5443/eventbus");
     const HeartbeatService = new HeartBeatService("GatewayHeartbeat");
 
-    console.log(eb);
-
-
-    beforeEach(function(done) {});
-
     it('Eb Is not Null', function() {
-        eb.onopen = function () {
-            expect(eb).not.toBe(null);
-            expect(eb.state).toBe(EventBus.OPEN);
-
-            done();
-        }
+        expect(eb).not.toBe(null);
     });
 
     it('Heartbeat Service Is not Null', function() {
-        eb.onopen = function () {
-            expect(HeartbeatService).not.toBe(null);
-
-            done();
-        }
+        expect(HeartbeatService).not.toBe(null);
     });
 
     eb.close();
 });
 
 describe('HeartBeatService should return true', function() {
-    const url = "http://localhost:" + appConf.bridgePort + "/eventbus";
-    console.info("Now connecting to eventbus @ " + url);
-
-    const eb = new EventBus("http://localhost:" + appConf.bridgePort + "/eventbus");
+    const eb = new EventBus("http://localhost:5443/eventbus");
     const HeartbeatService = new HeartBeatService("GatewayHeartbeat");
 
     beforeEach(function(done) {
-    });
+        it('HeartBeatService should return true!', function () {
+            eb.onopen = function () {
+                HeartbeatService.ping(function (error, result) {
+                    expect(error).to.equal('undefined');
+                    expect(result).to.equal(true);
 
-    it('HeartBeatService should return true!', function () {
-        eb.onopen = function () {
-            HeartbeatService.ping(function (error, result) {
-                expect(error).to.equal('undefined');
-                expect(result).to.equal(true);
+                    done();
 
-                eb.close();
-
-                done();
-            });
-        }
+                    eb.close();
+                })
+            };
+        });
     });
 });

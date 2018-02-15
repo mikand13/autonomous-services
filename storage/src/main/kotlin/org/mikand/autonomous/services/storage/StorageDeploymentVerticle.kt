@@ -22,45 +22,29 @@
  * SOFTWARE.
  */
 
-package org.mikand.autonomous.services.gateway
+package org.mikand.autonomous.services.storage
 
+import io.vertx.core.AbstractVerticle
+import io.vertx.core.DeploymentOptions
+import io.vertx.core.Future
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.RunTestOnContext
-import io.vertx.ext.unit.junit.Timeout
-import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.mikand.autonomous.services.gateway.utils.ConfigSupport
 
 /**
  * @author Anders Mikkelsen
  * @version 20.12.17 11:41
  */
-@RunWith(VertxUnitRunner::class)
-class GatewayHeartbeatServiceImplTest : ConfigSupport {
+class StorageDeploymentVerticle : AbstractVerticle() {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    @JvmField
-    @Rule
-    val rule = RunTestOnContext()
+    private var coreCount = Runtime.getRuntime().availableProcessors()
+    private val deploymentOptions = DeploymentOptions()
+            .setInstances(coreCount * 2)
 
-    @JvmField
-    @Rule
-    val timeout = Timeout.seconds(5)
+    override fun start(startFuture: Future<Void>?) {
+        logger.info("StorageDeploymentVerticle is running!")
 
-    @Test
-    fun testPing(context: TestContext) {
-        val async = context.async()
-        val heartbeat = GatewayHeartbeatServiceImpl(rule.vertx(), getTestConfig())
-
-        heartbeat.ping({
-            context.assertTrue(it.failed())
-
-            async.complete()
-        })
+        startFuture?.complete()
     }
 }

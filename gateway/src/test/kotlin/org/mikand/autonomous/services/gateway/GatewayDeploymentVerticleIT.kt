@@ -27,10 +27,12 @@ package org.mikand.autonomous.services.gateway
 import io.vertx.core.CompositeFuture
 import io.vertx.core.DeploymentOptions
 import io.vertx.core.Future
+import io.vertx.core.json.Json
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
 import io.vertx.ext.unit.junit.RunTestOnContext
+import io.vertx.ext.unit.junit.Timeout
 import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
@@ -42,7 +44,7 @@ import org.mikand.autonomous.services.gateway.utils.ConfigSupport
  * @version 20.12.17 11:41
  */
 @RunWith(VertxUnitRunner::class)
-class GatewayDeploymentVerticleTest : ConfigSupport {
+class GatewayDeploymentVerticleIT : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
@@ -50,32 +52,39 @@ class GatewayDeploymentVerticleTest : ConfigSupport {
     @Rule
     val rule = RunTestOnContext()
 
+    @JvmField
+    @Rule
+    val timeout = Timeout.seconds(5)
+
     @Test
     fun shouldDeployDeploymentVerticleWithSuccess(context : TestContext) {
-        val deploymentOptions = DeploymentOptions().setConfig(getTestConfig())
+        val config = getTestConfig().put("bridgePort", Integer.parseInt(System.getProperty("vertx.port")))
+        val depOptions = DeploymentOptions().setConfig(config)
         val async = context.async()
         val vertx = rule.vertx()
 
-        vertx.deployVerticle(GatewayDeploymentVerticle(), deploymentOptions, {
+        vertx.deployVerticle(GatewayDeploymentVerticle(), depOptions, {
             context.assertTrue(it.succeeded())
 
             val busFuture = Future.future<Void>()
             val healthFuture = Future.future<Void>()
 
             vertx.createHttpClient()
-                    .getAbs("http://localhost:5443/eventbus")
+                    .getAbs("http://localhost:${config.getInteger("bridgePort")}/eventbus")
                     .handler({
                         context.assertTrue(it.statusCode() == 200)
                         busFuture.complete()
                     })
+                    .exceptionHandler({ context.fail(it) })
                     .end()
 
             vertx.createHttpClient()
-                    .getAbs("http://localhost:5443/eventbus-health")
+                    .getAbs("http://localhost:${config.getInteger("bridgePort")}/eventbus-health")
                     .handler({
                         context.assertTrue(it.statusCode() == 200)
                         healthFuture.complete()
                     })
+                    .exceptionHandler({ context.fail(it) })
                     .end()
 
             CompositeFuture.all(busFuture, healthFuture).setHandler({

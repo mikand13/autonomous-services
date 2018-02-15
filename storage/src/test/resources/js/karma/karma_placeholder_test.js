@@ -22,45 +22,8 @@
  * SOFTWARE.
  */
 
-package org.mikand.autonomous.services.gateway
-
-import io.vertx.core.logging.Logger
-import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.RunTestOnContext
-import io.vertx.ext.unit.junit.Timeout
-import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.mikand.autonomous.services.gateway.utils.ConfigSupport
-
-/**
- * @author Anders Mikkelsen
- * @version 20.12.17 11:41
- */
-@RunWith(VertxUnitRunner::class)
-class GatewayHeartbeatServiceImplTest : ConfigSupport {
-    @Suppress("unused")
-    private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
-
-    @JvmField
-    @Rule
-    val rule = RunTestOnContext()
-
-    @JvmField
-    @Rule
-    val timeout = Timeout.seconds(5)
-
-    @Test
-    fun testPing(context: TestContext) {
-        val async = context.async()
-        val heartbeat = GatewayHeartbeatServiceImpl(rule.vertx(), getTestConfig())
-
-        heartbeat.ping({
-            context.assertTrue(it.failed())
-
-            async.complete()
-        })
-    }
-}
+describe('Dont crash Karma', function() {
+    it('Nothing Is not Null', function() {
+        expect(true).not.toBe(null);
+    });
+});

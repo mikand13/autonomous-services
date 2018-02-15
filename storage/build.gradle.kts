@@ -30,23 +30,21 @@ import com.palantir.gradle.docker.DockerRunExtension
 import com.wiredforcode.gradle.spawn.KillProcessTask
 import com.wiredforcode.gradle.spawn.SpawnProcessTask
 import groovy.json.JsonBuilder
-import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
-import groovy.util.Eval
 import org.gradle.api.tasks.JavaExec
 import org.gradle.kotlin.dsl.*
 import org.gradle.script.lang.kotlin.*
+import org.jetbrains.kotlin.daemon.common.SOCKET_ANY_FREE_PORT
 import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 import org.jetbrains.kotlin.gradle.plugin.KaptAnnotationProcessorOptions
 import org.jetbrains.kotlin.gradle.plugin.KaptJavacOptionsDelegate
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
-import java.net.ServerSocket
+import java.net.ServerSocket;
 
-val mainClass = "org.mikand.autonomous.services.gateway.GatewayLauncher"
-val mainVerticleName = "org.mikand.autonomous.services.gateway.GatewayDeploymentVerticle"
+val mainClass = "org.mikand.autonomous.services.storage.StorageLauncher"
+val mainVerticleName = "org.mikand.autonomous.services.storage.StorageDeploymentVerticle"
 
 val watchForChange = "src/**/*"
 val confFile = "src/main/resources/app-conf.json"
@@ -62,9 +60,9 @@ val vertxPort = findFreePort()
 println("Test Port for Vertx is: $vertxPort")
 
 doOnChange = if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-    "..\\gradlew :gateway:classes"
+    "..\\gradlew :storage:classes"
 } else {
-    "../gradlew :gateway:classes"
+    "../gradlew :storage:classes"
 }
 
 val kotlin_version by project
@@ -130,6 +128,7 @@ dependencies {
     // Nannoq
     compile("com.nannoq:tools:$nannoq_tools_version")
     compile("com.nannoq:cluster:$nannoq_tools_version")
+    compile("com.nannoq:repository:$nannoq_tools_version")
 
     // Vert.x
     compile("io.vertx:vertx-health-check:$vertx_version")
@@ -185,8 +184,8 @@ karma {
 
     dependencies(listOf(
             "sockjs-client@^1.1.4",
-            "vertx3-eventbus-client@^3.5.1",
-            "vertx3-min@^3.5.1",
+            "vertx3-eventbus-client@^3.4.2",
+            "vertx3-min@^3.4.2",
             "karma-browserify@^5.2.0",
             "browserify@^16.0.0"
     ))
@@ -255,7 +254,7 @@ tasks {
                 }
 
                 copy {
-                    from("${buildDir}/nannoq-artifacts/${it.name}/nannoqHeartbeatService-js") {
+                    from("${buildDir}/nannoq-artifacts/${it.name}/nannoqRepositoryService-js") {
                         include("*-proxy.js")
                     }
 
@@ -274,13 +273,13 @@ tasks {
         val confFilePath = writePortToConf(vertxPort)
         command = "java -jar ${projectDir}/build/libs/$nameOfArchive -conf $confFilePath"
         ready = "running"
-        directory = "gateway"
-        pidLockFileName = ".gateway.pid.lock"
+        directory = "storage"
+        pidLockFileName = ".storage.pid.lock"
     }
 
     "stopServer"(KillProcessTask::class) {
-        directory = "gateway"
-        pidLockFileName = ".gateway.pid.lock"
+        directory = "storage"
+        pidLockFileName = ".storage.pid.lock"
     }
 
     "karmaRun" {

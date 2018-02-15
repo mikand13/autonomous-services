@@ -22,43 +22,8 @@
  * SOFTWARE.
  */
 
-package org.mikand.autonomous.services.gateway.bridge
-
-import io.vertx.core.logging.Logger
-import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.RunTestOnContext
-import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
-
-
-
-@RunWith(VertxUnitRunner::class)
-class BridgeVerticleTest {
-    @Suppress("unused")
-    private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
-
-    @JvmField
-    @Rule
-    val rule = RunTestOnContext()
-
-    @Test
-    fun testBridgeDeploymentToStandardParameters(context: TestContext) {
-        val async = context.async()
-        val vertx = rule.vertx()
-
-        vertx.deployVerticle(BridgeVerticle(), {
-            context.assertTrue(it.succeeded())
-
-            vertx.createHttpClient()
-                    .getAbs("http://localhost:5443/eventbus")
-                    .handler({
-                        context.assertTrue(it.statusCode() == 200)
-                        async.complete()
-                    })
-                    .end()
-        })
-    }
-}
+describe('Dont crash Karma', function() {
+    it('Nothing Is not Null', function() {
+        expect(true).not.toBe(null);
+    });
+});

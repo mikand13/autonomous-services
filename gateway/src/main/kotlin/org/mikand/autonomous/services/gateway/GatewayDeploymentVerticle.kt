@@ -27,9 +27,15 @@ package org.mikand.autonomous.services.gateway
 import com.nannoq.tools.cluster.services.HeartbeatService
 import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.*
+import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
+import io.vertx.ext.web.Router
+import io.vertx.ext.web.handler.CookieHandler
+import io.vertx.ext.web.handler.sockjs.SockJSHandler
+import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions
 import io.vertx.servicediscovery.Record
+import org.mikand.autonomous.services.gateway.bridge.BridgeVerticle.Companion.DEFAULT_BRIDGE_PORT
 
 /**
  * @author Anders Mikkelsen
@@ -53,17 +59,20 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
     }
 
     override fun start(startFuture: Future<Void>?) {
-        logger.info("GatewayDeploymentVerticle is running!")
-
         val bridgeFuture = Future.future<String>()
         val heartBeatFuture = Future.future<Record>()
+        val depOptions = deploymentOptions.setConfig(config())
 
-        deployBridgeAndHealthCheck(BRIDGE_VERTICLE, deploymentOptions, bridgeFuture, heartBeatFuture)
+        deployBridgeAndHealthCheck(BRIDGE_VERTICLE, depOptions, bridgeFuture, heartBeatFuture)
 
         CompositeFuture.all(bridgeFuture, heartBeatFuture).setHandler({
             logger.info("GatewayDeploymentVerticle has deployed: ${it.succeeded()}")
 
             if (it.succeeded()) {
+                val port = config().getInteger("bridgePort") ?: DEFAULT_BRIDGE_PORT
+
+                logger.info("GatewayDeploymentVerticle is running on port: $port!")
+
                 startFuture?.complete()
 
                 periodicTimerId = deployPeriodicCheck()
@@ -77,7 +86,7 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
                                            deploymentOptions: DeploymentOptions?,
                                            bridgeFuture: Future<String>,
                                            heartBeatFuture: Future<Record>) {
-        vertx.deployVerticle(bridgeVerticle, deploymentOptions, { deploymentID ->
+        vertx.deployVerticle(bridgeVerticle, deploymentOptions?.setConfig(config()), { deploymentID ->
             if (deploymentID.succeeded()) {
                 val result = deploymentID.result()
                 logger.info("Deployed bridge: $result")

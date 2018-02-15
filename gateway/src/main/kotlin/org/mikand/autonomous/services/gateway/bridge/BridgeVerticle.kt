@@ -47,7 +47,7 @@ import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions
 import org.mikand.autonomous.services.gateway.GatewayDeploymentVerticle.Companion.GATEWAY_HEARTBEAT_ADDRESS
 import java.util.*
 
-class BridgeVerticle() : AbstractVerticle() {
+internal class BridgeVerticle() : AbstractVerticle() {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
@@ -93,6 +93,8 @@ class BridgeVerticle() : AbstractVerticle() {
 
     private fun startBridge(bridgeBase: String, bridgePath: String, bridgePort: Int, startFuture: Future<Void>?) {
         val options = bridgeHandlerOptions ?: SockJSHandlerOptions()
+                .setHeartbeatInterval(150000L)
+                .setInsertJSESSIONID(false)
         val router = router ?: Router.router(vertx)
         val ebHandler = SockJSHandler.create(vertx, options)
 
@@ -125,8 +127,12 @@ class BridgeVerticle() : AbstractVerticle() {
 
     private fun addEventBusBridge(ebHandler: SockJSHandler, router: Router,
                                   bridgeBase: String, bridgePath: String) {
+        ebHandler.socketHandler({ socket ->
+            logger.info("Incoming socket!")
+        })
+
         ebHandler.bridge(createBridgeOptions(bridgeBase), { bridgeEvent ->
-            logger.debug("Event received from external client!")
+            logger.info("Event received from external client!")
 
             if (bridgeEvent.type() != null) {
                 when (bridgeEvent.type()) {
@@ -186,6 +192,8 @@ class BridgeVerticle() : AbstractVerticle() {
             }
         })
 
+        logger.info("Adding bridge to: $bridgePath")
+
         router.route(bridgePath).handler(CookieHandler.create())
         router.route(bridgePath).handler(ebHandler)
     }
@@ -237,6 +245,8 @@ class BridgeVerticle() : AbstractVerticle() {
                 .listen(bridgePort, { server ->
                     if (server.succeeded()) {
                         this.server = server.result()
+
+                        logger.info("Bridge deployed on: $bridgePort")
 
                         startFuture?.complete()
                     } else {

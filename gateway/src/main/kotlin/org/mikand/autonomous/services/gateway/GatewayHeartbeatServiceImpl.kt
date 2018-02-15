@@ -36,7 +36,7 @@ import io.vertx.core.logging.LoggerFactory
 import org.mikand.autonomous.services.gateway.bridge.BridgeVerticle.Companion.DEFAULT_BRIDGE_PATH
 import org.mikand.autonomous.services.gateway.bridge.BridgeVerticle.Companion.DEFAULT_BRIDGE_PORT
 
-class GatewayHeartbeatServiceImpl : HeartbeatService {
+internal class GatewayHeartbeatServiceImpl : HeartbeatService {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 

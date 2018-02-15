@@ -1,1 +1,1 @@
-include("gateway")
+include("gateway", "storage", "data")
