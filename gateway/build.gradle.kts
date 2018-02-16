@@ -297,12 +297,8 @@ tasks {
                 Pair("vertx.port", vertxPort))
     }
 
-    "build" {
-        dependsOn(listOf("clean", "test", "docker"))
-    }
-
     "install" {
-        dependsOn(listOf("build", "publish"))
+        dependsOn(listOf("clean", "test", "docker", "publish"))
     }
 }
 

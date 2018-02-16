@@ -104,6 +104,7 @@ plugins {
     id("com.craigburke.karma") version("1.4.4")
     id("com.wiredforcode.spawn") version("0.8.0")
     `maven-publish`
+    `signing`
 }
 
 project.setProperty("mainClassName", mainClass)
@@ -294,12 +295,8 @@ tasks {
                 Pair("vertx.port", vertxPort))
     }
 
-    "build" {
-        dependsOn(listOf("clean", "test", "docker"))
-    }
-
     "install" {
-        dependsOn(listOf("build", "publish"))
+        dependsOn(listOf("clean", "test", "docker", "publish"))
     }
 }
 
