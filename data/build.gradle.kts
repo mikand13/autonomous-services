@@ -304,10 +304,6 @@ publishing {
     }
 }
 
-fun isExtract(componentIdentifier: String) : Boolean {
-    return componentIdentifier.contains("com.nannoq:repository")
-}
-
 fun findFreePort() = ServerSocket(0).use {
     it.localPort
 }

@@ -330,7 +330,7 @@ publishing {
 }
 
 fun isExtract(componentIdentifier: String) : Boolean {
-    return componentIdentifier.contains("com.nannoq:repository")
+    return componentIdentifier.contains("com.nannoq:cluster")
 }
 
 fun findFreePort() = ServerSocket(0).use {
