@@ -230,7 +230,7 @@ tasks {
         }
     }
 
-    "build" {
+    "assemble" {
         dependsOn("shadowJar")
     }
 
@@ -268,8 +268,6 @@ tasks {
     }
 
     "startServer"(SpawnProcessTask::class) {
-        dependsOn("shadowJar")
-
         doFirst({
             command = "java -jar ${projectDir}/build/libs/$nameOfArchive -conf ${writeCustomConfToConf(vertxPort)}"
         })
@@ -296,8 +294,12 @@ tasks {
                 Pair("vertx.port", vertxPort))
     }
 
+    "build" {
+        dependsOn(listOf("clean", "test", "docker"))
+    }
+
     "install" {
-        dependsOn(listOf("clean", "test", "docker", "publish"))
+        dependsOn(listOf("build", "publish"))
     }
 }
 

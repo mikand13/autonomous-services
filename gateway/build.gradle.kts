@@ -35,6 +35,7 @@ import groovy.json.JsonSlurper
 import groovy.util.Eval
 import org.gradle.api.tasks.JavaExec
 import org.gradle.kotlin.dsl.*
+import org.gradle.language.assembler.plugins.internal.AssembleTaskConfig
 import org.gradle.script.lang.kotlin.*
 import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
@@ -106,6 +107,7 @@ plugins {
     id("com.craigburke.karma") version("1.4.4")
     id("com.wiredforcode.spawn") version("0.8.0")
     `maven-publish`
+    `signing`
 }
 
 project.setProperty("mainClassName", mainClass)
@@ -231,12 +233,12 @@ tasks {
         }
     }
 
-    "build" {
+    "assemble" {
         dependsOn("shadowJar")
     }
 
     "docker" {
-        dependsOn("build")
+        dependsOn("assemble")
     }
 
     "dockerRun" {
@@ -269,8 +271,6 @@ tasks {
     }
 
     "startServer"(SpawnProcessTask::class) {
-        dependsOn("shadowJar")
-
         doFirst({
             command = "java -jar $projectDir/build/libs/$nameOfArchive -conf ${writeCustomConfToConf(vertxPort)}"
         })
@@ -297,8 +297,12 @@ tasks {
                 Pair("vertx.port", vertxPort))
     }
 
+    "build" {
+        dependsOn(listOf("clean", "test", "docker"))
+    }
+
     "install" {
-        dependsOn(listOf("clean", "test", "docker", "publish"))
+        dependsOn(listOf("build", "publish"))
     }
 }
 
