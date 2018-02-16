@@ -10,7 +10,6 @@ pipeline {
     buildDiscarder(logRotator(numToKeepStr: '1'))
     disableConcurrentBuilds()
     timeout(time: 1, unit: 'HOURS')
-    retry(3)
   }
   
   tools {
