@@ -58,7 +58,7 @@ class GatewayDeploymentVerticleIT : ConfigSupport {
 
     @Test
     fun shouldDeployDeploymentVerticleWithSuccess(context : TestContext) {
-        val config = getTestConfig().put("bridgePort", Integer.parseInt(System.getProperty("vertx.port")))
+        val config = getTestConfig().put("bridgePort", findFreePort())
         val depOptions = DeploymentOptions().setConfig(config)
         val async = context.async()
         val vertx = rule.vertx()

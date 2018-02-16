@@ -81,6 +81,7 @@ buildscript {
         mavenCentral()
         jcenter()
         maven(url = "http://dl.bintray.com/vermeulen-mp/gradle-plugins")
+        maven(url = "https://s3-us-west-2.amazonaws.com/dynamodb-local/release")
     }
 
     dependencies {
@@ -145,6 +146,9 @@ dependencies {
     compile(group = "org.apache.logging.log4j", name = "log4j-core", version = log4j_version.toString())
     compile(group = "com.lmax", name = "disruptor", version = com_lmax_version.toString())
 
+    // AWS DynamoDB
+    //testCompile("com.amazonaws:DynamoDBLocal:9.5.0")
+
     // Test
     testCompile("junit:junit:$junit_version")
     testCompile("org.jetbrains.kotlin:kotlin-test")
@@ -200,6 +204,7 @@ karma {
 
     preprocessors = mapOf(Pair("test/resources/js/karma/**/*_test.js", listOf("browserify")))
     propertyMissing("logLevel", "WARN")
+    propertyMissing("port", findFreePort())
 }
 
 tasks {
@@ -229,14 +234,6 @@ tasks {
         mergeServiceFiles {
             include("META-INF/services/io.vertx.core.spi.VerticleFactory")
         }
-    }
-
-    "assemble" {
-        dependsOn("shadowJar")
-    }
-
-    "docker" {
-        dependsOn("assemble")
     }
 
     "dockerRun" {
@@ -269,6 +266,7 @@ tasks {
     }
 
     "startServer"(SpawnProcessTask::class) {
+        dependsOn("shadowJar")
         doFirst({
             command = "java -jar ${projectDir}/build/libs/$nameOfArchive -conf ${writeCustomConfToConf(vertxPort)}"
         })
@@ -290,27 +288,48 @@ tasks {
     }
 
     "test"(Test::class) {
-        systemProperties = mapOf(
-                Pair("vertx.logger-delegate-factory-class-name", logger_factory_version.toString()),
-                Pair("vertx.port", vertxPort))
+        maxParallelForks = 4
+        systemProperties = mapOf(Pair("vertx.logger-delegate-factory-class-name", logger_factory_version.toString()))
+    }
+
+    "karmaRun" {
+        dependsOn("karmaGenerateConfig")
+    }
+
+    "dockerPrepare" {
+        dependsOn("shadowJar")
+    }
+
+    "docker" {
+        mustRunAfter("test")
+        doLast({
+            println("Built image for $nameOfArchive!")
+        })
+    }
+
+    "publish" {
+        mustRunAfter("test")
     }
 
     "install" {
         dependsOn(listOf("clean", "test", "docker", "publish"))
+
+        doLast({
+            println("$nameOfArchive installed!")
+        })
     }
 }
 
 publishing {
     repositories {
         mavenLocal()
-        maven {
-            url = uri("$buildDir/repo")
-        }
     }
 
     (publications) {
         "mavenJava"(MavenPublication::class) {
-            artifact(file("$projectDir/build/libs/$nameOfArchive"))
+            artifact(file("$projectDir/build/libs/$nameOfArchive")) {
+                builtBy(tasks.findByName("shadowJar"))
+            }
         }
     }
 }

@@ -202,6 +202,7 @@ karma {
 
     preprocessors = mapOf(Pair("test/resources/js/karma/**/*_test.js", listOf("browserify")))
     propertyMissing("logLevel", "WARN")
+    propertyMissing("port", findFreePort())
 }
 
 tasks {
@@ -231,14 +232,6 @@ tasks {
         mergeServiceFiles {
             include("META-INF/services/io.vertx.core.spi.VerticleFactory")
         }
-    }
-
-    "assemble" {
-        dependsOn("shadowJar")
-    }
-
-    "docker" {
-        dependsOn("assemble")
     }
 
     "dockerRun" {
@@ -271,6 +264,7 @@ tasks {
     }
 
     "startServer"(SpawnProcessTask::class) {
+        dependsOn("shadowJar")
         doFirst({
             command = "java -jar $projectDir/build/libs/$nameOfArchive -conf ${writeCustomConfToConf(vertxPort)}"
         })
@@ -292,27 +286,48 @@ tasks {
     }
 
     "test"(Test::class) {
-        systemProperties = mapOf(
-                Pair("vertx.logger-delegate-factory-class-name", logger_factory_version.toString()),
-                Pair("vertx.port", vertxPort))
+        maxParallelForks = 4
+        systemProperties = mapOf(Pair("vertx.logger-delegate-factory-class-name", logger_factory_version.toString()))
+    }
+
+    "karmaRun" {
+        dependsOn("karmaGenerateConfig")
+    }
+
+    "dockerPrepare" {
+        dependsOn("shadowJar")
+    }
+
+    "docker" {
+        mustRunAfter("test")
+        doLast({
+            println("Built image for $nameOfArchive!")
+        })
+    }
+
+    "publish" {
+        mustRunAfter("test")
     }
 
     "install" {
         dependsOn(listOf("clean", "test", "docker", "publish"))
+
+        doLast({
+            println("$nameOfArchive installed!")
+        })
     }
 }
 
 publishing {
     repositories {
         mavenLocal()
-        maven {
-            url = uri("$buildDir/repo")
-        }
     }
 
     (publications) {
         "mavenJava"(MavenPublication::class) {
-            artifact(file("$projectDir/build/libs/$nameOfArchive"))
+            artifact(file("$projectDir/build/libs/$nameOfArchive")) {
+                builtBy(tasks.findByName("shadowJar"))
+            }
         }
     }
 }

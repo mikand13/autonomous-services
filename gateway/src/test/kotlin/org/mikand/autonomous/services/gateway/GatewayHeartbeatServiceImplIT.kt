@@ -54,13 +54,13 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
 
     @JvmField
     @Rule
-    val timeout = Timeout.seconds(5)
+    val timeout = Timeout.seconds(15)
 
     @Test
     fun testPing(context: TestContext) {
         val async = context.async()
         val verticle = BridgeVerticle()
-        val config = getTestConfig().put("bridgePort", Integer.parseInt(System.getProperty("vertx.port")))
+        val config = getTestConfig().put("bridgePort", findFreePort())
         val depOptions = DeploymentOptions().setConfig(config)
         val vertx = rule.vertx()
 
@@ -90,7 +90,7 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     @Test
     fun testFailedPing(context: TestContext) {
         val async = context.async()
-        val config = getTestConfig().put("bridgePort", Integer.parseInt(System.getProperty("vertx.port")))
+        val config = getTestConfig().put("bridgePort", findFreePort())
         val vertx = rule.vertx()
 
         ServiceManager.getInstance(vertx).publishService(HeartbeatService::class.java,
@@ -125,7 +125,7 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     fun testLang(context: TestContext, langVerticle: String) {
         val async = context.async()
         val verticle = BridgeVerticle()
-        val config = getTestConfig().put("bridgePort", Integer.parseInt(System.getProperty("vertx.port")))
+        val config = getTestConfig().put("bridgePort", findFreePort())
         val depOptions = DeploymentOptions().setConfig(config)
         val vertx = rule.vertx()
 

@@ -54,7 +54,7 @@ class BridgeVerticleIT : ConfigSupport {
     @Test
     fun testBridgeDeploymentToStandardParameters(context: TestContext) {
         val async = context.async()
-        val config = getTestConfig().put("bridgePort", Integer.parseInt(System.getProperty("vertx.port")))
+        val config = getTestConfig().put("bridgePort", findFreePort())
         val depOptions = DeploymentOptions().setConfig(config)
         val verticle = BridgeVerticle()
         val vertx = rule.vertx()
