@@ -233,7 +233,7 @@ tasks {
     }
 
     "docker" {
-        dependsOn("build")
+        dependsOn("assemble")
     }
 
     "dockerRun" {
