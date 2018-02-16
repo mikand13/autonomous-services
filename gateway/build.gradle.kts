@@ -188,17 +188,18 @@ karma {
 
     dependencies(listOf(
             "sockjs-client@^1.1.4",
-            "vertx3-eventbus-client@^3.5.1",
-            "vertx3-min@^3.5.1",
+            "vertx3-eventbus-client@^3.4.2",
+            "vertx3-min@^3.4.2",
             "karma-browserify@^5.2.0",
-            "browserify@^16.0.0"
+            "browserify@^16.0.0",
+            "karma-jasmine-html-reporter@^0.2.2"
     ))
 
     files = listOf("test/resources/js/karma/**/*_test.js")
 
     browsers = listOf("PhantomJS")
     frameworks = listOf("browserify", "jasmine")
-    reporters = listOf("progress")
+    reporters = listOf("progress", "kjhtml")
 
     preprocessors = mapOf(Pair("test/resources/js/karma/**/*_test.js", listOf("browserify")))
     propertyMissing("logLevel", "WARN")
