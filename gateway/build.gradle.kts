@@ -59,8 +59,6 @@ val dockerFileLocation = "src/main/docker/Dockerfile"
 
 val vertxPort = findFreePort()
 
-println("Test Port for Vertx is: $vertxPort")
-
 doOnChange = if (System.getProperty("os.name").toLowerCase().contains("windows")) {
     "..\\gradlew :gateway:classes"
 } else {
@@ -108,6 +106,8 @@ plugins {
     id("com.craigburke.karma") version("1.4.4")
     id("com.wiredforcode.spawn") version("0.8.0")
 }
+
+project.setProperty("mainClassName", mainClass)
 
 apply {
     plugin("java")
@@ -247,8 +247,6 @@ tasks {
 
         configurations.getByName("compile").resolvedConfiguration.resolvedArtifacts.forEach({
             if (isExtract(it.id.componentIdentifier.displayName)) {
-                println("Copying JS/TS proxies from: ${it.name}")
-
                 copy {
                     from(zipTree(it.file))
                     into(file("${buildDir}/nannoq-artifacts/${it.name}"))
@@ -271,8 +269,11 @@ tasks {
 
     "startServer"(SpawnProcessTask::class) {
         dependsOn("shadowJar")
-        val confFilePath = writePortToConf(vertxPort)
-        command = "java -jar ${projectDir}/build/libs/$nameOfArchive -conf $confFilePath"
+
+        doFirst({
+            command = "java -jar ${projectDir}/build/libs/$nameOfArchive -conf ${writeCustomConfToConf(vertxPort)}"
+        })
+
         ready = "running"
         directory = "gateway"
         pidLockFileName = ".gateway.pid.lock"
@@ -304,15 +305,14 @@ fun findFreePort() = ServerSocket(0).use {
     it.localPort
 }
 
-fun writePortToConf(vertxPort: Int): String {
+fun writeCustomConfToConf(vertxPort: Int): String {
     val config = JsonSlurper().parseText(File("${projectDir}/src/test/resources/app-conf.json").readText())
     val outPutConfig = File("${buildDir}/tmp/app-conf-test.json")
+    outPutConfig.createNewFile()
 
     val builder = JsonBuilder(config)
     val openJson = builder.toPrettyString().removeSuffix("}")
     val newConfig = JsonBuilder(JsonSlurper().parseText("$openJson, \"bridgePort\":$vertxPort}")).toPrettyString()
-
-    println("Modified test config is: $newConfig")
 
     outPutConfig.bufferedWriter().use { out ->
         out.write(newConfig)

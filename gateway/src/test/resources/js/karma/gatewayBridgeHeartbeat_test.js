@@ -24,54 +24,64 @@
 
 const EventBus = require("vertx3-eventbus-client");
 const HeartBeatService = require("./extractedProxies/heartbeat_service-proxy.js");
-const appConf = require('../../../../../build/tmp/app-conf-test');
+const appConf = require('../../../../../build/tmp/app-conf-test.json');
 
-localStorage.debug = '*';
+localStorage.debug = null;
 
 describe('NotNull', function() {
     const url = "http://localhost:" + appConf.bridgePort + "/eventbus";
-    console.info("Now connecting to eventbus @ " + url);
 
-    const eb = new EventBus(url);
-    const HeartbeatService = new HeartBeatService(eb, "GatewayHeartbeat");
+    var eb;
+    var HeartbeatService;
 
-    beforeEach(function(done) {
-        setTimeout(function() {
+    beforeEach(function() {
+        eb = new EventBus(url);
+        HeartbeatService = new HeartBeatService(eb, "GatewayHeartbeat");
+    });
+
+    it('Eb Is not Null', function(done) {
+        eb.onopen = function() {
+            expect(eb).not.toBe(null);
+            expect(eb.state).toBe(EventBus.OPEN);
+
+            eb.close();
+
             done();
-        }, 2000);
+        }
     });
 
-    it('Eb Is not Null', function() {
-        expect(eb).not.toBe(null);
-        expect(eb.state).toBe(EventBus.OPEN);
-    });
+    it('Heartbeat Service Is not Null', function(done) {
+        eb.onopen = function() {
+            expect(HeartbeatService).not.toBe(null);
 
-    it('Heartbeat Service Is not Null', function() {
-        expect(HeartbeatService).not.toBe(null);
-    });
+            eb.close();
 
-    eb.close();
+            done();
+        }
+    });
 });
 
 describe('HeartBeatService should return true', function() {
     const url = "http://localhost:" + appConf.bridgePort + "/eventbus";
-    console.info("Now connecting to eventbus @ " + url);
 
-    const eb = new EventBus("http://localhost:" + appConf.bridgePort + "/eventbus");
-    const HeartbeatService = new HeartBeatService(eb, "GatewayHeartbeat");
+    var eb;
+    var HeartbeatService;
 
-    beforeEach(function(done) {
-        setTimeout(function() {
-            done();
-        }, 2000);
+    beforeEach(function() {
+        eb = new EventBus(url);
+        HeartbeatService = new HeartBeatService(eb, "GatewayHeartbeat");
     });
 
-    it('HeartBeatService should return true!', function () {
-        HeartbeatService.ping(function (error, result) {
-            expect(error).to.equal('undefined');
-            expect(result).to.equal(true);
+    it('HeartBeatService should return true!', function (done) {
+        eb.onopen = function() {
+            HeartbeatService.ping(function (error, result) {
+                expect(error).toBeNull();
+                expect(result).toBe(true);
 
-            eb.close();
-        });
+                eb.close();
+
+                done();
+            });
+        }
     });
 });
