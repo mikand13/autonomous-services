@@ -21,7 +21,7 @@ pipeline {
     stage("Build AS") {
       steps {
         script {
-          sh "./gradlew clean test"
+          sh "./gradlew install --info --stacktrace"
         } 
       }
     }

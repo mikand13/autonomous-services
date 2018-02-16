@@ -105,6 +105,7 @@ plugins {
     id("application")
     id("com.craigburke.karma") version("1.4.4")
     id("com.wiredforcode.spawn") version("0.8.0")
+    `maven-publish`
 }
 
 project.setProperty("mainClassName", mainClass)
@@ -243,21 +244,21 @@ tasks {
     }
 
     "copyJsServiceProxies"(Copy::class) {
-        delete("${projectDir}/src/test/resources/js/extractedProxies")
+        delete("$projectDir/src/test/resources/js/extractedProxies")
 
         configurations.getByName("compile").resolvedConfiguration.resolvedArtifacts.forEach({
             if (isExtract(it.id.componentIdentifier.displayName)) {
                 copy {
                     from(zipTree(it.file))
-                    into(file("${buildDir}/nannoq-artifacts/${it.name}"))
+                    into(file("$buildDir/nannoq-artifacts/${it.name}"))
                 }
 
                 copy {
-                    from("${buildDir}/nannoq-artifacts/${it.name}/nannoqHeartbeatService-js") {
+                    from("$buildDir/nannoq-artifacts/${it.name}/nannoqHeartbeatService-js") {
                         include("*-proxy.js")
                     }
 
-                    into("${projectDir}/src/test/resources/js/karma/extractedProxies")
+                    into("$projectDir/src/test/resources/js/karma/extractedProxies")
                 }
             }
         })
@@ -271,22 +272,22 @@ tasks {
         dependsOn("shadowJar")
 
         doFirst({
-            command = "java -jar ${projectDir}/build/libs/$nameOfArchive -conf ${writeCustomConfToConf(vertxPort)}"
+            command = "java -jar $projectDir/build/libs/$nameOfArchive -conf ${writeCustomConfToConf(vertxPort)}"
         })
 
         ready = "running"
-        directory = "gateway"
+        directory = "gateway/build/tmp"
         pidLockFileName = ".gateway.pid.lock"
     }
 
     "stopServer"(KillProcessTask::class) {
-        directory = "gateway"
+        directory = "gateway/build/tmp"
         pidLockFileName = ".gateway.pid.lock"
     }
 
     "karmaRun" {
         dependsOn("startServer")
-        delete("${buildDir}/karma.conf.js")
+        delete("$buildDir/karma.conf.js")
         finalizedBy("stopServer")
     }
 
@@ -294,6 +295,25 @@ tasks {
         systemProperties = mapOf(
                 Pair("vertx.logger-delegate-factory-class-name", logger_factory_version.toString()),
                 Pair("vertx.port", vertxPort))
+    }
+
+    "install" {
+        dependsOn(listOf("clean", "test", "docker", "publish"))
+    }
+}
+
+publishing {
+    repositories {
+        mavenLocal()
+        maven {
+            url = uri("$buildDir/repo")
+        }
+    }
+
+    (publications) {
+        "mavenJava"(MavenPublication::class) {
+            artifact(file("$projectDir/build/libs/$nameOfArchive"))
+        }
     }
 }
 
@@ -306,8 +326,8 @@ fun findFreePort() = ServerSocket(0).use {
 }
 
 fun writeCustomConfToConf(vertxPort: Int): String {
-    val config = JsonSlurper().parseText(File("${projectDir}/src/test/resources/app-conf.json").readText())
-    val outPutConfig = File("${buildDir}/tmp/app-conf-test.json")
+    val config = JsonSlurper().parseText(File("$projectDir/src/test/resources/app-conf.json").readText())
+    val outPutConfig = File("$buildDir/tmp/app-conf-test.json")
     outPutConfig.createNewFile()
 
     val builder = JsonBuilder(config)

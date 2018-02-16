@@ -103,6 +103,7 @@ plugins {
     id("application")
     id("com.craigburke.karma") version("1.4.4")
     id("com.wiredforcode.spawn") version("0.8.0")
+    `maven-publish`
 }
 
 project.setProperty("mainClassName", mainClass)
@@ -274,12 +275,12 @@ tasks {
         })
 
         ready = "running"
-        directory = "storage"
+        directory = "storage/build/tmp"
         pidLockFileName = ".storage.pid.lock"
     }
 
     "stopServer"(KillProcessTask::class) {
-        directory = "storage"
+        directory = "storage/build/tmp"
         pidLockFileName = ".storage.pid.lock"
     }
 
@@ -293,6 +294,25 @@ tasks {
         systemProperties = mapOf(
                 Pair("vertx.logger-delegate-factory-class-name", logger_factory_version.toString()),
                 Pair("vertx.port", vertxPort))
+    }
+
+    "install" {
+        dependsOn(listOf("clean", "test", "docker", "publish"))
+    }
+}
+
+publishing {
+    repositories {
+        mavenLocal()
+        maven {
+            url = uri("$buildDir/repo")
+        }
+    }
+
+    (publications) {
+        "mavenJava"(MavenPublication::class) {
+            artifact(file("$projectDir/build/libs/$nameOfArchive"))
+        }
     }
 }
 
