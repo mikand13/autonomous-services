@@ -259,11 +259,7 @@ tasks {
             }
         })
     }
-
-    "processResources" {
-        dependsOn("copyJsServiceProxies")
-    }
-
+    
     "startServer"(SpawnProcessTask::class) {
         dependsOn("shadowJar")
         doFirst({
@@ -281,7 +277,7 @@ tasks {
     }
 
     "karmaRun" {
-        dependsOn("startServer")
+        dependsOn(listOf("startServer", "copyJsServiceProxies"))
         delete("$buildDir/karma.conf.js")
         finalizedBy("stopServer")
     }
