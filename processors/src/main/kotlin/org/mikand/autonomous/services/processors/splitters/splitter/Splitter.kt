@@ -26,19 +26,15 @@
 package org.mikand.autonomous.services.processors.splitters.splitter
 
 import io.vertx.codegen.annotations.Fluent
-import io.vertx.codegen.annotations.ProxyGen
-import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
 
-@VertxGen(concrete = false)
-@ProxyGen
 interface Splitter<Input, Output> {
     @Fluent
     fun split(data: Input): Splitter<Input, Output>
 
     @Fluent
-    fun splitWithReceipt(data: Input, responseHandler: Handler<AsyncResult<SplitterStatus>>): Splitter<Input, Output>
+    fun splitWithReceipt(data: Input, responseHandler: Handler<AsyncResult<SplitStatus>>): Splitter<Input, Output>
 
     @Fluent
     fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): Splitter<Input, Output>

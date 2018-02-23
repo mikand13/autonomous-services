@@ -26,11 +26,10 @@
 package org.mikand.autonomous.services.processors.splitters.splitter
 
 import io.vertx.codegen.annotations.DataObject
-import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
 
-@DataObject
-class SplitterStatus {
+@DataObject(generateConverter = true)
+class SplitStatus {
     var statusCode: Int = 500
     var statusMessage: String = ""
     var statusObject: JsonObject = JsonObject()
@@ -42,12 +41,10 @@ class SplitterStatus {
     }
 
     constructor(jsonObject: JsonObject) {
-        this.statusCode = jsonObject.getInteger("statusCode")
-        this.statusMessage = jsonObject.getString("statusMessage")
-        this.statusObject = jsonObject.getJsonObject("statusObject")
+        SplitStatusConverter.fromJson(jsonObject, this)
     }
 
-    fun toJson(): String {
-        return Json.encode(this)
+    fun toJson(): JsonObject {
+        return JsonObject.mapFrom(this)
     }
 }

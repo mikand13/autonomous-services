@@ -60,4 +60,27 @@ class JsonSplitterImplTest : ConfigSupport {
             async.complete()
         })
     }
+
+    @Test
+    fun testSplitWithReceiptAndDataReception(context: TestContext) {
+        val async = context.async()
+        val splitter = JsonSplitterImpl()
+
+        splitter.fetchSubscriptionAddress(Handler {
+            context.assertTrue(it.succeeded())
+
+            val address = it.result()
+
+            context.assertNotNull(address, "Address is null!")
+
+            rule.vertx().eventBus().consumer<JsonObject>(address).handler({
+                context.assertNotNull(it.body(), "Body is null!")
+                async.complete()
+            })
+
+            splitter.splitWithReceipt(JsonObject(), Handler {
+                context.assertEquals(200, it.result().statusCode, "Statuscode is not 200!")
+            })
+        })
+    }
 }
