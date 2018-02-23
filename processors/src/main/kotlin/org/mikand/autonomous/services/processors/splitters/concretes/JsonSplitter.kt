@@ -14,42 +14,14 @@ import org.mikand.autonomous.services.processors.splitters.splitter.SplitterStat
 @ProxyGen
 interface JsonSplitter: Splitter<JsonObject, JsonObject> {
     @Fluent
-    override fun split(data: JsonObject): Splitter<JsonObject, JsonObject>
+    override fun split(data: JsonObject): JsonSplitter
 
     @Fluent
     override fun splitWithReceipt(data: JsonObject,
                                   responseHandler: Handler<AsyncResult<SplitterStatus>>)
-            : Splitter<JsonObject, JsonObject>
-
-    @GenIgnore
-    fun recurseIntoKey(data: JsonObject, output: JsonObject, extractables: List<String>, it: String) {
-        val keyMap = it.split(".")
-
-        if (keyMap.isEmpty()) throw IllegalStateException("$keyMap should not be empty!")
-
-        if (keyMap.size == 2) {
-            if (extractables.contains(it)) {
-                if (!output.containsKey(keyMap[0])) {
-                    output.put(keyMap[0], JsonObject())
-                }
-
-                val keyObject = data.getJsonObject(keyMap[0])
-
-                if (keyObject.containsKey(keyMap[1])) {
-                    val value = keyObject.getValue(keyMap[1])
-
-                    output.getJsonObject(keyMap[0]).put(keyMap[1], value)
-                }
-            }
-        } else {
-            val modifiedIt = keyMap.drop(1).toTypedArray().joinToString { "." }
-            val newExtractables = arrayListOf(modifiedIt)
-
-            recurseIntoKey(data.getJsonObject(keyMap[0]), output, newExtractables, modifiedIt)
-        }
-    }
+            : JsonSplitter
 
     @Fluent
     override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>)
-            : Splitter<JsonObject, JsonObject>
+            : JsonSplitter
 }
