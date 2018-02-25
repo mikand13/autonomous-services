@@ -95,10 +95,13 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
             logger.debug("Fetching Object for: ${keyMap[0]}")
 
             val subObject = data.getJsonObject(keyMap[0])
-            val modifiedIt = keyMap.drop(1).toTypedArray().joinToString { "." }
+            val modifiedIt = keyMap.drop(1).joinToString { "." }
             val newExtractables = arrayListOf(modifiedIt)
 
-            recurseIntoKey(subObject, output, newExtractables, modifiedIt)
+            logger.debug("Modified is: $modifiedIt")
+            logger.debug("NewExtract is: $newExtractables")
+
+            recurseIntoKey(subObject, output.getJsonObject(keyMap[0]), newExtractables, modifiedIt)
         }
     }
 
