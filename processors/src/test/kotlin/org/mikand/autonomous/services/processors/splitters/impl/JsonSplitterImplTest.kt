@@ -117,8 +117,6 @@ class JsonSplitterImplTest : ConfigSupport {
             rule.vertx().eventBus().consumer<JsonObject>(address).handler({
                 val body = it.body()
 
-                logger.info(body.encodePrettily())
-
                 context.assertNotNull(body, "Body is null!")
                 context.assertNotNull(body.getJsonObject("someObjectOne"), "Object 1 is null!")
                 context.assertNotNull(body
