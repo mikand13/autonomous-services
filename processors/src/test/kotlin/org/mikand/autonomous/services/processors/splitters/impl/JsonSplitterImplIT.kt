@@ -24,14 +24,19 @@
 
 package org.mikand.autonomous.services.processors.splitters.impl
 
+import com.nannoq.tools.cluster.services.ServiceManager
+import io.vertx.core.Handler
+import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
+import io.vertx.ext.unit.TestContext
 import io.vertx.ext.unit.junit.RunTestOnContext
 import io.vertx.ext.unit.junit.Timeout
 import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mikand.autonomous.services.processors.splitters.concretes.JsonSplitter
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 
 @RunWith(VertxUnitRunner::class)
@@ -48,12 +53,58 @@ class JsonSplitterImplIT : ConfigSupport {
     val timeout = Timeout.seconds(5)
 
     @Test
-    fun testSplit() {
+    fun testSplit(context: TestContext) {
         val splitter = JsonSplitterImpl()
+        val async = context.async()
+        val vertx = rule.vertx()
+
+        vertx.deployVerticle(splitter, {
+            context.assertTrue(it.succeeded())
+
+            ServiceManager.getInstance().consumeService(JsonSplitter::class.java) {
+                context.assertTrue(it.succeeded())
+                val service = it.result()
+
+                service.fetchSubscriptionAddress(Handler {
+                    context.assertTrue(it.succeeded())
+
+                    vertx.eventBus().consumer<JsonObject>(it.result()) {
+                        context.assertNotNull(it.body())
+                        async.complete()
+                    }
+
+                    service.split(JsonObject())
+                })
+            }
+        })
     }
 
     @Test
-    fun testSplitWithReceipt() {
+    fun testSplitWithReceipt(context: TestContext) {
         val splitter = JsonSplitterImpl()
+        val async = context.async()
+        val vertx = rule.vertx()
+
+        vertx.deployVerticle(splitter, {
+            context.assertTrue(it.succeeded())
+
+            ServiceManager.getInstance().consumeService(JsonSplitter::class.java) {
+                context.assertTrue(it.succeeded())
+                val service = it.result()
+
+                service.fetchSubscriptionAddress(Handler {
+                    context.assertTrue(it.succeeded())
+
+                    vertx.eventBus().consumer<JsonObject>(it.result()) {
+                        context.assertNotNull(it.body())
+                        async.complete()
+                    }
+
+                    service.splitWithReceipt(JsonObject(), Handler {
+                        context.assertEquals(200, it.result().statusCode, "Statuscode is not 200!")
+                    })
+                })
+            }
+        })
     }
 }

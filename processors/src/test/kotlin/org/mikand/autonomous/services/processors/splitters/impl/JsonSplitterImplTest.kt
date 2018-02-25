@@ -25,6 +25,7 @@
 package org.mikand.autonomous.services.processors.splitters.impl
 
 import io.vertx.core.Handler
+import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
@@ -79,6 +80,68 @@ class JsonSplitterImplTest : ConfigSupport {
             })
 
             splitter.splitWithReceipt(JsonObject(), Handler {
+                context.assertEquals(200, it.result().statusCode, "Statuscode is not 200!")
+            })
+        })
+    }
+
+    @Test
+    fun testSplitWithReceiptAndDataReceptionAndDataObject(context: TestContext) {
+        val async = context.async()
+        val extractsArray = JsonArray()
+                .add("someStringOne")
+                .add("someObjectOne.someObjectOneStringOne")
+                .add("someObjectTwo.someObjectTwoObjectOne.someObjectTwoObjectOneStringOne")
+        val splitter = JsonSplitterImpl(JsonObject()
+                .put("extractables", extractsArray))
+        val testObject = JsonObject()
+                .put("someStringOne", "someStringOne")
+                .put("someStringTwo", "someStringTwo")
+                .put("someObjectOne", JsonObject()
+                        .put("someObjectOneStringOne", "someObjectOneStringOne")
+                        .put("someObjectOneStringTwo", "someObjectOneStringTwo"))
+                .put("someObjectTwo", JsonObject()
+                        .put("someObjectTwoStringOne", "someObjectTwoStringOne")
+                        .put("someObjectTwoStringTwo", "someObjectTwoStringTwo")
+                        .put("someObjectTwoObjectOne", JsonObject()
+                                .put("someObjectTwoObjectOneStringOne", "someObjectTwoObjectOneStringOne")
+                                .put("someObjectTwoObjectOneStringTwo", "someObjectTwoObjectOneStringTwo")))
+
+        splitter.fetchSubscriptionAddress(Handler {
+            context.assertTrue(it.succeeded())
+
+            val address = it.result()
+
+            context.assertNotNull(address, "Address is null!")
+
+            rule.vertx().eventBus().consumer<JsonObject>(address).handler({
+                val body = it.body()
+
+                logger.info(body.encodePrettily())
+
+                context.assertNotNull(body, "Body is null!")
+                context.assertNotNull(body.getJsonObject("someObjectOne"), "Object 1 is null!")
+                context.assertNotNull(body
+                        .getJsonObject("someObjectTwo")
+                        .getJsonObject("someObjectTwoObjectOne"), "Object 2 -> 1 is null!")
+                context.assertEquals(3, body.size(), "Extracted more than expected!")
+                context.assertEquals(1, body.getJsonObject("someObjectOne").size(), "Extracted > than expected in object 1!")
+                context.assertEquals(1, body
+                        .getJsonObject("someObjectTwo")
+                        .getJsonObject("someObjectTwoObjectOne").size(), "Extracted more than expected in Object2 -> 1!")
+                context.assertEquals("someStringOne", body.getString("someStringOne"))
+                context.assertEquals("someObjectOneStringOne", body
+                        .getJsonObject("someObjectOne")
+                        .getString("someObjectOneStringOne"))
+                context.assertEquals("someObjectTwoObjectOneStringOne", body
+                        .getJsonObject("someObjectTwo")
+                        .getJsonObject("someObjectTwoObjectOne")
+                        .getString("someObjectTwoObjectOneStringOne"))
+
+                async.complete()
+            })
+
+            splitter.splitWithReceipt(testObject, Handler {
                 context.assertEquals(200, it.result().statusCode, "Statuscode is not 200!")
             })
         })

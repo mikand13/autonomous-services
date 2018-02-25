@@ -1,5 +1,6 @@
 package org.mikand.autonomous.services.processors.splitters.impl
 
+import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.codegen.annotations.Fluent
 import io.vertx.core.*
 import io.vertx.core.json.Json
@@ -13,9 +14,25 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
+    private val publishAddress: String = config.getString("customPublishAddress") ?: javaClass.simpleName
+    private val deployService: Boolean = config.getBoolean("deployAsService") ?: true
     private val subscriptionAddress: String = config.getString("customSubscriptionAddress") ?: javaClass.name
     private val extractables: List<String> = config.getJsonArray("extractables")?.map { it.toString() } ?: ArrayList()
     private val thisVertx: Vertx = vertx ?: Vertx.currentContext().owner()
+
+    override fun start(startFuture: Future<Void>?) {
+        if (deployService) {
+            ServiceManager.getInstance().publishService(JsonSplitter::class.java, publishAddress, this, {
+                if (it.succeeded()) {
+                    startFuture?.complete()
+                } else {
+                    startFuture?.fail(it.cause())
+                }
+            })
+        } else {
+            startFuture?.complete()
+        }
+    }
 
     @Fluent
     override fun split(data: JsonObject): JsonSplitter {
@@ -32,7 +49,7 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
 
         try {
             extractables.forEach {
-                if (it.contains("\\.")) {
+                if (it.contains('.')) {
                     recurseIntoKey(data, output, extractables, it)
                 } else {
                     output.put(it, data.getValue(it))
@@ -52,7 +69,7 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     }
 
     private fun recurseIntoKey(data: JsonObject, output: JsonObject, extractables: List<String>, it: String) {
-        val keyMap = it.split(".")
+        val keyMap = it.split('.')
 
         if (keyMap.isEmpty()) throw IllegalStateException("$keyMap should not be empty!")
 
@@ -71,10 +88,15 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
                 }
             }
         } else {
+            if (!output.containsKey(keyMap[0])) {
+                output.put(keyMap[0], JsonObject())
+            }
+
+            val subObject = data.getJsonObject(keyMap[0])
             val modifiedIt = keyMap.drop(1).toTypedArray().joinToString { "." }
             val newExtractables = arrayListOf(modifiedIt)
 
-            recurseIntoKey(data.getJsonObject(keyMap[0]), output, newExtractables, modifiedIt)
+            recurseIntoKey(subObject, output, newExtractables, modifiedIt)
         }
     }
 
