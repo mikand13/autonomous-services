@@ -123,10 +123,12 @@ class JsonSplitterImplTest : ConfigSupport {
                         .getJsonObject("someObjectTwo")
                         .getJsonObject("someObjectTwoObjectOne"), "Object 2 -> 1 is null!")
                 context.assertEquals(3, body.size(), "Extracted more than expected!")
-                context.assertEquals(1, body.getJsonObject("someObjectOne").size(), "Extracted > than expected in object 1!")
+                context.assertEquals(1, body.getJsonObject("someObjectOne").size(),
+                        "Extracted > than expected in object 1!")
                 context.assertEquals(1, body
                         .getJsonObject("someObjectTwo")
-                        .getJsonObject("someObjectTwoObjectOne").size(), "Extracted more than expected in Object2 -> 1!")
+                        .getJsonObject("someObjectTwoObjectOne").size(),
+                        "Extracted more than expected in Object2 -> 1!")
                 context.assertEquals("someStringOne", body.getString("someStringOne"))
                 context.assertEquals("someObjectOneStringOne", body
                         .getJsonObject("someObjectOne")
