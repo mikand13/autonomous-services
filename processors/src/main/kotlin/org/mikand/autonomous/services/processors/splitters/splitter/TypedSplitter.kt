@@ -25,21 +25,30 @@
 
 package org.mikand.autonomous.services.processors.splitters.splitter
 
+import com.nannoq.tools.repository.models.Model
+import com.nannoq.tools.repository.repository.results.CreateResult
+import com.nannoq.tools.repository.repository.results.DeleteResult
+import com.nannoq.tools.repository.repository.results.UpdateResult
 import io.vertx.codegen.annotations.Fluent
-import io.vertx.codegen.annotations.ProxyGen
-import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
 
-@VertxGen
-@ProxyGen
-interface TypedSplitter<T> {
+interface TypedSplitter<T : Model> {
     @Fluent
-    fun splitCreate(record: T, createHandler: Handler<AsyncResult<T>>) : TypedSplitter<T>
+    fun splitCreate(record: T) : TypedSplitter<T>
 
     @Fluent
-    fun splitUpdate(record: T, createHandler: Handler<AsyncResult<T>>) : TypedSplitter<T>
+    fun splitCreateWithReceipt(record: T, createHandler: Handler<AsyncResult<CreateResult<T>>>) : TypedSplitter<T>
 
     @Fluent
-    fun splitDelete(record: T, createHandler: Handler<AsyncResult<T>>) : TypedSplitter<T>
+    fun splitUpdate(record: T) : TypedSplitter<T>
+
+    @Fluent
+    fun splitUpdateWithReceipt(record: T, updateHandler: Handler<AsyncResult<UpdateResult<T>>>) : TypedSplitter<T>
+
+    @Fluent
+    fun splitDelete(record: T) : TypedSplitter<T>
+
+    @Fluent
+    fun splitDeleteWithReceipt(record: T, deleteHandler: Handler<AsyncResult<DeleteResult<T>>>) : TypedSplitter<T>
 }

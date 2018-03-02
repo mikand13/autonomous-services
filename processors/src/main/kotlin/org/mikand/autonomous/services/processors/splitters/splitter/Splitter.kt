@@ -26,9 +26,11 @@
 package org.mikand.autonomous.services.processors.splitters.splitter
 
 import io.vertx.codegen.annotations.Fluent
+import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
 
+@VertxGen(concrete = false)
 interface Splitter<Input, Output> {
     @Fluent
     fun split(data: Input): Splitter<Input, Output>
