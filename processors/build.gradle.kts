@@ -247,13 +247,13 @@ tasks {
         })
 
         ready = "running"
-        directory = "data/build/tmp"
-        pidLockFileName = ".data.pid.lock"
+        directory = "processors/build/tmp"
+        pidLockFileName = ".processors.pid.lock"
     }
 
     "stopServer"(KillProcessTask::class) {
-        directory = "data/build/tmp"
-        pidLockFileName = ".data.pid.lock"
+        directory = "processors/build/tmp"
+        pidLockFileName = ".processors.pid.lock"
     }
 
     "karmaRun" {

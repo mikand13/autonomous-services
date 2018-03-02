@@ -31,4 +31,7 @@ interface TestModelSplitter : TypedSplitter<TestModel> {
 
     @Fluent
     override fun splitDeleteWithReceipt(record: TestModel, deleteHandler: Handler<AsyncResult<DeleteResult<TestModel>>>): TypedSplitter<TestModel>
+
+    @Fluent
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): TypedSplitter<TestModel>
 }

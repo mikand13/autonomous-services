@@ -25,13 +25,21 @@
 
 package org.mikand.autonomous.services.processors.splitters.typed
 
+import com.nannoq.tools.cluster.services.ServiceManager
+import io.vertx.core.Handler
+import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
+import io.vertx.ext.unit.TestContext
 import io.vertx.ext.unit.junit.RunTestOnContext
 import io.vertx.ext.unit.junit.Timeout
 import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
+import org.junit.Test
 import org.junit.runner.RunWith
+import org.mikand.autonomous.services.processors.splitters.typed.impl.TestModelRepository
+import org.mikand.autonomous.services.processors.splitters.typed.impl.TestModelSplitter
+import org.mikand.autonomous.services.processors.splitters.typed.impl.models.TestModel
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 
 @RunWith(VertxUnitRunner::class)
@@ -46,4 +54,178 @@ class TypedSplitterIT : ConfigSupport {
     @JvmField
     @Rule
     val timeout = Timeout.seconds(5)
+
+    @Test
+    fun testSplitCreate(context: TestContext) {
+        val splitter = TestModelRepository()
+        val async = context.async()
+        val vertx = rule.vertx()
+
+        ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
+            context.assertTrue(it.succeeded())
+
+            ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
+                context.assertTrue(it.succeeded())
+                val service = it.result()
+
+                service.fetchSubscriptionAddress( Handler {
+                    context.assertTrue(it.succeeded())
+
+                    vertx.eventBus().consumer<JsonObject>(it.result()) {
+                        context.assertNotNull(it.body())
+                        async.complete()
+                    }
+
+                    service.splitCreate(TestModel())
+                })
+            }
+        }
+    }
+
+    @Test
+    fun testSplitCreateWithReceipt(context: TestContext) {
+        val splitter = TestModelRepository()
+        val async = context.async()
+        val vertx = rule.vertx()
+        val model = TestModel()
+
+        ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
+            context.assertTrue(it.succeeded())
+
+            ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
+                context.assertTrue(it.succeeded())
+                val service = it.result()
+
+                service.fetchSubscriptionAddress( Handler {
+                    context.assertTrue(it.succeeded())
+
+                    vertx.eventBus().consumer<JsonObject>(it.result()) {
+                        context.assertNotNull(it.body())
+                        async.complete()
+                    }
+
+                    service.splitCreateWithReceipt(model, Handler {
+                        context.assertTrue(it.succeeded())
+                        context.assertEquals(model, it.result())
+                    })
+                })
+            }
+        }
+    }
+
+    @Test
+    fun testSplitUpdate(context: TestContext) {
+        val splitter = TestModelRepository()
+        val async = context.async()
+        val vertx = rule.vertx()
+
+        ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
+            context.assertTrue(it.succeeded())
+
+            ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
+                context.assertTrue(it.succeeded())
+                val service = it.result()
+
+                service.fetchSubscriptionAddress( Handler {
+                    context.assertTrue(it.succeeded())
+
+                    vertx.eventBus().consumer<JsonObject>(it.result()) {
+                        context.assertNotNull(it.body())
+                        async.complete()
+                    }
+
+                    service.splitUpdate(TestModel())
+                })
+            }
+        }
+    }
+
+    @Test
+    fun testSplitUpdateWithReceipt(context: TestContext) {
+        val splitter = TestModelRepository()
+        val async = context.async()
+        val vertx = rule.vertx()
+        val model = TestModel()
+
+        ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
+            context.assertTrue(it.succeeded())
+
+            ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
+                context.assertTrue(it.succeeded())
+                val service = it.result()
+
+                service.fetchSubscriptionAddress( Handler {
+                    context.assertTrue(it.succeeded())
+
+                    vertx.eventBus().consumer<JsonObject>(it.result()) {
+                        context.assertNotNull(it.body())
+                        async.complete()
+                    }
+
+                    service.splitUpdateWithReceipt(model, Handler {
+                        context.assertTrue(it.succeeded())
+                        context.assertEquals(model, it.result())
+                    })
+                })
+            }
+        }
+    }
+
+    @Test
+    fun testSplitDelete(context: TestContext) {
+        val splitter = TestModelRepository()
+        val async = context.async()
+        val vertx = rule.vertx()
+
+        ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
+            context.assertTrue(it.succeeded())
+
+            ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
+                context.assertTrue(it.succeeded())
+                val service = it.result()
+
+                service.fetchSubscriptionAddress( Handler {
+                    context.assertTrue(it.succeeded())
+
+                    vertx.eventBus().consumer<JsonObject>(it.result()) {
+                        context.assertNotNull(it.body())
+                        async.complete()
+                    }
+
+                    service.splitDelete(TestModel())
+                })
+            }
+        }
+    }
+
+    @Test
+    fun testSplitDeleteWithReceipt(context: TestContext) {
+        val splitter = TestModelRepository()
+        val async = context.async()
+        val vertx = rule.vertx()
+        val model = TestModel()
+
+        ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
+            context.assertTrue(it.succeeded())
+
+            ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
+                context.assertTrue(it.succeeded())
+                val service = it.result()
+
+                service.fetchSubscriptionAddress( Handler {
+                    context.assertTrue(it.succeeded())
+
+                    vertx.eventBus().consumer<JsonObject>(it.result()) {
+                        context.assertNotNull(it.body())
+                        async.complete()
+                    }
+
+                    service.splitDeleteWithReceipt(model, Handler {
+                        context.assertTrue(it.succeeded())
+                        context.assertEquals(model, it.result())
+                    })
+                })
+            }
+        }
+    }
 }

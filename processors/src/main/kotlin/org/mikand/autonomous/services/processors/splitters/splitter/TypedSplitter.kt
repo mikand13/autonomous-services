@@ -51,4 +51,7 @@ interface TypedSplitter<T : Model> {
 
     @Fluent
     fun splitDeleteWithReceipt(record: T, deleteHandler: Handler<AsyncResult<DeleteResult<T>>>) : TypedSplitter<T>
+
+    @Fluent
+    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): TypedSplitter<T>
 }

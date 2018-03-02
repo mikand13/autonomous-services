@@ -22,13 +22,13 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
 
     override fun start(startFuture: Future<Void>?) {
         if (deployService) {
-            ServiceManager.getInstance().publishService(JsonSplitter::class.java, publishAddress, this, {
+            ServiceManager.getInstance().publishService(JsonSplitter::class.java, publishAddress, this) {
                 if (it.succeeded()) {
                     startFuture?.complete()
                 } else {
                     startFuture?.fail(it.cause())
                 }
-            })
+            }
         } else {
             startFuture?.complete()
         }
