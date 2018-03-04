@@ -37,9 +37,9 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.processors.splitters.typed.impl.TestModelRepository
-import org.mikand.autonomous.services.processors.splitters.typed.impl.TestModelSplitter
 import org.mikand.autonomous.services.processors.splitters.typed.impl.models.TestModel
+import org.mikand.autonomous.services.processors.splitters.typed.impl.TestModelSplitter
+import org.mikand.autonomous.services.processors.splitters.typed.impl.TestModelRepository
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 
 @RunWith(VertxUnitRunner::class)
@@ -88,6 +88,7 @@ class TypedSplitterIT : ConfigSupport {
         val async = context.async()
         val vertx = rule.vertx()
         val model = TestModel()
+        model.setSomeStringOne("String")
 
         ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
             context.assertTrue(it.succeeded())
@@ -106,7 +107,7 @@ class TypedSplitterIT : ConfigSupport {
 
                     service.splitCreateWithReceipt(model, Handler {
                         context.assertTrue(it.succeeded())
-                        context.assertEquals(model, it.result())
+                        context.assertEquals(model.getSomeStringOne(), it.result().getSomeStringOne())
                     })
                 })
             }
@@ -146,6 +147,7 @@ class TypedSplitterIT : ConfigSupport {
         val async = context.async()
         val vertx = rule.vertx()
         val model = TestModel()
+        model.setSomeStringOne("String")
 
         ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
             context.assertTrue(it.succeeded())
@@ -164,7 +166,7 @@ class TypedSplitterIT : ConfigSupport {
 
                     service.splitUpdateWithReceipt(model, Handler {
                         context.assertTrue(it.succeeded())
-                        context.assertEquals(model, it.result())
+                        context.assertEquals(model.getSomeStringOne(), it.result().getSomeStringOne())
                     })
                 })
             }
@@ -204,6 +206,7 @@ class TypedSplitterIT : ConfigSupport {
         val async = context.async()
         val vertx = rule.vertx()
         val model = TestModel()
+        model.setSomeStringOne("String")
 
         ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
             context.assertTrue(it.succeeded())
@@ -222,7 +225,7 @@ class TypedSplitterIT : ConfigSupport {
 
                     service.splitDeleteWithReceipt(model, Handler {
                         context.assertTrue(it.succeeded())
-                        context.assertEquals(model, it.result())
+                        context.assertEquals(model.getSomeStringOne(), it.result().getSomeStringOne())
                     })
                 })
             }

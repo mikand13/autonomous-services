@@ -8,12 +8,13 @@ import io.vertx.codegen.annotations.DataObject
 import io.vertx.codegen.annotations.Fluent
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
+import org.mikand.autonomous.services.processors.splitters.TestModelConverter.fromJson
 import java.util.*
 
 @DynamoDBTable(tableName = "testModels")
 @DataObject(generateConverter = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-class TestModel() : DynamoDBModel, Model, ETagable, Cacheable {
+class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
     private var etag: String? = null
     private var someStringOne: String? = null
     private var someStringTwo: String? = null
@@ -32,8 +33,10 @@ class TestModel() : DynamoDBModel, Model, ETagable, Cacheable {
     private var updatedAt: Date? = null
     private var version: Long? = null
 
-    constructor(jsonObject: JsonObject) : this() {
-        //fromJson(jsonObject, this)
+    constructor()
+
+    constructor(jsonObject: JsonObject) {
+        fromJson(jsonObject, this)
 
         someDate = if (jsonObject.getLong("someDate") == null) null else Date(jsonObject.getLong("someDate"))
         someDateTwo = if (jsonObject.getLong("someDateTwo") == null) null else Date(jsonObject.getLong("someDateTwo"))

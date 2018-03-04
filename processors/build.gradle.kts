@@ -151,10 +151,6 @@ dependencies {
     testCompile("io.vertx:vertx-config:$vertx_version")
     testCompile("io.vertx:vertx-unit:$vertx_version")
     testCompile("io.rest-assured:rest-assured:$rest_assured_version")
-
-    // Kapt Test
-    kaptTest("io.vertx:vertx-codegen:$vertx_version:processor")
-    kaptTest("io.vertx:vertx-service-proxy:$vertx_version:processor")
 }
 
 configure<ApplicationPluginConvention> {

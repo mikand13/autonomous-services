@@ -1,8 +1,5 @@
 package org.mikand.autonomous.services.processors.splitters.typed.impl
 
-import com.nannoq.tools.repository.repository.results.CreateResult
-import com.nannoq.tools.repository.repository.results.DeleteResult
-import com.nannoq.tools.repository.repository.results.UpdateResult
 import io.vertx.codegen.annotations.Fluent
 import io.vertx.codegen.annotations.ProxyGen
 import io.vertx.codegen.annotations.VertxGen
@@ -15,23 +12,26 @@ import org.mikand.autonomous.services.processors.splitters.typed.impl.models.Tes
 @ProxyGen
 interface TestModelSplitter : TypedSplitter<TestModel> {
     @Fluent
-    override fun splitCreate(record: TestModel): TypedSplitter<TestModel>
+    override fun splitCreate(record: TestModel): TestModelSplitter
 
     @Fluent
-    override fun splitCreateWithReceipt(record: TestModel, createHandler: Handler<AsyncResult<CreateResult<TestModel>>>): TypedSplitter<TestModel>
+    override fun splitCreateWithReceipt(record: TestModel,
+                                        createHandler: Handler<AsyncResult<TestModel>>): TestModelSplitter
 
     @Fluent
-    override fun splitUpdate(record: TestModel): TypedSplitter<TestModel>
+    override fun splitUpdate(record: TestModel): TestModelSplitter
 
     @Fluent
-    override fun splitUpdateWithReceipt(record: TestModel, updateHandler: Handler<AsyncResult<UpdateResult<TestModel>>>): TypedSplitter<TestModel>
+    override fun splitUpdateWithReceipt(record: TestModel,
+                                        updateHandler: Handler<AsyncResult<TestModel>>): TestModelSplitter
 
     @Fluent
-    override fun splitDelete(record: TestModel): TypedSplitter<TestModel>
+    override fun splitDelete(record: TestModel): TestModelSplitter
 
     @Fluent
-    override fun splitDeleteWithReceipt(record: TestModel, deleteHandler: Handler<AsyncResult<DeleteResult<TestModel>>>): TypedSplitter<TestModel>
+    override fun splitDeleteWithReceipt(record: TestModel,
+                                        deleteHandler: Handler<AsyncResult<TestModel>>): TestModelSplitter
 
     @Fluent
-    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): TypedSplitter<TestModel>
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): TestModelSplitter
 }

@@ -60,7 +60,7 @@ class TypedSplitterTest : ConfigSupport {
 
         splitter.splitCreateWithReceipt(model, Handler {
             context.assertTrue(it.succeeded())
-            context.assertEquals(model, it.result().item, "Statuscode is not 200!")
+            context.assertEquals(model, it.result(), "Object is not equal!")
 
             splitter.splitCreate(model)
 
@@ -76,7 +76,7 @@ class TypedSplitterTest : ConfigSupport {
 
         splitter.splitUpdateWithReceipt(model, Handler {
             context.assertTrue(it.succeeded())
-            context.assertEquals(model, it.result().item, "Statuscode is not 200!")
+            context.assertEquals(model, it.result(), "Object is not equal!")
 
             splitter.splitUpdate(model)
 
@@ -92,7 +92,7 @@ class TypedSplitterTest : ConfigSupport {
 
         splitter.splitDeleteWithReceipt(model, Handler {
             context.assertTrue(it.succeeded())
-            context.assertEquals(model, it.result().item, "Statuscode is not 200!")
+            context.assertEquals(model, it.result(), "Object is not equal!")
 
             splitter.splitDelete(model)
 

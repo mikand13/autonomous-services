@@ -6,13 +6,14 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.nannoq.tools.repository.models.ETagable
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonObject
+import org.mikand.autonomous.services.processors.splitters.TestDocumentConverter.fromJson
 import java.util.*
 
 
 @DynamoDBDocument
 @DataObject(generateConverter = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-class TestDocument() : ETagable {
+class TestDocument : ETagable {
     private var etag: String? = null
     var someStringOne: String? = null
     var someStringTwo: String? = null
@@ -21,8 +22,10 @@ class TestDocument() : ETagable {
     @get:DynamoDBVersionAttribute
     var version: Long? = null
 
-    constructor(jsonObject: JsonObject) : this() {
-        //fromJson(jsonObject, this)
+    constructor()
+
+    constructor(jsonObject: JsonObject) {
+        fromJson(jsonObject, this)
     }
 
     fun toJson(): JsonObject {
