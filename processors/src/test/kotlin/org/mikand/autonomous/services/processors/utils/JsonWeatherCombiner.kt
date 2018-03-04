@@ -23,22 +23,19 @@
  *
  */
 
-package org.mikand.autonomous.services.processors.combiners.combiner
+package org.mikand.autonomous.services.processors.utils
 
-import com.nannoq.tools.repository.models.Model
-import com.nannoq.tools.repository.utils.ItemList
-import io.vertx.codegen.annotations.Fluent
 import io.vertx.core.AsyncResult
+import io.vertx.core.Future
 import io.vertx.core.Handler
 import io.vertx.core.json.JsonObject
+import org.mikand.autonomous.services.processors.combiners.combiner.Combiner
+import org.mikand.autonomous.services.processors.combiners.impl.JsonCombinerImpl
 
-interface TypedCombiner<T : Model> {
-    @Fluent
-    fun combineRead(query: JsonObject, readHandler: Handler<AsyncResult<T>>) : TypedCombiner<T>
+class JsonWeatherCombiner(config: JsonObject = JsonObject()): JsonCombinerImpl(config) {
+    override fun combine(query: JsonObject, responseHandler: Handler<AsyncResult<JsonObject>>): Combiner<JsonObject> {
+        responseHandler.handle(Future.succeededFuture(query))
 
-    @Fluent
-    fun combineReadAll(query: JsonObject, readAllHandler: Handler<AsyncResult<ItemList<T>>>) : TypedCombiner<T>
-
-    @Fluent
-    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): TypedCombiner<T>
+        return this
+    }
 }

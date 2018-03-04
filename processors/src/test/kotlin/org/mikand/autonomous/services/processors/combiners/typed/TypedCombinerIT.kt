@@ -38,13 +38,13 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.processors.utils.TestModelRepository
 import org.mikand.autonomous.services.processors.test.gen.TestModelSplitter
 import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
+import org.mikand.autonomous.services.processors.utils.TestModelRepository
 
 @RunWith(VertxUnitRunner::class)
-class TypedSplitterIT : ConfigSupport {
+class TypedCombinerIT : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 

@@ -35,12 +35,12 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.processors.utils.TestModelRepository
 import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
+import org.mikand.autonomous.services.processors.utils.TestModelRepository
 
 @RunWith(VertxUnitRunner::class)
-class TypedSplitterTest : ConfigSupport {
+class TypedCombinerTest : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
@@ -53,7 +53,7 @@ class TypedSplitterTest : ConfigSupport {
     val timeout = Timeout.seconds(5)
 
     @Test
-    fun testSplitCreate(context: TestContext) {
+    fun testCombineRead(context: TestContext) {
         val async = context.async()
         val splitter = TestModelRepository()
         val model = TestModel()
@@ -69,7 +69,7 @@ class TypedSplitterTest : ConfigSupport {
     }
 
     @Test
-    fun testSplitUpdate(context: TestContext) {
+    fun testCombineReadAll(context: TestContext) {
         val async = context.async()
         val splitter = TestModelRepository()
         val model = TestModel()
@@ -79,22 +79,6 @@ class TypedSplitterTest : ConfigSupport {
             context.assertEquals(model, it.result(), "Object is not equal!")
 
             splitter.splitUpdate(model)
-
-            async.complete()
-        })
-    }
-
-    @Test
-    fun testSplitDelete(context: TestContext) {
-        val async = context.async()
-        val splitter = TestModelRepository()
-        val model = TestModel()
-
-        splitter.splitDeleteWithReceipt(model, Handler {
-            context.assertTrue(it.succeeded())
-            context.assertEquals(model, it.result(), "Object is not equal!")
-
-            splitter.splitDelete(model)
 
             async.complete()
         })

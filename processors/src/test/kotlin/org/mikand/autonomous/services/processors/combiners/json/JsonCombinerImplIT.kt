@@ -23,9 +23,11 @@
  *
  */
 
-package org.mikand.autonomous.services.processors.splitters.typed
+package org.mikand.autonomous.services.processors.splitters.json
 
+import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.Handler
+import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
@@ -35,12 +37,12 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.processors.utils.TestModelRepository
-import org.mikand.autonomous.services.processors.test.gen.models.TestModel
+import org.mikand.autonomous.services.processors.combiners.concretes.JsonCombiner
+import org.mikand.autonomous.services.processors.splitters.impl.JsonSplitterImpl
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 
 @RunWith(VertxUnitRunner::class)
-class TypedSplitterTest : ConfigSupport {
+class JsonCombinerImplIT : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
@@ -53,50 +55,23 @@ class TypedSplitterTest : ConfigSupport {
     val timeout = Timeout.seconds(5)
 
     @Test
-    fun testSplitCreate(context: TestContext) {
+    fun testCombine(context: TestContext) {
+        val splitter = JsonSplitterImpl()
         val async = context.async()
-        val splitter = TestModelRepository()
-        val model = TestModel()
+        val vertx = rule.vertx()
 
-        splitter.splitCreateWithReceipt(model, Handler {
+        vertx.deployVerticle(splitter, {
             context.assertTrue(it.succeeded())
-            context.assertEquals(model, it.result(), "Object is not equal!")
 
-            splitter.splitCreate(model)
+            ServiceManager.getInstance().consumeService(JsonCombiner::class.java) {
+                context.assertTrue(it.succeeded())
+                val service = it.result()
 
-            async.complete()
-        })
-    }
-
-    @Test
-    fun testSplitUpdate(context: TestContext) {
-        val async = context.async()
-        val splitter = TestModelRepository()
-        val model = TestModel()
-
-        splitter.splitUpdateWithReceipt(model, Handler {
-            context.assertTrue(it.succeeded())
-            context.assertEquals(model, it.result(), "Object is not equal!")
-
-            splitter.splitUpdate(model)
-
-            async.complete()
-        })
-    }
-
-    @Test
-    fun testSplitDelete(context: TestContext) {
-        val async = context.async()
-        val splitter = TestModelRepository()
-        val model = TestModel()
-
-        splitter.splitDeleteWithReceipt(model, Handler {
-            context.assertTrue(it.succeeded())
-            context.assertEquals(model, it.result(), "Object is not equal!")
-
-            splitter.splitDelete(model)
-
-            async.complete()
+                service.combine(JsonObject(), Handler {
+                    context.assertTrue(it.succeeded())
+                    async.complete()
+                })
+            }
         })
     }
 }
