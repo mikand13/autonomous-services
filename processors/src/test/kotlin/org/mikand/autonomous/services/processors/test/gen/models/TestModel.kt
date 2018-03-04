@@ -1,4 +1,4 @@
-package org.mikand.autonomous.services.processors.splitters.typed.impl.models
+package org.mikand.autonomous.services.processors.test.gen.models
 
 import com.amazonaws.services.dynamodbv2.datamodeling.*
 import com.fasterxml.jackson.annotation.JsonInclude
@@ -8,7 +8,7 @@ import io.vertx.codegen.annotations.DataObject
 import io.vertx.codegen.annotations.Fluent
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
-import org.mikand.autonomous.services.processors.splitters.TestModelConverter.fromJson
+import org.mikand.autonomous.services.processors.test.gen.models.TestModelConverter.fromJson
 import java.util.*
 
 @DynamoDBTable(tableName = "testModels")

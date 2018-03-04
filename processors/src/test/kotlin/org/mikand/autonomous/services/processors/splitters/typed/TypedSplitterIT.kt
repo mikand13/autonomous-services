@@ -27,6 +27,7 @@ package org.mikand.autonomous.services.processors.splitters.typed
 
 import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.Handler
+import io.vertx.core.Vertx
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
@@ -37,9 +38,9 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.processors.splitters.typed.impl.models.TestModel
-import org.mikand.autonomous.services.processors.splitters.typed.impl.TestModelSplitter
 import org.mikand.autonomous.services.processors.splitters.typed.impl.TestModelRepository
+import org.mikand.autonomous.services.processors.test.gen.TestModelSplitter
+import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 
 @RunWith(VertxUnitRunner::class)
@@ -49,7 +50,7 @@ class TypedSplitterIT : ConfigSupport {
 
     @JvmField
     @Rule
-    val rule = RunTestOnContext()
+    val rule = RunTestOnContext({ Vertx.vertx() })
 
     @JvmField
     @Rule

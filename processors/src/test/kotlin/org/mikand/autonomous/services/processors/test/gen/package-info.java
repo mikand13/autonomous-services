@@ -23,7 +23,7 @@
  *
  */
 
-@ModuleGen(name = "autonomous-services-splitters", groupPackage="org.mikand.autonomous.services.processors.splitters")
-package org.mikand.autonomous.services.processors.splitters;
+@ModuleGen(name = "autonomous-services-processors-test-gen", groupPackage="org.mikand.autonomous.services.processors.test.gen")
+package org.mikand.autonomous.services.processors.test.gen;
 
 import io.vertx.codegen.annotations.ModuleGen;

@@ -36,7 +36,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mikand.autonomous.services.processors.splitters.typed.impl.TestModelRepository
-import org.mikand.autonomous.services.processors.splitters.typed.impl.models.TestModel
+import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 
 @RunWith(VertxUnitRunner::class)

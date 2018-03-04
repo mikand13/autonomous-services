@@ -1,4 +1,4 @@
-package org.mikand.autonomous.services.processors.splitters.typed.impl
+package org.mikand.autonomous.services.processors.test.gen
 
 import io.vertx.codegen.annotations.Fluent
 import io.vertx.codegen.annotations.ProxyGen
@@ -6,7 +6,7 @@ import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
 import org.mikand.autonomous.services.processors.splitters.splitter.TypedSplitter
-import org.mikand.autonomous.services.processors.splitters.typed.impl.models.TestModel
+import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 
 @VertxGen
 @ProxyGen
