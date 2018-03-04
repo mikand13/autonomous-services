@@ -7,6 +7,7 @@ import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
+import io.vertx.servicediscovery.Record
 import org.mikand.autonomous.services.processors.splitters.concretes.JsonSplitter
 import org.mikand.autonomous.services.processors.splitters.splitter.SplitStatus
 
@@ -20,10 +21,14 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     private val extractables: List<String> = config.getJsonArray("extractables")?.map { it.toString() } ?: ArrayList()
     private val thisVertx: Vertx = vertx ?: Vertx.currentContext().owner()
 
+    private lateinit var service: Record
+
     override fun start(startFuture: Future<Void>?) {
         if (deployService) {
             ServiceManager.getInstance().publishService(JsonSplitter::class.java, publishAddress, this) {
                 if (it.succeeded()) {
+                    service = it.result()
+
                     startFuture?.complete()
                 } else {
                     startFuture?.fail(it.cause())
@@ -31,6 +36,20 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
             }
         } else {
             startFuture?.complete()
+        }
+    }
+
+    override fun stop(stopFuture: Future<Void>?) {
+        if (deployService) {
+            ServiceManager.getInstance().unPublishService(JsonSplitter::class.java, service) {
+                if (it.succeeded()) {
+                    stopFuture?.complete()
+                } else {
+                    stopFuture?.fail(it.cause())
+                }
+            }
+        } else {
+            stopFuture?.complete()
         }
     }
 

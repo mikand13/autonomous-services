@@ -23,7 +23,22 @@
  *
  */
 
-@ModuleGen(name = "autonomous-services-combiners", groupPackage="org.mikand.autonomous.services.processors.combiners")
-package org.mikand.autonomous.services.processors.combiners;
+package org.mikand.autonomous.services.processors.combiners.combiner
 
-import io.vertx.codegen.annotations.ModuleGen;
+import com.nannoq.tools.repository.models.Model
+import com.nannoq.tools.repository.repository.results.ItemResult
+import io.vertx.codegen.annotations.Fluent
+import io.vertx.core.AsyncResult
+import io.vertx.core.Handler
+import io.vertx.core.json.JsonObject
+
+interface TypedCombiner<T : Model> {
+    @Fluent
+    fun combineRead(query: JsonObject, readHandler: Handler<AsyncResult<T>>) : TypedCombiner<T>
+
+    @Fluent
+    fun combineReadAll(query: JsonObject, readAllHandler: Handler<AsyncResult<ItemResult<T>>>) : TypedCombiner<T>
+
+    @Fluent
+    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): TypedCombiner<T>
+}

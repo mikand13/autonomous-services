@@ -23,7 +23,19 @@
  *
  */
 
-@ModuleGen(name = "autonomous-services-combiners", groupPackage="org.mikand.autonomous.services.processors.combiners")
-package org.mikand.autonomous.services.processors.combiners;
+package org.mikand.autonomous.services.processors.combiners.concretes
 
-import io.vertx.codegen.annotations.ModuleGen;
+import io.vertx.codegen.annotations.ProxyGen
+import io.vertx.codegen.annotations.VertxGen
+import io.vertx.core.AsyncResult
+import io.vertx.core.Handler
+import io.vertx.core.json.JsonObject
+import org.mikand.autonomous.services.processors.combiners.combiner.Combiner
+
+@VertxGen
+@ProxyGen
+interface JsonCombiner : Combiner<JsonObject> {
+    override fun combine(query: JsonObject, responseHandler: Handler<AsyncResult<JsonObject>>): Combiner<JsonObject>
+
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): Combiner<JsonObject>
+}
