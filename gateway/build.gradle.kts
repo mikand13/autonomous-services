@@ -191,15 +191,14 @@ karma {
             "vertx3-eventbus-client@^3.4.2",
             "vertx3-min@^3.4.2",
             "karma-browserify@^5.2.0",
-            "browserify@^16.0.0",
-            "karma-jasmine-html-reporter@^0.2.2"
+            "browserify@^16.0.0"
     ))
 
     files = listOf("test/resources/js/karma/**/*_test.js")
 
     browsers = listOf("PhantomJS")
     frameworks = listOf("browserify", "jasmine")
-    reporters = listOf("progress", "kjhtml")
+    reporters = listOf("progress")
 
     preprocessors = mapOf(Pair("test/resources/js/karma/**/*_test.js", listOf("browserify")))
     propertyMissing("logLevel", "WARN")
