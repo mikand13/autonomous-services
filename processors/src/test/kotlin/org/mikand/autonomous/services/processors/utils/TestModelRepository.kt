@@ -25,51 +25,33 @@
 
 package org.mikand.autonomous.services.processors.utils
 
-import com.nannoq.tools.cluster.services.ServiceManager
-import com.nannoq.tools.repository.utils.ItemList
-import io.vertx.core.*
+import com.nannoq.tools.repository.utils.GenericItemList
+import io.vertx.core.AbstractVerticle
+import io.vertx.core.AsyncResult
+import io.vertx.core.Future
+import io.vertx.core.Handler
 import io.vertx.core.json.JsonObject
-import org.mikand.autonomous.services.processors.combiners.combiner.TypedCombiner
 import org.mikand.autonomous.services.processors.test.gen.TestModelCombiner
 import org.mikand.autonomous.services.processors.test.gen.TestModelSplitter
 import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 import org.mikand.autonomous.services.processors.test.gen.models.TestModelCodec
 import java.util.*
 
-class TestModelRepository : AbstractVerticle, TestModelSplitter, TestModelCombiner {
-    private val publishAddress: String = javaClass.simpleName
+class TestModelRepository : AbstractVerticle(), TestModelSplitter, TestModelCombiner {
     private val subscriptionAddress: String = javaClass.name
-    private val thisVertx: Vertx = vertx ?: Vertx.currentContext().owner()
 
-    companion object {
-        var initializedCodec = false
-    }
-
-    constructor() {
+    override fun start() {
         initializeCodec()
     }
 
-    override fun start(startFuture: Future<Void>?) {
-        initializeCodec()
-
-        ServiceManager.getInstance().publishService(TestModelSplitter::class.java, publishAddress, this) {
-            if (it.succeeded()) {
-                startFuture?.complete()
-            } else {
-                startFuture?.fail(it.cause())
-            }
-        }
-    }
-
-    @Synchronized
     private fun initializeCodec() {
-        if (initializedCodec) return else {
-            thisVertx.eventBus().registerDefaultCodec(TestModel::class.java, TestModelCodec())
-        }
+        try {
+            vertx.eventBus().registerDefaultCodec(TestModel::class.java, TestModelCodec())
+        } catch (ignored: Exception) {}
     }
 
     override fun splitCreate(record: TestModel): TestModelRepository {
-        thisVertx.eventBus().publish(subscriptionAddress, record)
+        vertx.eventBus().publish(subscriptionAddress, record)
 
         return this
     }
@@ -77,13 +59,13 @@ class TestModelRepository : AbstractVerticle, TestModelSplitter, TestModelCombin
     override fun splitCreateWithReceipt(record: TestModel,
                                         createHandler: Handler<AsyncResult<TestModel>>): TestModelRepository {
         createHandler.handle(Future.succeededFuture(record))
-        thisVertx.eventBus().publish(subscriptionAddress, record)
+        vertx.eventBus().publish(subscriptionAddress, record)
 
         return this
     }
 
     override fun splitUpdate(record: TestModel): TestModelRepository {
-        thisVertx.eventBus().publish(subscriptionAddress, record)
+        vertx.eventBus().publish(subscriptionAddress, record)
 
         return this
     }
@@ -91,13 +73,13 @@ class TestModelRepository : AbstractVerticle, TestModelSplitter, TestModelCombin
     override fun splitUpdateWithReceipt(record: TestModel,
                                         updateHandler: Handler<AsyncResult<TestModel>>): TestModelRepository {
         updateHandler.handle(Future.succeededFuture(record))
-        thisVertx.eventBus().publish(subscriptionAddress, record)
+        vertx.eventBus().publish(subscriptionAddress, record)
 
         return this
     }
 
     override fun splitDelete(record: TestModel): TestModelRepository {
-        thisVertx.eventBus().publish(subscriptionAddress, record)
+        vertx.eventBus().publish(subscriptionAddress, record)
 
         return this
     }
@@ -105,19 +87,19 @@ class TestModelRepository : AbstractVerticle, TestModelSplitter, TestModelCombin
     override fun splitDeleteWithReceipt(record: TestModel,
                                         deleteHandler: Handler<AsyncResult<TestModel>>): TestModelRepository {
         deleteHandler.handle(Future.succeededFuture(record))
-        thisVertx.eventBus().publish(subscriptionAddress, record)
+        vertx.eventBus().publish(subscriptionAddress, record)
 
         return this
     }
 
-    override fun combineRead(query: JsonObject, readHandler: Handler<AsyncResult<TestModel>>): TypedCombiner<TestModel> {
+    override fun combineRead(query: JsonObject, readHandler: Handler<AsyncResult<TestModel>>): TestModelRepository {
         readHandler.handle(Future.succeededFuture(TestModel()))
 
         return this
     }
 
-    override fun combineReadAll(query: JsonObject, readAllHandler: Handler<AsyncResult<ItemList<TestModel>>>): TypedCombiner<TestModel> {
-        readAllHandler.handle(Future.succeededFuture(ItemList("someBase", "page", 1, Collections.singletonList(TestModel()), arrayOf())))
+    override fun combineReadAll(query: JsonObject, readAllHandler: Handler<AsyncResult<GenericItemList>>): TestModelRepository {
+        readAllHandler.handle(Future.succeededFuture(GenericItemList("page", 1, Collections.singletonList(TestModel().toJsonFormat()))))
 
         return this
     }

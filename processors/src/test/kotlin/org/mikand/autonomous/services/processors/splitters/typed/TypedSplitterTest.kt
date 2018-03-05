@@ -35,9 +35,9 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.processors.utils.TestModelRepository
 import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
+import org.mikand.autonomous.services.processors.utils.TestModelRepository
 
 @RunWith(VertxUnitRunner::class)
 class TypedSplitterTest : ConfigSupport {
@@ -57,15 +57,18 @@ class TypedSplitterTest : ConfigSupport {
         val async = context.async()
         val splitter = TestModelRepository()
         val model = TestModel()
+        val vertx = rule.vertx()
 
-        splitter.splitCreateWithReceipt(model, Handler {
-            context.assertTrue(it.succeeded())
-            context.assertEquals(model, it.result(), "Object is not equal!")
+        vertx.deployVerticle(splitter, context.asyncAssertSuccess({
+            splitter.splitCreateWithReceipt(model, Handler {
+                context.assertTrue(it.succeeded())
+                context.assertEquals(model, it.result(), "Object is not equal!")
 
-            splitter.splitCreate(model)
+                splitter.splitCreate(model)
 
-            async.complete()
-        })
+                async.complete()
+            })
+        }))
     }
 
     @Test
@@ -73,15 +76,18 @@ class TypedSplitterTest : ConfigSupport {
         val async = context.async()
         val splitter = TestModelRepository()
         val model = TestModel()
+        val vertx = rule.vertx()
 
-        splitter.splitUpdateWithReceipt(model, Handler {
-            context.assertTrue(it.succeeded())
-            context.assertEquals(model, it.result(), "Object is not equal!")
+        vertx.deployVerticle(splitter, context.asyncAssertSuccess({
+            splitter.splitUpdateWithReceipt(model, Handler {
+                context.assertTrue(it.succeeded())
+                context.assertEquals(model, it.result(), "Object is not equal!")
 
-            splitter.splitUpdate(model)
+                splitter.splitUpdate(model)
 
-            async.complete()
-        })
+                async.complete()
+            })
+        }))
     }
 
     @Test
@@ -89,14 +95,17 @@ class TypedSplitterTest : ConfigSupport {
         val async = context.async()
         val splitter = TestModelRepository()
         val model = TestModel()
+        val vertx = rule.vertx()
 
-        splitter.splitDeleteWithReceipt(model, Handler {
-            context.assertTrue(it.succeeded())
-            context.assertEquals(model, it.result(), "Object is not equal!")
+        vertx.deployVerticle(splitter, context.asyncAssertSuccess({
+            splitter.splitDeleteWithReceipt(model, Handler {
+                context.assertTrue(it.succeeded())
+                context.assertEquals(model, it.result(), "Object is not equal!")
 
-            splitter.splitDelete(model)
+                splitter.splitDelete(model)
 
-            async.complete()
-        })
+                async.complete()
+            })
+        }))
     }
 }

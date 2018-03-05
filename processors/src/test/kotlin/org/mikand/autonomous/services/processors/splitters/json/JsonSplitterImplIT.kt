@@ -59,10 +59,8 @@ class JsonSplitterImplIT : ConfigSupport {
         val async = context.async()
         val vertx = rule.vertx()
 
-        vertx.deployVerticle(splitter, {
-            context.assertTrue(it.succeeded())
-
-            ServiceManager.getInstance().consumeService(JsonSplitter::class.java) {
+        vertx.deployVerticle(splitter, context.asyncAssertSuccess({ id ->
+            ServiceManager.getInstance(vertx).consumeService(JsonSplitter::class.java) {
                 context.assertTrue(it.succeeded())
                 val service = it.result()
 
@@ -71,13 +69,16 @@ class JsonSplitterImplIT : ConfigSupport {
 
                     vertx.eventBus().consumer<JsonObject>(it.result()) {
                         context.assertNotNull(it.body())
-                        async.complete()
+
+                        vertx.undeploy(id, context.asyncAssertSuccess({
+                            async.complete()
+                        }))
                     }
 
                     service.split(JsonObject())
                 })
             }
-        })
+        }))
     }
 
     @Test
@@ -86,26 +87,20 @@ class JsonSplitterImplIT : ConfigSupport {
         val async = context.async()
         val vertx = rule.vertx()
 
-        vertx.deployVerticle(splitter, {
-            context.assertTrue(it.succeeded())
-
-            ServiceManager.getInstance().consumeService(JsonSplitter::class.java) {
+        vertx.deployVerticle(splitter, context.asyncAssertSuccess({ id ->
+            ServiceManager.getInstance(vertx).consumeService(JsonSplitter::class.java) {
                 context.assertTrue(it.succeeded())
                 val service = it.result()
 
-                service.fetchSubscriptionAddress(Handler {
+                service.splitWithReceipt(JsonObject(), Handler {
                     context.assertTrue(it.succeeded())
+                    context.assertEquals(200, it.result().statusCode, "Statuscode is not 200!")
 
-                    vertx.eventBus().consumer<JsonObject>(it.result()) {
-                        context.assertNotNull(it.body())
+                    vertx.undeploy(id, context.asyncAssertSuccess({
                         async.complete()
-                    }
-
-                    service.splitWithReceipt(JsonObject(), Handler {
-                        context.assertEquals(200, it.result().statusCode, "Statuscode is not 200!")
-                    })
+                    }))
                 })
             }
-        })
+        }))
     }
 }

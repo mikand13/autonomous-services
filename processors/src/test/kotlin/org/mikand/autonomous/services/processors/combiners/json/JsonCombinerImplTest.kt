@@ -55,9 +55,9 @@ class JsonCombinerImplTest : ConfigSupport {
     @Test
     fun testCombine(context: TestContext) {
         val async = context.async()
-        val splitter = JsonWeatherCombiner()
+        val combiner = JsonWeatherCombiner()
 
-        splitter.combine(JsonObject(), Handler {
+        combiner.combine(JsonObject(), Handler {
             context.assertTrue(it.succeeded())
             async.complete()
         })

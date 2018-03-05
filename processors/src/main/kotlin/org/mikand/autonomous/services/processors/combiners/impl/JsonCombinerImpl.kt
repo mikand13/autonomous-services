@@ -33,13 +33,12 @@ import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.servicediscovery.Record
 import org.mikand.autonomous.services.processors.combiners.concretes.JsonCombiner
-import org.mikand.autonomous.services.processors.splitters.concretes.JsonSplitter
 
 abstract class JsonCombinerImpl(config: JsonObject = JsonObject()) : AbstractVerticle(), JsonCombiner {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    private val publishAddress: String = config.getString("customPublishAddress") ?: javaClass.simpleName
+    private val publishAddress: String = config.getString("customPublishAddress") ?: JsonCombiner::class.java.simpleName
     private val deployService: Boolean = config.getBoolean("deployAsService") ?: true
     private val subscriptionAddress: String = config.getString("customSubscriptionAddress") ?: javaClass.name
     @Suppress("unused")
@@ -65,7 +64,7 @@ abstract class JsonCombinerImpl(config: JsonObject = JsonObject()) : AbstractVer
 
     override fun stop(stopFuture: Future<Void>?) {
         if (deployService) {
-            ServiceManager.getInstance().unPublishService(JsonSplitter::class.java, service) {
+            ServiceManager.getInstance().unPublishService(JsonCombiner::class.java, service) {
                 if (it.succeeded()) {
                     stopFuture?.complete()
                 } else {

@@ -38,8 +38,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mikand.autonomous.services.processors.combiners.concretes.JsonCombiner
-import org.mikand.autonomous.services.processors.splitters.impl.JsonSplitterImpl
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
+import org.mikand.autonomous.services.processors.utils.JsonWeatherCombiner
 
 @RunWith(VertxUnitRunner::class)
 class JsonCombinerImplIT : ConfigSupport {
@@ -56,14 +56,12 @@ class JsonCombinerImplIT : ConfigSupport {
 
     @Test
     fun testCombine(context: TestContext) {
-        val splitter = JsonSplitterImpl()
+        val combiner = JsonWeatherCombiner()
         val async = context.async()
         val vertx = rule.vertx()
 
-        vertx.deployVerticle(splitter, {
-            context.assertTrue(it.succeeded())
-
-            ServiceManager.getInstance().consumeService(JsonCombiner::class.java) {
+        vertx.deployVerticle(combiner, context.asyncAssertSuccess({
+            ServiceManager.getInstance(vertx).consumeService(JsonCombiner::class.java) {
                 context.assertTrue(it.succeeded())
                 val service = it.result()
 
@@ -72,6 +70,6 @@ class JsonCombinerImplIT : ConfigSupport {
                     async.complete()
                 })
             }
-        })
+        }))
     }
 }

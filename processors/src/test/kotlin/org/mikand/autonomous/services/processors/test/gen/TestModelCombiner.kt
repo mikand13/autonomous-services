@@ -25,7 +25,7 @@
 
 package org.mikand.autonomous.services.processors.test.gen
 
-import com.nannoq.tools.repository.utils.ItemList
+import com.nannoq.tools.repository.utils.GenericItemList
 import io.vertx.codegen.annotations.Fluent
 import io.vertx.codegen.annotations.ProxyGen
 import io.vertx.codegen.annotations.VertxGen
@@ -39,12 +39,12 @@ import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 @ProxyGen
 interface TestModelCombiner : TypedCombiner<TestModel> {
     @Fluent
-    override fun combineRead(query: JsonObject, readHandler: Handler<AsyncResult<TestModel>>): TypedCombiner<TestModel>
+    override fun combineRead(query: JsonObject, readHandler: Handler<AsyncResult<TestModel>>): TestModelCombiner
 
     @Fluent
     override fun combineReadAll(query: JsonObject,
-                                readAllHandler: Handler<AsyncResult<ItemList<TestModel>>>): TypedCombiner<TestModel>
+                                readAllHandler: Handler<AsyncResult<GenericItemList>>): TestModelCombiner
 
     @Fluent
-    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): TypedCombiner<TestModel>
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): TestModelCombiner
 }

@@ -35,7 +35,7 @@ import org.mikand.autonomous.services.processors.combiners.combiner.Combiner
 @VertxGen
 @ProxyGen
 interface JsonCombiner : Combiner<JsonObject> {
-    override fun combine(query: JsonObject, responseHandler: Handler<AsyncResult<JsonObject>>): Combiner<JsonObject>
+    override fun combine(query: JsonObject, responseHandler: Handler<AsyncResult<JsonObject>>): JsonCombiner
 
-    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): Combiner<JsonObject>
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): JsonCombiner
 }

@@ -23,9 +23,10 @@
  *
  */
 
-package org.mikand.autonomous.services.processors.splitters.typed
+package org.mikand.autonomous.services.processors.combiners.typed
 
 import io.vertx.core.Handler
+import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
@@ -35,7 +36,6 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 import org.mikand.autonomous.services.processors.utils.TestModelRepository
 
@@ -55,32 +55,30 @@ class TypedCombinerTest : ConfigSupport {
     @Test
     fun testCombineRead(context: TestContext) {
         val async = context.async()
-        val splitter = TestModelRepository()
-        val model = TestModel()
+        val combiner = TestModelRepository()
+        val model = JsonObject()
+        val vertx = rule.vertx()
 
-        splitter.splitCreateWithReceipt(model, Handler {
-            context.assertTrue(it.succeeded())
-            context.assertEquals(model, it.result(), "Object is not equal!")
-
-            splitter.splitCreate(model)
-
-            async.complete()
-        })
+        vertx.deployVerticle(combiner, context.asyncAssertSuccess({
+            combiner.combineRead(model, Handler {
+                context.assertTrue(it.succeeded())
+                async.complete()
+            })
+        }))
     }
 
     @Test
     fun testCombineReadAll(context: TestContext) {
         val async = context.async()
-        val splitter = TestModelRepository()
-        val model = TestModel()
+        val combiner = TestModelRepository()
+        val model = JsonObject()
+        val vertx = rule.vertx()
 
-        splitter.splitUpdateWithReceipt(model, Handler {
-            context.assertTrue(it.succeeded())
-            context.assertEquals(model, it.result(), "Object is not equal!")
-
-            splitter.splitUpdate(model)
-
-            async.complete()
-        })
+        vertx.deployVerticle(combiner, context.asyncAssertSuccess({
+            combiner.combineReadAll(model, Handler {
+                context.assertTrue(it.succeeded())
+                async.complete()
+            })
+        }))
     }
 }

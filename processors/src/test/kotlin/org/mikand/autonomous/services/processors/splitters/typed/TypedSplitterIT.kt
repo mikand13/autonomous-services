@@ -35,14 +35,16 @@ import io.vertx.ext.unit.TestContext
 import io.vertx.ext.unit.junit.RunTestOnContext
 import io.vertx.ext.unit.junit.Timeout
 import io.vertx.ext.unit.junit.VertxUnitRunner
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.processors.utils.TestModelRepository
 import org.mikand.autonomous.services.processors.test.gen.TestModelSplitter
 import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
+import org.mikand.autonomous.services.processors.utils.TestModelRepository
 
+@Ignore
 @RunWith(VertxUnitRunner::class)
 class TypedSplitterIT : ConfigSupport {
     @Suppress("unused")
@@ -62,25 +64,25 @@ class TypedSplitterIT : ConfigSupport {
         val async = context.async()
         val vertx = rule.vertx()
 
-        ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
-            context.assertTrue(it.succeeded())
-
-            ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
-                context.assertTrue(it.succeeded())
-                val service = it.result()
-
-                service.fetchSubscriptionAddress( Handler {
+        vertx.deployVerticle(splitter, context.asyncAssertSuccess({
+            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter) {
+                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
                     context.assertTrue(it.succeeded())
+                    val service = it.result()
 
-                    vertx.eventBus().consumer<JsonObject>(it.result()) {
-                        context.assertNotNull(it.body())
-                        async.complete()
-                    }
+                    service.fetchSubscriptionAddress(Handler {
+                        context.assertTrue(it.succeeded())
 
-                    service.splitCreate(TestModel())
-                })
+                        vertx.eventBus().consumer<JsonObject>(it.result()) {
+                            context.assertNotNull(it.body())
+                            async.complete()
+                        }
+
+                        service.splitCreate(TestModel())
+                    })
+                }
             }
-        }
+        }))
     }
 
     @Test
@@ -91,28 +93,20 @@ class TypedSplitterIT : ConfigSupport {
         val model = TestModel()
         model.setSomeStringOne("String")
 
-        ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
-            context.assertTrue(it.succeeded())
-
-            ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
-                context.assertTrue(it.succeeded())
-                val service = it.result()
-
-                service.fetchSubscriptionAddress( Handler {
+        vertx.deployVerticle(splitter, context.asyncAssertSuccess({
+            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter) {
+                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
                     context.assertTrue(it.succeeded())
-
-                    vertx.eventBus().consumer<JsonObject>(it.result()) {
-                        context.assertNotNull(it.body())
-                        async.complete()
-                    }
+                    val service = it.result()
 
                     service.splitCreateWithReceipt(model, Handler {
                         context.assertTrue(it.succeeded())
                         context.assertEquals(model.getSomeStringOne(), it.result().getSomeStringOne())
+                        async.complete()
                     })
-                })
+                }
             }
-        }
+        }))
     }
 
     @Test
@@ -121,25 +115,25 @@ class TypedSplitterIT : ConfigSupport {
         val async = context.async()
         val vertx = rule.vertx()
 
-        ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
-            context.assertTrue(it.succeeded())
-
-            ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
-                context.assertTrue(it.succeeded())
-                val service = it.result()
-
-                service.fetchSubscriptionAddress( Handler {
+        vertx.deployVerticle(splitter, context.asyncAssertSuccess({
+            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter) {
+                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
                     context.assertTrue(it.succeeded())
+                    val service = it.result()
 
-                    vertx.eventBus().consumer<JsonObject>(it.result()) {
-                        context.assertNotNull(it.body())
-                        async.complete()
-                    }
+                    service.fetchSubscriptionAddress(Handler {
+                        context.assertTrue(it.succeeded())
 
-                    service.splitUpdate(TestModel())
-                })
+                        vertx.eventBus().consumer<TestModel>(it.result()) {
+                            context.assertNotNull(it.body())
+                            async.complete()
+                        }
+
+                        service.splitUpdate(TestModel())
+                    })
+                }
             }
-        }
+        }))
     }
 
     @Test
@@ -150,28 +144,20 @@ class TypedSplitterIT : ConfigSupport {
         val model = TestModel()
         model.setSomeStringOne("String")
 
-        ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
-            context.assertTrue(it.succeeded())
-
-            ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
-                context.assertTrue(it.succeeded())
-                val service = it.result()
-
-                service.fetchSubscriptionAddress( Handler {
+        vertx.deployVerticle(splitter, context.asyncAssertSuccess({
+            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter) {
+                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
                     context.assertTrue(it.succeeded())
-
-                    vertx.eventBus().consumer<JsonObject>(it.result()) {
-                        context.assertNotNull(it.body())
-                        async.complete()
-                    }
+                    val service = it.result()
 
                     service.splitUpdateWithReceipt(model, Handler {
                         context.assertTrue(it.succeeded())
                         context.assertEquals(model.getSomeStringOne(), it.result().getSomeStringOne())
+                        async.complete()
                     })
-                })
+                }
             }
-        }
+        }))
     }
 
     @Test
@@ -180,25 +166,25 @@ class TypedSplitterIT : ConfigSupport {
         val async = context.async()
         val vertx = rule.vertx()
 
-        ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
-            context.assertTrue(it.succeeded())
-
-            ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
-                context.assertTrue(it.succeeded())
-                val service = it.result()
-
-                service.fetchSubscriptionAddress( Handler {
+        vertx.deployVerticle(splitter, context.asyncAssertSuccess({
+            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter) {
+                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
                     context.assertTrue(it.succeeded())
+                    val service = it.result()
 
-                    vertx.eventBus().consumer<JsonObject>(it.result()) {
-                        context.assertNotNull(it.body())
-                        async.complete()
-                    }
+                    service.fetchSubscriptionAddress(Handler {
+                        context.assertTrue(it.succeeded())
 
-                    service.splitDelete(TestModel())
-                })
+                        vertx.eventBus().consumer<TestModel>(it.result()) {
+                            context.assertNotNull(it.body())
+                            async.complete()
+                        }
+
+                        service.splitDelete(TestModel())
+                    })
+                }
             }
-        }
+        }))
     }
 
     @Test
@@ -209,27 +195,19 @@ class TypedSplitterIT : ConfigSupport {
         val model = TestModel()
         model.setSomeStringOne("String")
 
-        ServiceManager.getInstance(vertx).publishService(TestModelSplitter::class.java, splitter) {
-            context.assertTrue(it.succeeded())
-
-            ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
-                context.assertTrue(it.succeeded())
-                val service = it.result()
-
-                service.fetchSubscriptionAddress( Handler {
+        vertx.deployVerticle(splitter, context.asyncAssertSuccess({
+            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter) {
+                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
                     context.assertTrue(it.succeeded())
-
-                    vertx.eventBus().consumer<JsonObject>(it.result()) {
-                        context.assertNotNull(it.body())
-                        async.complete()
-                    }
+                    val service = it.result()
 
                     service.splitDeleteWithReceipt(model, Handler {
                         context.assertTrue(it.succeeded())
                         context.assertEquals(model.getSomeStringOne(), it.result().getSomeStringOne())
+                        async.complete()
                     })
-                })
+                }
             }
-        }
+        }))
     }
 }

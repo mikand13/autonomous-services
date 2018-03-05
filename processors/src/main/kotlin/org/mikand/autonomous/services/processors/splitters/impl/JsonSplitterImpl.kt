@@ -15,7 +15,7 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    private val publishAddress: String = config.getString("customPublishAddress") ?: javaClass.simpleName
+    private val publishAddress: String = config.getString("customPublishAddress") ?: JsonSplitter::class.java.simpleName
     private val deployService: Boolean = config.getBoolean("deployAsService") ?: true
     private val subscriptionAddress: String = config.getString("customSubscriptionAddress") ?: javaClass.name
     private val extractables: List<String> = config.getJsonArray("extractables")?.map { it.toString() } ?: ArrayList()
@@ -41,12 +41,12 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
 
     override fun stop(stopFuture: Future<Void>?) {
         if (deployService) {
-            ServiceManager.getInstance().unPublishService(JsonSplitter::class.java, service) {
-                if (it.succeeded()) {
+            try {
+                ServiceManager.getInstance().unPublishService(JsonSplitter::class.java, service) {
                     stopFuture?.complete()
-                } else {
-                    stopFuture?.fail(it.cause())
                 }
+            } catch (error: Exception) {
+                stopFuture?.complete()
             }
         } else {
             stopFuture?.complete()

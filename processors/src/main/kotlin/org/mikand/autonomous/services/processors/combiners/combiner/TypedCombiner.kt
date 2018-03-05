@@ -26,7 +26,7 @@
 package org.mikand.autonomous.services.processors.combiners.combiner
 
 import com.nannoq.tools.repository.models.Model
-import com.nannoq.tools.repository.utils.ItemList
+import com.nannoq.tools.repository.utils.GenericItemList
 import io.vertx.codegen.annotations.Fluent
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
@@ -37,7 +37,7 @@ interface TypedCombiner<T : Model> {
     fun combineRead(query: JsonObject, readHandler: Handler<AsyncResult<T>>) : TypedCombiner<T>
 
     @Fluent
-    fun combineReadAll(query: JsonObject, readAllHandler: Handler<AsyncResult<ItemList<T>>>) : TypedCombiner<T>
+    fun combineReadAll(query: JsonObject, readAllHandler: Handler<AsyncResult<GenericItemList>>) : TypedCombiner<T>
 
     @Fluent
     fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): TypedCombiner<T>
