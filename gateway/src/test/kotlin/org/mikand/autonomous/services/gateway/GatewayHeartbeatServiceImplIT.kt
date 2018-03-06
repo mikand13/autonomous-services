@@ -27,6 +27,8 @@ package org.mikand.autonomous.services.gateway
 import com.nannoq.tools.cluster.services.HeartbeatService
 import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.DeploymentOptions
+import io.vertx.core.Vertx
+import io.vertx.core.VertxOptions
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
@@ -50,7 +52,13 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
 
     @JvmField
     @Rule
-    val rule = RunTestOnContext()
+    val rule = RunTestOnContext({
+        val options = VertxOptions()
+                .setMaxWorkerExecuteTime(Long.MAX_VALUE)
+                .setMaxEventLoopExecuteTime(Long.MAX_VALUE)
+        
+        Vertx.vertx(options)
+    })
 
     @JvmField
     @Rule
