@@ -25,7 +25,7 @@ pipeline {
     stage("Build AS") {
       steps {
         script {
-          sh "./gradlew install --info --stacktrace"
+          sh "./gradlew install -Pcentral=true --info --stacktrace"
         } 
       }
     }

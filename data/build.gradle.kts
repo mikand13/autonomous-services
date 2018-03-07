@@ -32,8 +32,10 @@ import com.wiredforcode.gradle.spawn.SpawnProcessTask
 import groovy.json.JsonBuilder
 import groovy.json.JsonSlurper
 import org.gradle.api.tasks.JavaExec
+import org.gradle.internal.impldep.org.bouncycastle.pqc.crypto.gmss.GMSSKeyPairGenerator
 import org.gradle.kotlin.dsl.*
 import org.gradle.script.lang.kotlin.*
+import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 import org.jetbrains.kotlin.gradle.plugin.KaptAnnotationProcessorOptions
@@ -48,9 +50,10 @@ val mainVerticleName = "org.mikand.autonomous.services.data.DataDeploymentVertic
 val watchForChange = "src/**/*"
 val confFile = "src/main/resources/app-conf.json"
 var doOnChange : String
+val groupId = project.group
 val projectName = project.name
 val projectVersion = project.version
-val nameOfArchive = "$projectName-$projectVersion-fat.jar"
+val nameOfArchive = "$projectName-$projectVersion.jar"
 val dockerImageName = "autonomous_services/$projectName"
 val dockerFileLocation = "src/main/docker/Dockerfile"
 
@@ -74,7 +77,9 @@ val nannoq_tools_version by project
 
 buildscript {
     var kotlin_version: String by extra
+    var dokka_version: String by extra
     kotlin_version = "1.2.21"
+    dokka_version = "0.9.16"
 
     repositories {
         mavenCentral()
@@ -87,6 +92,7 @@ buildscript {
         classpath("com.github.jengelman.gradle.plugins:shadow:2.0.2")
         classpath("com.wiredforcode:gradle-spawn-plugin:0.8.0")
         classpath(kotlin("gradle-plugin", kotlin_version))
+        classpath("org.jetbrains.dokka:dokka-gradle-plugin:$dokka_version")
     }
 }
 
@@ -113,6 +119,7 @@ apply {
     plugin("kotlin")
     plugin("application")
     plugin("com.github.johnrengelman.shadow")
+    plugin("org.jetbrains.dokka")
     plugin("com.palantir.docker")
     plugin("com.palantir.docker-run")
     plugin("com.palantir.docker-compose")
@@ -201,6 +208,41 @@ karma {
     propertyMissing("port", findFreePort())
 }
 
+val dokka by tasks.getting(DokkaTask::class) {
+    outputFormat = "html"
+    outputDirectory = "$buildDir/docs"
+    jdkVersion = 8
+}
+
+val packageJavadoc by tasks.creating(Jar::class) {
+    dependsOn("dokka")
+    classifier = "javadoc"
+    from(dokka.outputDirectory)
+}
+
+val sourcesJar by tasks.creating(Jar::class) {
+    classifier = "sources"
+    from(java.sourceSets["main"].allSource)
+}
+
+val shadowJar by tasks.getting(ShadowJar::class) {
+    classifier = "jar"
+    archiveName = nameOfArchive
+
+    manifest {
+        attributes(mapOf(
+                "Main-Class" to mainClass,
+                "Main-Verticle" to mainVerticleName)
+        )
+    }
+
+    files(listOf("/src/main/java", "/src/main/kotlin"))
+
+    mergeServiceFiles {
+        include("META-INF/services/io.vertx.core.spi.VerticleFactory")
+    }
+}
+
 tasks {
     "run"(JavaExec::class) {
         jvmArgs("-Xdebug", "-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005")
@@ -210,24 +252,6 @@ tasks {
                 "--launcher-class=$mainClass",
                 "--on-redeploy=$doOnChange",
                 "-conf $confFile")
-    }
-
-    "shadowJar"(ShadowJar::class) {
-        classifier = "fat"
-        archiveName = nameOfArchive
-
-        manifest {
-            attributes(mapOf(
-                    "Main-Class" to mainClass,
-                    "Main-Verticle" to mainVerticleName)
-            )
-        }
-
-        files(listOf("/src/main/java", "/src/main/kotlin"))
-
-        mergeServiceFiles {
-            include("META-INF/services/io.vertx.core.spi.VerticleFactory")
-        }
     }
 
     "dockerRun" {
@@ -271,17 +295,23 @@ tasks {
 
     "docker" {
         mustRunAfter("test")
+
         doLast({
             println("Built image for $nameOfArchive!")
         })
     }
 
+    "verify" {
+        dependsOn(listOf("test"))
+    }
+
     "publish" {
-        mustRunAfter("test")
+        dependsOn(listOf("signSourcesJar", "signPackageJavadoc", "signShadowJar"))
+        mustRunAfter(listOf("signSourcesJar", "signPackageJavadoc", "signShadowJar"))
     }
 
     "install" {
-        dependsOn(listOf("clean", "test", "docker", "publish"))
+        dependsOn(listOf("verify", "docker", "publish"))
 
         doLast({
             println("$nameOfArchive installed!")
@@ -289,15 +319,81 @@ tasks {
     }
 }
 
+signing {
+    useGpgCmd()
+    sign(sourcesJar)
+    sign(packageJavadoc)
+    sign(shadowJar)
+}
+
 publishing {
     repositories {
         mavenLocal()
+
+        if (projectVersion.toString().contains("-SNAPSHOT") && project.hasProperty("central")) {
+            maven(url = "https://oss.sonatype.org/content/repositories/snapshots/") {
+                credentials {
+                    username = System.getenv("OSSRH_USER")
+                    password = System.getenv("OSSRH_PASS")
+                }
+            }
+        } else if (project.hasProperty("central")) {
+            maven(url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                credentials {
+                    username = System.getenv("OSSRH_USER")
+                    password = System.getenv("OSSRH_PASS")
+                }
+            }
+        }
     }
 
     (publications) {
         "mavenJava"(MavenPublication::class) {
             artifact(file("$projectDir/build/libs/$nameOfArchive")) {
                 builtBy(tasks.findByName("shadowJar"))
+
+                classifier = "jar"
+            }
+
+            artifact(sourcesJar) {
+                classifier = "sources"
+            }
+
+            artifact(packageJavadoc) {
+                classifier = "javadoc"
+            }
+
+            pom.withXml {
+                asNode().appendNode("name", "AS Data")
+                asNode().appendNode("description", "Data Layer of AS")
+                asNode().appendNode("url", "https://github.com/mikand13/autonomous-services")
+
+                val scmNode = asNode().appendNode("scm")
+
+                scmNode.appendNode("url", "https://github.com/mikand13/autonomous-services")
+                scmNode.appendNode("connection", "scm:git:git://github.com/mikand13/autonomous-services")
+                scmNode.appendNode("developerConnection", "scm:git:ssh:git@github.com/mikand13/autonomous-services")
+
+                val licenses = asNode().appendNode("licenses")
+                val license = licenses.appendNode("license")
+                license.appendNode("name", "MIT License")
+                license.appendNode("url", "http://www.opensource.org/licenses/mit-license.php")
+                license.appendNode("distribution", "repo")
+
+                val developers = asNode().appendNode("developers")
+                val developer = developers.appendNode("developer")
+                developer.appendNode("id", "mikand13")
+                developer.appendNode("name", "Anders Mikkelsen")
+                developer.appendNode("email", "mikkelsen.anders@gmail.com")
+
+                val dependenciesNode = asNode().appendNode("dependencies")
+
+                configurations.compile.allDependencies.forEach {
+                    val dependencyNode = dependenciesNode.appendNode("dependency")
+                    dependencyNode.appendNode("groupId", it.group)
+                    dependencyNode.appendNode("artifactId", it.name)
+                    dependencyNode.appendNode("version", it.version)
+                }
             }
         }
     }
