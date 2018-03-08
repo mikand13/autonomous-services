@@ -73,6 +73,7 @@ val junit_version by project
 val rest_assured_version by project
 val logger_factory_version by project
 val nannoq_tools_version by project
+val sqlLiteVersion = "1.0.392"
 
 buildscript {
     var kotlin_version: String by extra
@@ -99,6 +100,7 @@ repositories {
     mavenCentral()
     mavenLocal()
     jcenter()
+    maven(url = "http://dynamodb-local.s3-website-us-west-2.amazonaws.com/release")
 }
 
 plugins {
@@ -160,6 +162,15 @@ dependencies {
     testCompile("io.vertx:vertx-config:$vertx_version")
     testCompile("io.vertx:vertx-unit:$vertx_version")
     testCompile("io.rest-assured:rest-assured:$rest_assured_version")
+
+    // DynamoDB Test
+    testCompile("com.amazonaws:DynamoDBLocal:[1.11.2,2.0]")
+    testCompile("com.almworks.sqlite4java:sqlite4java:$sqlLiteVersion")
+    testCompile("com.almworks.sqlite4java:sqlite4java-win32-x86:$sqlLiteVersion")
+    testCompile("com.almworks.sqlite4java:sqlite4java-win32-x64:$sqlLiteVersion")
+    testCompile("com.almworks.sqlite4java:libsqlite4java-osx:$sqlLiteVersion")
+    testCompile("com.almworks.sqlite4java:libsqlite4java-linux-i386:$sqlLiteVersion")
+    testCompile("com.almworks.sqlite4java:libsqlite4java-linux-amd64:$sqlLiteVersion")
 }
 
 configure<ApplicationPluginConvention> {
@@ -282,8 +293,29 @@ tasks {
         })
     }
 
+    "copyDynamoDBLibs"(Copy::class) {
+        delete("${projectDir}/build/dynamodb-libs")
+
+        configurations.getByName("testCompile").resolvedConfiguration.resolvedArtifacts.forEach({
+            if (isSqlite(it.id.componentIdentifier.displayName)) {
+                copy {
+                    from(it.file)
+                    into(file("${buildDir}/sqlite/${it.name}"))
+                }
+
+                copy {
+                    from("${buildDir}/sqlite/${it.name}") {
+                        include(listOf("*.so", "*.dll", "*.dylib"))
+                    }
+
+                    into("${projectDir}/build/dynamodb-libs")
+                }
+            }
+        })
+    }
+
     "processResources" {
-        dependsOn("copyJsServiceProxies")
+        dependsOn(listOf("copyJsServiceProxies", "copyDynamoDBLibs"))
     }
 
     "startServer"(SpawnProcessTask::class) {
@@ -309,8 +341,13 @@ tasks {
     }
 
     "test"(Test::class) {
+        dependsOn("processResources")
+        mustRunAfter("processResources")
+
         maxParallelForks = 4
-        systemProperties = mapOf(Pair("vertx.logger-delegate-factory-class-name", logger_factory_version.toString()))
+        systemProperties = mapOf(
+                Pair("vertx.logger-delegate-factory-class-name", logger_factory_version.toString()),
+                Pair("java.library.path", file("${projectDir}/build/dynamodb-libs").absolutePath))
     }
 
     "karmaRun" {
@@ -330,11 +367,12 @@ tasks {
 
     "verify" {
         dependsOn(listOf("test"))
+        mustRunAfter(listOf("clean", "test"))
     }
 
     "publish" {
         dependsOn(listOf("signSourcesJar", "signPackageJavadoc", "signShadowJar"))
-        mustRunAfter(listOf("signSourcesJar", "signPackageJavadoc", "signShadowJar"))
+        mustRunAfter(listOf("verify", "signSourcesJar", "signPackageJavadoc", "signShadowJar"))
     }
 
     "install" {
@@ -429,6 +467,10 @@ publishing {
 
 fun isExtract(componentIdentifier: String) : Boolean {
     return componentIdentifier.contains("com.nannoq:repository")
+}
+
+fun isSqlite(componentIdentifier: String) : Boolean {
+    return componentIdentifier.contains("sqlite4java")
 }
 
 fun findFreePort() = ServerSocket(0).use {

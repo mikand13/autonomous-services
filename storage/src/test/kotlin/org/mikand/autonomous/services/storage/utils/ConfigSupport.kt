@@ -22,68 +22,24 @@
  * SOFTWARE.
  */
 
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+package org.mikand.autonomous.services.storage.utils
 
-val groupValue : String = "org.mikand.autonomous.services"
-val versionValue : String = "1.0.0-SNAPSHOT"
-val jvmTargetValue : String = "1.8"
+import io.vertx.core.json.JsonObject
+import java.io.File
+import java.net.ServerSocket
 
-repositories {
-    mavenCentral()
-    mavenLocal()
-    jcenter()
-}
+/**
+ * @author Anders Mikkelsen
+ * @version 20.12.17 11:41
+ */
+interface ConfigSupport {
+    fun getTestConfig() : JsonObject {
+        val configFile = File(this::class.java.classLoader.getResource("app-conf.json").toURI())
 
-buildscript {
-    repositories {
-        mavenCentral()
+        return JsonObject(configFile.readText())
     }
 
-    dependencies {
-        classpath(kotlin("gradle-plugin", "1.2.21"))
+    fun findFreePort() = ServerSocket(0).use {
+        it.localPort
     }
 }
-
-plugins {
-    base
-
-    kotlin("jvm") version "1.2.30" apply false
-    id("com.github.ksoichiro.console.reporter") version("0.5.0")
-    id("io.codearte.nexus-staging") version("0.11.0")
-}
-
-apply {
-    plugin("kotlin")
-    plugin("jacoco")
-    plugin("idea")
-}
-
-allprojects {
-    group = groupValue
-    version = versionValue
-
-    repositories {
-        jcenter()
-    }
-}
-
-subprojects {
-    tasks.withType<KotlinCompile> {
-        kotlinOptions {
-            jvmTarget = jvmTargetValue
-            incremental = true
-            suppressWarnings = true
-            freeCompilerArgs = listOf("-Xskip-runtime-version-check")
-        }
-    }
-}
-
-dependencies {
-    subprojects.forEach {
-        archives(it)
-    }
-}
-
-nexusStaging {
-    packageGroup = groupValue
- }
