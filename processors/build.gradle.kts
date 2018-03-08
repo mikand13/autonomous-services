@@ -312,6 +312,7 @@ tasks {
 
     "install" {
         dependsOn(listOf("verify", "docker", "publish"))
+        mustRunAfter("clean")
 
         doLast({
             println("$nameOfArchive installed!")
