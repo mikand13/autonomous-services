@@ -26,7 +26,7 @@ class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
     private var someLongTwo: Long? = null
     private var someInteger: Int? = null
     private var someIntegerTwo: Int? = null
-    private var someBoolean: Boolean? = null
+    private var someBoolean: Boolean? = false
     private var someBooleanTwo: Boolean? = null
     private var documents: List<TestDocument>? = null
     private var createdAt: Date? = null
@@ -49,8 +49,8 @@ class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
     }
 
     override fun setIdentifiers(identifiers: JsonObject): TestModel {
-        setHash(identifiers.getString("hash"))
-        setRange(identifiers.getString("range"))
+        hash = identifiers.getString("hash")
+        range = identifiers.getString("range")
 
         return this
     }
@@ -224,14 +224,14 @@ class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
     }
 
     @Fluent
-    override fun setHash(hash: String): TestModel {
+    override fun setHash(hash: String?): TestModel {
         someStringOne = hash
 
         return this
     }
 
     @Fluent
-    override fun setRange(range: String): TestModel {
+    override fun setRange(range: String?): TestModel {
         someStringTwo = range
 
         return this
@@ -256,6 +256,8 @@ class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
     }
 
     override fun setModifiables(newObject: Model): TestModel {
+        setSomeBoolean((newObject as TestModel).someBoolean)
+
         return this
     }
 

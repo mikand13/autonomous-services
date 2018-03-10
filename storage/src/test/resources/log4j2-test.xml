@@ -50,7 +50,7 @@
             <AppenderRef ref="vertx_logs_file" />
         </AsyncLogger>
 
-        <AsyncRoot level="ALL">
+        <AsyncRoot level="DEBUG">
             <AppenderRef ref="vertx_console" />
         </AsyncRoot>
     </Loggers>

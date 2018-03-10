@@ -1,9 +1,5 @@
 pipeline {
-  agent {
-      node {
-        label 'AWS_STANDARD_SLAVE_GENERIC'
-      }
-    }
+  agent any
   
   triggers {
     pollSCM('')

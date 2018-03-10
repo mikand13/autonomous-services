@@ -33,7 +33,7 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         this.type = type
         this.config = config
         this.vertx = vertx
-        this.subscriptionAddress = "${Receiver::class.java.name}.${type::class.java.simpleName}"
+        this.subscriptionAddress = "${Receiver::class.java.name}.${type.simpleName}"
     }
 
     override fun receiverCreate(json: JsonObject): Receiver {
@@ -53,7 +53,7 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
 
                 resultHandler.handle(Future.succeededFuture(status))
 
-                vertx.eventBus().publish(subscriptionAddress, Json.encodePrettily(status))
+                vertx.eventBus().publish(subscriptionAddress, JsonObject(Json.encode(status)))
             } else {
                 logger.error("Error in receiverCreateWithReceipt for ${type.simpleName}", it.cause())
 
@@ -80,7 +80,7 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
 
                 resultHandler.handle(Future.succeededFuture(status))
 
-                vertx.eventBus().publish(subscriptionAddress, Json.encodePrettily(status))
+                vertx.eventBus().publish(subscriptionAddress, JsonObject(Json.encode(status)))
             } else {
                 logger.error("Error in receiverRead for ${type.simpleName}", it.cause())
 
@@ -106,13 +106,18 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
     }
 
     override fun receiverIndex(json: JsonObject, resultHandler: Handler<AsyncResult<GenericItemList>>): Receiver {
-        readAll(json, QueryPack.builder().withProjections(arrayOf()).build(), readAllResult(resultHandler))
+        val defaultPack = QueryPack.builder()
+                .withCustomRoute("receiverIndex-${json.encode().hashCode()}")
+                .withProjections(arrayOf())
+                .build()
+
+        receiverIndexWithQuery(json, JsonObject(Json.encode(defaultPack)), resultHandler)
 
         return this
     }
 
     override fun receiverIndexWithQuery(json: JsonObject, queryPack: JsonObject, resultHandler: Handler<AsyncResult<GenericItemList>>): Receiver {
-        val query: QueryPack = Json.decodeValue(json.encode(), QueryPack::class.java)
+        val query: QueryPack = Json.decodeValue(queryPack.encode(), QueryPack::class.java)
 
         readAll(json, query, readAllResult(resultHandler))
 
@@ -154,7 +159,7 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
 
                 resultHandler.handle(Future.succeededFuture(status))
 
-                vertx.eventBus().publish(subscriptionAddress, Json.encodePrettily(status))
+                vertx.eventBus().publish(subscriptionAddress, JsonObject(Json.encode(status)))
             } else {
                 logger.error("Error in receiverDeleteWithReceipt for ${type.simpleName}", it.cause())
 
