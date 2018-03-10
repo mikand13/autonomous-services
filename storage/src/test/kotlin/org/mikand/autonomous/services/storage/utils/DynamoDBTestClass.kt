@@ -1,7 +1,5 @@
-package org.mikand.autonomous.services.storage
+package org.mikand.autonomous.services.storage.utils
 
-import com.amazonaws.client.builder.AwsClientBuilder
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
@@ -9,14 +7,13 @@ import io.vertx.ext.unit.junit.RunTestOnContext
 import io.vertx.ext.unit.junit.Timeout
 import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.*
+import org.junit.rules.TestName
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.storage.utils.ConfigSupport
-import org.mikand.autonomous.services.storage.utils.DynamoDBUtils
 
 
 
 @RunWith(VertxUnitRunner::class)
-class TestClassTest : ConfigSupport {
+abstract class DynamoDBTestClass : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
@@ -27,6 +24,10 @@ class TestClassTest : ConfigSupport {
     @JvmField
     @Rule
     val timeout = Timeout.seconds(30)
+
+    @JvmField
+    @Rule
+    var name = TestName()
 
     companion object {
         private lateinit var dynamoDBUtils: DynamoDBUtils
@@ -47,23 +48,14 @@ class TestClassTest : ConfigSupport {
     @Before
     fun setup(context: TestContext) {
         val freePort = findFreePort()
-        dynamoDBUtils.startDynmodDB(freePort)
-        context.put<String>("port", freePort)
-        context.put<String>("endpoint", "http://localhost:$freePort")
+        dynamoDBUtils.startDynamoDB(freePort)
+        context.put<String>("${name.methodName}-port", freePort)
+        context.put<String>("${name.methodName}-endpoint", "http://localhost:$freePort")
     }
 
     @After
     fun teardown(context: TestContext) {
-        val freePort = context.get<Int>("port")
+        val freePort = context.get<Int>("${name.methodName}-port")
         dynamoDBUtils.stopDynamoDB(freePort)
-    }
-
-    @Test
-    fun testDynamoDB(context: TestContext) {
-        val amazonDynamoDB = AmazonDynamoDBClientBuilder.standard().withEndpointConfiguration(
-                AwsClientBuilder.EndpointConfiguration(context.get("endpoint"), "eu-west-1"))
-                .build()
-
-        amazonDynamoDB.listTables()
     }
 }

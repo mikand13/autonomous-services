@@ -52,7 +52,7 @@ internal class BridgeVerticle() : AbstractVerticle() {
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
     companion object {
-        const val DEFAULT_BRIDGE_BASE = "org.mikand.autonomous.services.gateway.bridge"
+        const val DEFAULT_BRIDGE_BASE = "org.mikand.autonomous.services"
         const val DEFAULT_BRIDGE_PATH = "/eventbus/*"
         const val DEFAULT_BRIDGE_PORT = 5443
         const val DEFAULT_BRIDGE_BASE_API = ".api"

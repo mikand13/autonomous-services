@@ -101,6 +101,7 @@ repositories {
     mavenLocal()
     jcenter()
     maven(url = "http://dynamodb-local.s3-website-us-west-2.amazonaws.com/release")
+    maven(url = "https://oss.sonatype.org/content/repositories/snapshots/")
 }
 
 plugins {
@@ -146,6 +147,8 @@ dependencies {
     // Kapt
     kapt("io.vertx:vertx-codegen:$vertx_version:processor")
     kapt("io.vertx:vertx-service-proxy:$vertx_version:processor")
+    kaptTest("io.vertx:vertx-codegen:$vertx_version:processor")
+    kaptTest("io.vertx:vertx-service-proxy:$vertx_version:processor")
 
     // Log4j2
     compile(group = "org.apache.logging.log4j", name = "log4j-api", version = log4j_version.toString())

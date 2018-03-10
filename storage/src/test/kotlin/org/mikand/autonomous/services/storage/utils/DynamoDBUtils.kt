@@ -9,7 +9,7 @@ class DynamoDBUtils {
     }
 
     @Synchronized
-    fun startDynmodDB(port: Int = 8000): DynamoDBProxyServer {
+    fun startDynamoDB(port: Int = 8000): DynamoDBProxyServer {
         val args = arrayOf("-inMemory", "-port", "$port", "-sharedDb")
         val server = ServerRunner.createServerFromCommandLineArgs(args)
 

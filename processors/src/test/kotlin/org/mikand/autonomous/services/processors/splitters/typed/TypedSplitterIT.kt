@@ -44,7 +44,6 @@ import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 import org.mikand.autonomous.services.processors.utils.TestModelRepository
 
-@Ignore
 @RunWith(VertxUnitRunner::class)
 class TypedSplitterIT : ConfigSupport {
     @Suppress("unused")
