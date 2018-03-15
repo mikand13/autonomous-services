@@ -109,8 +109,10 @@ plugins {
     id("application")
     id("com.craigburke.karma") version("1.4.4")
     id("com.wiredforcode.spawn") version("0.8.0")
+
+    @Suppress("RemoveRedundantBackticks")
     `maven-publish`
-    `signing`
+    signing
 }
 
 project.setProperty("mainClassName", mainClass)

@@ -29,13 +29,12 @@ import io.vertx.codegen.annotations.Fluent
 import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
-import io.vertx.core.json.JsonObject
 
 @VertxGen(concrete = false)
-interface Combiner<Output> {
+interface Combiner {
     @Fluent
-    fun combine(query: JsonObject, responseHandler: Handler<AsyncResult<Output>>): Combiner<Output>
+    fun combine(query: CombineEvent, responseHandler: Handler<AsyncResult<CombineEvent>>): Combiner
 
     @Fluent
-    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): Combiner<Output>
+    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<CombineEvent>>): Combiner
 }

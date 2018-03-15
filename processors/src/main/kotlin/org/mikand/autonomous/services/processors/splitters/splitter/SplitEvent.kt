@@ -23,19 +23,37 @@
  *
  */
 
-package org.mikand.autonomous.services.processors.combiners.concretes
+package org.mikand.autonomous.services.processors.splitters.splitter
 
-import io.vertx.codegen.annotations.ProxyGen
-import io.vertx.codegen.annotations.VertxGen
-import io.vertx.core.AsyncResult
-import io.vertx.core.Handler
-import org.mikand.autonomous.services.processors.combiners.combiner.CombineEvent
-import org.mikand.autonomous.services.processors.combiners.combiner.Combiner
+import io.vertx.codegen.annotations.DataObject
+import io.vertx.core.json.JsonObject
+import java.util.*
 
-@VertxGen
-@ProxyGen
-interface JsonCombiner : Combiner {
-    override fun combine(query: CombineEvent, responseHandler: Handler<AsyncResult<CombineEvent>>): JsonCombiner
+@DataObject(generateConverter = true)
+class SplitEvent {
+    var id: String = UUID.randomUUID().toString()
+    var type: String = ""
+    var action: String = ""
+    var metaData: JsonObject = JsonObject()
+    var body: SplitStatus = SplitStatus(500, "Unknown Error")
 
-    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<CombineEvent>>): JsonCombiner
+    constructor(type: String, action: String, body: SplitStatus) :
+            this(UUID.randomUUID().toString(), type, action, JsonObject(), body)
+
+    constructor(id: String = UUID.randomUUID().toString(), type: String, action: String,
+                metaData: JsonObject = JsonObject(), body: SplitStatus) {
+        this.id = id;
+        this.body = body
+        this.type = type
+        this.action = action
+        this.metaData = metaData
+    }
+
+    constructor(jsonObject: JsonObject) {
+        SplitEventConverter.fromJson(jsonObject, this)
+    }
+
+    fun toJson(): JsonObject {
+        return JsonObject.mapFrom(this)
+    }
 }

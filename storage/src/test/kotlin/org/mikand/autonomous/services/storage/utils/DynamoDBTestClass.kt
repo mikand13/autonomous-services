@@ -19,6 +19,8 @@ import org.junit.rules.TestName
 import org.junit.runner.RunWith
 import org.mikand.autonomous.services.storage.gen.TestModelReceiverImpl
 import org.mikand.autonomous.services.storage.gen.models.TestModel
+import org.mikand.autonomous.services.storage.receivers.ReceiveEvent
+import org.mikand.autonomous.services.storage.receivers.ReceiveEventType
 import org.mikand.autonomous.services.storage.receivers.ReceiveStatus
 import java.time.LocalDate
 import java.util.*
@@ -99,8 +101,11 @@ abstract class DynamoDBTestClass : ConfigSupport {
         dynamoDBUtils.stopDynamoDB(freePort)
     }
 
-    fun createItem(repo: TestModelReceiverImpl, createHandler: Handler<AsyncResult<ReceiveStatus>>) {
-        repo.receiverCreateWithReceipt(TestModel().toJson(), createHandler)
+    fun createItem(repo: TestModelReceiverImpl, createHandler: Handler<AsyncResult<ReceiveEvent>>) {
+        val receiveEvent = ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_CREATE",
+                ReceiveStatus(201, statusObject = TestModel().toJson()))
+
+        repo.receiverCreateWithReceipt(receiveEvent, createHandler)
     }
 
     fun createXItems(repo: TestModelReceiverImpl, count: Int,
@@ -126,9 +131,11 @@ abstract class DynamoDBTestClass : ConfigSupport {
         }
 
         items.forEach { item ->
-            val future = Future.future<ReceiveStatus>()
+            val future = Future.future<ReceiveEvent>()
+            val receiveEvent = ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_CREATE",
+                    ReceiveStatus(201, statusObject = item.toJson()))
 
-            repo.receiverCreateWithReceipt(item.toJson(), future.completer())
+            repo.receiverCreateWithReceipt(receiveEvent, future.completer())
 
             futures.add(future)
 
@@ -140,7 +147,7 @@ abstract class DynamoDBTestClass : ConfigSupport {
                 resultHandler.handle(Future.failedFuture(res.cause()))
             } else {
                 val collect = futures
-                        .map { TestModel((it.result() as ReceiveStatus).statusObject) }
+                        .map { TestModel((it.result() as ReceiveEvent).body.statusObject) }
 
                 resultHandler.handle(Future.succeededFuture(collect))
             }

@@ -4,7 +4,6 @@ import com.nannoq.tools.repository.models.Cacheable
 import com.nannoq.tools.repository.models.DynamoDBModel
 import com.nannoq.tools.repository.models.ETagable
 import com.nannoq.tools.repository.models.Model
-import com.nannoq.tools.repository.utils.GenericItemList
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
@@ -35,61 +34,55 @@ open class DynamoDBReceiverVerticle<T> : AbstractVerticle, Receiver
         this.dynamoDbReceiver = DynamoDBReceiver(vertx, type, config)
     }
 
-    override fun receiverCreate(json: JsonObject): Receiver {
-        dynamoDbReceiver.receiverCreate(json)
+    override fun receiverCreate(receiveEvent: ReceiveEvent): Receiver {
+        dynamoDbReceiver.receiverCreate(receiveEvent)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverCreateWithReceipt(json: JsonObject, resultHandler: Handler<AsyncResult<ReceiveStatus>>): Receiver {
-        dynamoDbReceiver.receiverCreateWithReceipt(json, resultHandler)
+    override fun receiverCreateWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        dynamoDbReceiver.receiverCreateWithReceipt(receiveEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverUpdate(json: JsonObject): Receiver {
-        dynamoDbReceiver.receiverUpdate(json)
+    override fun receiverUpdate(receiveEvent: ReceiveEvent): Receiver {
+        dynamoDbReceiver.receiverUpdate(receiveEvent)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverUpdateWithReceipt(json: JsonObject, resultHandler: Handler<AsyncResult<ReceiveStatus>>): Receiver {
-        dynamoDbReceiver.receiverUpdateWithReceipt(json, resultHandler)
+    override fun receiverUpdateWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        dynamoDbReceiver.receiverUpdateWithReceipt(receiveEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverRead(json: JsonObject, resultHandler: Handler<AsyncResult<JsonObject>>): Receiver {
-        dynamoDbReceiver.receiverRead(json, resultHandler)
+    override fun receiverRead(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        dynamoDbReceiver.receiverRead(receiveEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverIndex(json: JsonObject, resultHandler: Handler<AsyncResult<GenericItemList>>): Receiver {
-        dynamoDbReceiver.receiverIndex(json, resultHandler)
+    override fun receiverIndex(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        dynamoDbReceiver.receiverIndex(receiveEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverIndexWithQuery(json: JsonObject, queryPack: JsonObject, resultHandler: Handler<AsyncResult<GenericItemList>>): Receiver {
-        dynamoDbReceiver.receiverIndexWithQuery(json, queryPack, resultHandler)
+    override fun receiverDelete(receiveEvent: ReceiveEvent): Receiver {
+        dynamoDbReceiver.receiverDelete(receiveEvent)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverDelete(json: JsonObject): Receiver {
-        dynamoDbReceiver.receiverDelete(json)
+    override fun receiverDeleteWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        dynamoDbReceiver.receiverDeleteWithReceipt(receiveEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverDeleteWithReceipt(json: JsonObject, resultHandler: Handler<AsyncResult<ReceiveStatus>>): Receiver {
-        dynamoDbReceiver.receiverDeleteWithReceipt(json, resultHandler)
-
-        return dynamoDbReceiver
-    }
-
-    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): Receiver {
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
         dynamoDbReceiver.fetchSubscriptionAddress(addressHandler)
 
         return dynamoDbReceiver

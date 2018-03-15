@@ -110,8 +110,10 @@ plugins {
     id("application")
     id("com.craigburke.karma") version("1.4.4")
     id("com.wiredforcode.spawn") version("0.8.0")
+
+    @Suppress("RemoveRedundantBackticks")
     `maven-publish`
-    `signing`
+    signing
 }
 
 project.setProperty("mainClassName", mainClass)
@@ -276,42 +278,42 @@ tasks {
     }
 
     "copyJsServiceProxies"(Copy::class) {
-        delete("${projectDir}/src/test/resources/js/extractedProxies")
+        delete("$projectDir/src/test/resources/js/extractedProxies")
 
         configurations.getByName("compile").resolvedConfiguration.resolvedArtifacts.forEach({
             if (isExtract(it.id.componentIdentifier.displayName)) {
                 copy {
                     from(zipTree(it.file))
-                    into(file("${buildDir}/nannoq-artifacts/${it.name}"))
+                    into(file("$buildDir/nannoq-artifacts/${it.name}"))
                 }
 
                 copy {
-                    from("${buildDir}/nannoq-artifacts/${it.name}/nannoqRepositoryService-js") {
+                    from("$buildDir/nannoq-artifacts/${it.name}/nannoqRepositoryService-js") {
                         include("*-proxy.js")
                     }
 
-                    into("${projectDir}/src/test/resources/js/karma/extractedProxies")
+                    into("$projectDir/src/test/resources/js/karma/extractedProxies")
                 }
             }
         })
     }
 
     "copyDynamoDBLibs"(Copy::class) {
-        delete("${projectDir}/build/dynamodb-libs")
+        delete("$projectDir/build/dynamodb-libs")
 
         configurations.getByName("testCompile").resolvedConfiguration.resolvedArtifacts.forEach({
             if (isSqlite(it.id.componentIdentifier.displayName)) {
                 copy {
                     from(it.file)
-                    into(file("${buildDir}/sqlite/${it.name}"))
+                    into(file("$buildDir/sqlite/${it.name}"))
                 }
 
                 copy {
-                    from("${buildDir}/sqlite/${it.name}") {
+                    from("$buildDir/sqlite/${it.name}") {
                         include(listOf("*.so", "*.dll", "*.dylib"))
                     }
 
-                    into("${projectDir}/build/dynamodb-libs")
+                    into("$projectDir/build/dynamodb-libs")
                 }
             }
         })
@@ -324,7 +326,7 @@ tasks {
     "startServer"(SpawnProcessTask::class) {
         dependsOn("shadowJar")
         doFirst({
-            command = "java -jar ${projectDir}/build/libs/$nameOfArchive -conf ${writeCustomConfToConf(vertxPort)}"
+            command = "java -jar $projectDir/build/libs/$nameOfArchive -conf ${writeCustomConfToConf(vertxPort)}"
         })
 
         ready = "running"
@@ -339,7 +341,7 @@ tasks {
 
     "karmaRun" {
         dependsOn("startServer")
-        delete("${buildDir}/karma.conf.js")
+        delete("$buildDir/karma.conf.js")
         finalizedBy("stopServer")
     }
 
@@ -350,7 +352,7 @@ tasks {
         maxParallelForks = 4
         systemProperties = mapOf(
                 Pair("vertx.logger-delegate-factory-class-name", logger_factory_version.toString()),
-                Pair("java.library.path", file("${projectDir}/build/dynamodb-libs").absolutePath))
+                Pair("java.library.path", file("$projectDir/build/dynamodb-libs").absolutePath))
     }
 
     "karmaRun" {
@@ -482,7 +484,7 @@ fun findFreePort() = ServerSocket(0).use {
 
 fun writeCustomConfToConf(vertxPort: Int): String {
     val config = JsonSlurper().parseText(File("${projectDir}/src/test/resources/app-conf.json").readText())
-    val outPutConfig = File("${buildDir}/tmp/app-conf-test.json")
+    val outPutConfig = File("$buildDir/tmp/app-conf-test.json")
     outPutConfig.createNewFile()
 
     val builder = JsonBuilder(config)

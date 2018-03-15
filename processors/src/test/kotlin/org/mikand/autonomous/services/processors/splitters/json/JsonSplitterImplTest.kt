@@ -58,7 +58,7 @@ class JsonSplitterImplTest : ConfigSupport {
         val splitter = JsonSplitterImpl()
 
         splitter.splitWithReceipt(JsonObject(), Handler {
-            context.assertEquals(200, it.result().statusCode, "Statuscode is not 200!")
+            context.assertEquals(200, it.result().body.statusCode, "Statuscode is not 200!")
             async.complete()
         })
     }
@@ -75,13 +75,13 @@ class JsonSplitterImplTest : ConfigSupport {
 
             context.assertNotNull(address, "Address is null!")
 
-            rule.vertx().eventBus().consumer<JsonObject>(address).handler({
+            rule.vertx().eventBus().consumer<JsonObject>(address.body.statusObject.getString("address")).handler({
                 context.assertNotNull(it.body(), "Body is null!")
                 async.complete()
             })
 
             splitter.splitWithReceipt(JsonObject(), Handler {
-                context.assertEquals(200, it.result().statusCode, "Statuscode is not 200!")
+                context.assertEquals(200, it.result().body.statusCode, "Statuscode is not 200!")
             })
         })
     }
@@ -115,8 +115,8 @@ class JsonSplitterImplTest : ConfigSupport {
 
             context.assertNotNull(address, "Address is null!")
 
-            rule.vertx().eventBus().consumer<JsonObject>(address).handler({
-                val body = it.body()
+            rule.vertx().eventBus().consumer<JsonObject>(address.body.statusObject.getString("address")).handler({
+                val body = it.body().getJsonObject("body").getJsonObject("statusObject")
 
                 context.assertNotNull(body, "Body is null!")
                 context.assertNotNull(body.getJsonObject("someObjectOne"), "Object 1 is null!")
@@ -143,7 +143,7 @@ class JsonSplitterImplTest : ConfigSupport {
             })
 
             splitter.splitWithReceipt(testObject, Handler {
-                context.assertEquals(200, it.result().statusCode, "Statuscode is not 200!")
+                context.assertEquals(200, it.result().body.statusCode, "Statuscode is not 200!")
             })
         })
     }

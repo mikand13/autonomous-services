@@ -29,10 +29,11 @@ import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
 import io.vertx.core.json.JsonObject
+import org.mikand.autonomous.services.processors.combiners.combiner.CombineEvent
 import org.mikand.autonomous.services.processors.combiners.impl.JsonCombinerImpl
 
 class JsonWeatherCombiner(config: JsonObject = JsonObject()): JsonCombinerImpl(config) {
-    override fun combine(query: JsonObject, responseHandler: Handler<AsyncResult<JsonObject>>): JsonWeatherCombiner {
+    override fun combine(query: CombineEvent, responseHandler: Handler<AsyncResult<CombineEvent>>): JsonWeatherCombiner {
         responseHandler.handle(Future.succeededFuture(query))
 
         return this

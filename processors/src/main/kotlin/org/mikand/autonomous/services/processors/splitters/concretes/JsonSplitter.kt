@@ -6,7 +6,7 @@ import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
 import io.vertx.core.json.JsonObject
-import org.mikand.autonomous.services.processors.splitters.splitter.SplitStatus
+import org.mikand.autonomous.services.processors.splitters.splitter.SplitEvent
 import org.mikand.autonomous.services.processors.splitters.splitter.Splitter
 
 @VertxGen
@@ -16,8 +16,8 @@ interface JsonSplitter: Splitter<JsonObject, JsonObject> {
     override fun split(data: JsonObject): JsonSplitter
 
     @Fluent
-    override fun splitWithReceipt(data: JsonObject, responseHandler: Handler<AsyncResult<SplitStatus>>): JsonSplitter
+    override fun splitWithReceipt(data: JsonObject, responseHandler: Handler<AsyncResult<SplitEvent>>): JsonSplitter
 
     @Fluent
-    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): JsonSplitter
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<SplitEvent>>): JsonSplitter
 }

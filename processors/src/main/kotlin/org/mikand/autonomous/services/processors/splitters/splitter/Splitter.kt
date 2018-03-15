@@ -36,8 +36,8 @@ interface Splitter<Input, Output> {
     fun split(data: Input): Splitter<Input, Output>
 
     @Fluent
-    fun splitWithReceipt(data: Input, responseHandler: Handler<AsyncResult<SplitStatus>>): Splitter<Input, Output>
+    fun splitWithReceipt(data: Input, responseHandler: Handler<AsyncResult<SplitEvent>>): Splitter<Input, Output>
 
     @Fluent
-    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): Splitter<Input, Output>
+    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<SplitEvent>>): Splitter<Input, Output>
 }

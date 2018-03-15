@@ -1,10 +1,10 @@
-package org.mikand.autonomous.services.processors.splitters.splitter
+package org.mikand.autonomous.services.processors.combiners.combiner
 
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonObject
 
 @DataObject(generateConverter = true)
-class SplitStatus {
+class CombineStatus {
     var statusCode: Int = 500
     var statusMessage: String = ""
     var statusObject: JsonObject = JsonObject()
@@ -16,7 +16,7 @@ class SplitStatus {
     }
 
     constructor(jsonObject: JsonObject) {
-        SplitStatusConverter.fromJson(jsonObject, this)
+        CombineStatusConverter.fromJson(jsonObject, this)
     }
 
     fun toJson(): JsonObject {

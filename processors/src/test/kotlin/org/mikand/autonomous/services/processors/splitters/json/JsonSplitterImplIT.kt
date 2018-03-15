@@ -67,7 +67,7 @@ class JsonSplitterImplIT : ConfigSupport {
                 service.fetchSubscriptionAddress(Handler {
                     context.assertTrue(it.succeeded())
 
-                    vertx.eventBus().consumer<JsonObject>(it.result()) {
+                    vertx.eventBus().consumer<JsonObject>(it.result().body.statusObject.getString("address")) {
                         context.assertNotNull(it.body())
 
                         vertx.undeploy(id, context.asyncAssertSuccess({
@@ -94,7 +94,7 @@ class JsonSplitterImplIT : ConfigSupport {
 
                 service.splitWithReceipt(JsonObject(), Handler {
                     context.assertTrue(it.succeeded())
-                    context.assertEquals(200, it.result().statusCode, "Statuscode is not 200!")
+                    context.assertEquals(200, it.result().body.statusCode, "Statuscode is not 200!")
 
                     vertx.undeploy(id, context.asyncAssertSuccess({
                         async.complete()

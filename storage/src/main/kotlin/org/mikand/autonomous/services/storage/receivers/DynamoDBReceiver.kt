@@ -17,6 +17,7 @@ import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
+import io.vertx.serviceproxy.ServiceException
 
 class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         where T : Model, T : DynamoDBModel, T : Cacheable, T : ETagable {
@@ -36,20 +37,21 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         this.subscriptionAddress = "${Receiver::class.java.name}.${type.simpleName}"
     }
 
-    override fun receiverCreate(json: JsonObject): Receiver {
-        receiverCreateWithReceipt(json, Handler {})
+    override fun receiverCreate(receiveEvent: ReceiveEvent): Receiver {
+        receiverCreateWithReceipt(receiveEvent, Handler {})
 
         return this
     }
 
-    override fun receiverCreateWithReceipt(json: JsonObject, resultHandler: Handler<AsyncResult<ReceiveStatus>>): Receiver {
-        val record: T = toT(json)
+    override fun receiverCreateWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        val record: T = toT(receiveEvent.body.statusObject)
 
         create(record, {
             val result = it.result()
 
             if (it.succeeded()) {
-                val status = ReceiveStatus(201, statusObject = result.item.toJsonFormat())
+                val status = ReceiveEvent(ReceiveEventType.DATA.name, "RECEIVE_CREATE",
+                        ReceiveStatus(201, statusObject = result.item.toJsonFormat()))
 
                 resultHandler.handle(Future.succeededFuture(status))
 
@@ -57,26 +59,31 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
             } else {
                 logger.error("Error in receiverCreateWithReceipt for ${type.simpleName}", it.cause())
 
-                resultHandler.handle(Future.failedFuture(it.cause()))
+                val receiveResult = ReceiveEvent(ReceiveEventType.COMMAND_FAILURE.name, "RECEIVE_CREATE",
+                        ReceiveStatus(500, "Unparseable"))
+
+                resultHandler.handle(ServiceException.fail(
+                        500, ReceiveEventType.COMMAND_FAILURE.name, receiveResult.toJson()))
             }
         })
 
         return this
     }
 
-    override fun receiverUpdate(json: JsonObject): Receiver {
-        receiverUpdateWithReceipt(json, Handler {})
+    override fun receiverUpdate(receiveEvent: ReceiveEvent): Receiver {
+        receiverUpdateWithReceipt(receiveEvent, Handler {})
 
         return this
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun receiverUpdateWithReceipt(json: JsonObject, resultHandler: Handler<AsyncResult<ReceiveStatus>>): Receiver {
-        val record: T = toT(json)
+    override fun receiverUpdateWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        val record: T = toT(receiveEvent.body.statusObject)
 
         update(record, { r -> r.setModifiables(record) as T }) {
             if (it.succeeded()) {
-                val status = ReceiveStatus(202, statusObject = it.result().item.toJsonFormat())
+                val status = ReceiveEvent(ReceiveEventType.DATA.name, "RECEIVE_UPDATE",
+                        ReceiveStatus(202, statusObject = it.result().item.toJsonFormat()))
 
                 resultHandler.handle(Future.succeededFuture(status))
 
@@ -84,69 +91,85 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
             } else {
                 logger.error("Error in receiverRead for ${type.simpleName}", it.cause())
 
-                resultHandler.handle(Future.failedFuture(it.cause()))
+                val receiveResult = ReceiveEvent(ReceiveEventType.COMMAND_FAILURE.name, "RECEIVE_UPDATE",
+                        ReceiveStatus(500, "Unparseable"))
+
+                resultHandler.handle(ServiceException.fail(
+                        500, ReceiveEventType.COMMAND_FAILURE.name, receiveResult.toJson()))
             }
         }
 
         return this
     }
 
-    override fun receiverRead(json: JsonObject, resultHandler: Handler<AsyncResult<JsonObject>>): Receiver {
-        read(json) {
+    override fun receiverRead(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        read(receiveEvent.body.statusObject) {
             if (it.succeeded()) {
-                resultHandler.handle(Future.succeededFuture(it.result().item.toJsonFormat()))
+                val status = ReceiveEvent(ReceiveEventType.DATA.name, "RECEIVE_READ",
+                        ReceiveStatus(200, statusObject = it.result().item.toJsonFormat()))
+
+                resultHandler.handle(Future.succeededFuture(status))
             } else {
                 logger.error("Error in receiverRead for ${type.simpleName}", it.cause())
 
-                resultHandler.handle(Future.failedFuture(it.cause()))
+                val receiveResult = ReceiveEvent(ReceiveEventType.COMMAND_FAILURE.name, "RECEIVE_READ",
+                        ReceiveStatus(500, "Unparseable"))
+
+                resultHandler.handle(ServiceException.fail(
+                        500, ReceiveEventType.COMMAND_FAILURE.name, receiveResult.toJson()))
             }
         }
 
         return this
     }
 
-    override fun receiverIndex(json: JsonObject, resultHandler: Handler<AsyncResult<GenericItemList>>): Receiver {
-        val defaultPack = QueryPack.builder()
-                .withCustomRoute("receiverIndex-${json.encode().hashCode()}")
+    override fun receiverIndex(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        val queryJson: JsonObject? = receiveEvent.metaData.getJsonObject("query")
+        val queryPack = if (queryJson == null) null else Json.decodeValue(
+                queryJson.encode(),
+                QueryPack::class.java
+        )
+
+        val query: QueryPack = queryPack ?:
+            QueryPack.builder()
+                .withCustomRoute("receiverIndex-${receiveEvent.body.statusObject.encode().hashCode()}")
                 .withProjections(arrayOf())
                 .build()
 
-        receiverIndexWithQuery(json, JsonObject(Json.encode(defaultPack)), resultHandler)
+        readAll(receiveEvent.body.statusObject, query, readAllResult(resultHandler))
 
         return this
     }
 
-    override fun receiverIndexWithQuery(json: JsonObject, queryPack: JsonObject, resultHandler: Handler<AsyncResult<GenericItemList>>): Receiver {
-        val query: QueryPack = Json.decodeValue(queryPack.encode(), QueryPack::class.java)
-
-        readAll(json, query, readAllResult(resultHandler))
-
-        return this
-    }
-
-    fun readAllResult(resultHandler: Handler<AsyncResult<GenericItemList>>) : Handler<AsyncResult<ItemListResult<T>>> {
+    fun readAllResult(resultHandler: Handler<AsyncResult<ReceiveEvent>>) : Handler<AsyncResult<ItemListResult<T>>> {
         return Handler {
             if (it.succeeded()) {
                 val items: ItemList<T> = it.result().itemList
                 val generic = GenericItemList(items.pageToken, items.count, items.items.map { it.toJsonFormat() })
+                val status = ReceiveEvent(ReceiveEventType.DATA.name, "RECEIVE_INDEX",
+                        ReceiveStatus(200, statusObject = generic.toJson()))
 
-                resultHandler.handle(Future.succeededFuture(generic))
+                resultHandler.handle(Future.succeededFuture(status))
             } else {
                 logger.error("Error in receiverIndexWithQuery for ${type.simpleName}", it.cause())
 
-                resultHandler.handle(Future.failedFuture(it.cause()))
+                val receiveResult = ReceiveEvent(ReceiveEventType.COMMAND_FAILURE.name, "RECEIVE_INDEX",
+                        ReceiveStatus(500, "Unparseable"))
+
+                resultHandler.handle(ServiceException.fail(
+                        500, ReceiveEventType.COMMAND_FAILURE.name, receiveResult.toJson()))
             }
         }
     }
 
-    override fun receiverDelete(json: JsonObject): Receiver {
-        receiverDeleteWithReceipt(json, Handler {})
+    override fun receiverDelete(receiveEvent: ReceiveEvent): Receiver {
+        receiverDeleteWithReceipt(receiveEvent, Handler {})
 
         return this
     }
 
-    override fun receiverDeleteWithReceipt(json: JsonObject, resultHandler: Handler<AsyncResult<ReceiveStatus>>): Receiver {
-        val record: T = toT(json)
+    override fun receiverDeleteWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        val record: T = toT(receiveEvent.body.statusObject)
         val id = JsonObject()
                 .put("hash", record.hash)
                 .put("range", record.range)
@@ -155,7 +178,8 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
             val result = it.result()
 
             if (it.succeeded()) {
-                val status = ReceiveStatus(204, statusObject = result.item.toJsonFormat())
+                val status = ReceiveEvent(ReceiveEventType.DATA.name, "RECEIVE_DELETE",
+                        ReceiveStatus(204, statusObject = result.item.toJsonFormat()))
 
                 resultHandler.handle(Future.succeededFuture(status))
 
@@ -163,15 +187,20 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
             } else {
                 logger.error("Error in receiverDeleteWithReceipt for ${type.simpleName}", it.cause())
 
-                resultHandler.handle(Future.failedFuture(it.cause()))
+                val receiveResult = ReceiveEvent(ReceiveEventType.COMMAND_FAILURE.name, "RECEIVE_DELETE",
+                        ReceiveStatus(500, "Unparseable"))
+
+                resultHandler.handle(ServiceException.fail(
+                        500, ReceiveEventType.COMMAND_FAILURE.name, receiveResult.toJson()))
             }
         })
 
         return this
     }
 
-    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): Receiver {
-        addressHandler.handle(Future.succeededFuture(subscriptionAddress))
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        addressHandler.handle(Future.succeededFuture(ReceiveEvent(ReceiveEventType.DATA.name, "ADDRESS",
+                ReceiveStatus(200, statusObject = JsonObject().put("address", subscriptionAddress)))))
 
         return this
     }

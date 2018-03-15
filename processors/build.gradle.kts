@@ -107,8 +107,10 @@ plugins {
     id("application")
     id("com.craigburke.karma") version("1.4.4")
     id("com.wiredforcode.spawn") version("0.8.0")
+
+    @Suppress("RemoveRedundantBackticks")
     `maven-publish`
-    `signing`
+    signing
 }
 
 project.setProperty("mainClassName", mainClass)
@@ -263,7 +265,7 @@ tasks {
     "startServer"(SpawnProcessTask::class) {
         dependsOn("shadowJar")
         doFirst({
-            command = "java -jar ${projectDir}/build/libs/$nameOfArchive -conf ${writeCustomConfToConf(vertxPort)}"
+            command = "java -jar $projectDir/build/libs/$nameOfArchive -conf ${writeCustomConfToConf(vertxPort)}"
         })
 
         ready = "running"
@@ -278,7 +280,7 @@ tasks {
 
     "karmaRun" {
         dependsOn("startServer")
-        delete("${buildDir}/karma.conf.js")
+        delete("$buildDir/karma.conf.js")
         finalizedBy("stopServer")
     }
 
@@ -406,8 +408,8 @@ fun findFreePort() = ServerSocket(0).use {
 }
 
 fun writeCustomConfToConf(vertxPort: Int): String {
-    val config = JsonSlurper().parseText(File("${projectDir}/src/test/resources/app-conf.json").readText())
-    val outPutConfig = file("${buildDir}/tmp/app-conf-test.json")
+    val config = JsonSlurper().parseText(File("$projectDir/src/test/resources/app-conf.json").readText())
+    val outPutConfig = file("$buildDir/tmp/app-conf-test.json")
     outPutConfig.createNewFile()
 
     val builder = JsonBuilder(config)

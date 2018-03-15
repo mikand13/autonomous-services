@@ -9,6 +9,8 @@ import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.servicediscovery.Record
 import org.mikand.autonomous.services.processors.splitters.concretes.JsonSplitter
+import org.mikand.autonomous.services.processors.splitters.splitter.SplitEvent
+import org.mikand.autonomous.services.processors.splitters.splitter.SplitEventType
 import org.mikand.autonomous.services.processors.splitters.splitter.SplitStatus
 
 open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticle(), JsonSplitter {
@@ -63,7 +65,7 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     }
 
     @Fluent
-    override fun splitWithReceipt(data: JsonObject, responseHandler: Handler<AsyncResult<SplitStatus>>): JsonSplitter {
+    override fun splitWithReceipt(data: JsonObject, responseHandler: Handler<AsyncResult<SplitEvent>>): JsonSplitter {
         val output = JsonObject()
 
         try {
@@ -77,11 +79,15 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
         } catch (ise: IllegalStateException) {
             logger.error("Field splitting ${data.encodePrettily()}", ise)
 
-            responseHandler.handle(Future.failedFuture(Json.encodePrettily(SplitStatus(500, "Unparseable"))))
-        } finally {
-            responseHandler.handle(Future.succeededFuture(SplitStatus(200, "Processed")))
+            val splitEvent = SplitEvent(SplitEventType.COMMAND_FAILURE.name, "SPLIT", SplitStatus(500, "Unparseable"))
 
-            thisVertx.eventBus().publish(subscriptionAddress, output)
+            responseHandler.handle(Future.failedFuture(Json.encodePrettily(splitEvent)))
+        } finally {
+            val splitEvent = SplitEvent(SplitEventType.DATA.name, "SPLIT", SplitStatus(200, "Processed", output))
+
+            responseHandler.handle(Future.succeededFuture(splitEvent))
+
+            thisVertx.eventBus().publish(subscriptionAddress, JsonObject(Json.encode(splitEvent)))
         }
 
         return this
@@ -120,8 +126,9 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     }
 
     @Fluent
-    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): JsonSplitter {
-        addressHandler.handle(Future.succeededFuture(subscriptionAddress))
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<SplitEvent>>): JsonSplitter {
+        addressHandler.handle(Future.succeededFuture(SplitEvent(SplitEventType.DATA.name, "ADDRESS",
+                SplitStatus(200, statusObject = JsonObject().put("address", subscriptionAddress)))))
 
         return this
     }
