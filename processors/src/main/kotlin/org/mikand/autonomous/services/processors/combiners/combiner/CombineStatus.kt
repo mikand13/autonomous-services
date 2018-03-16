@@ -9,6 +9,9 @@ class CombineStatus {
     var statusMessage: String = ""
     var statusObject: JsonObject = JsonObject()
 
+    constructor(statusMessage: String = "", statusObject: JsonObject = JsonObject()) :
+            this(500, statusMessage, statusObject)
+
     constructor(statusCode: Int, statusMessage: String = "", statusObject: JsonObject = JsonObject()) {
         this.statusCode = statusCode
         this.statusMessage = statusMessage

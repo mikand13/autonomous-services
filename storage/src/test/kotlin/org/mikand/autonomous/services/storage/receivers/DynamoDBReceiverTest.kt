@@ -103,7 +103,7 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
                 }
 
                 repo.receiverUpdate(ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_UPDATE",
-                        ReceiveStatus(202, statusObject = TestModel().toJson())))
+                        ReceiveStatus(202, statusObject = testModel.toJsonFormat())))
             })
         })
     }
