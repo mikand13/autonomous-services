@@ -55,7 +55,7 @@ internal class BridgeVerticle() : AbstractVerticle() {
         const val DEFAULT_BRIDGE_BASE = "org.mikand.autonomous.services"
         const val DEFAULT_BRIDGE_PATH = "/eventbus/*"
         const val DEFAULT_BRIDGE_PORT = 5443
-        const val DEFAULT_BRIDGE_BASE_API = ".api"
+        const val DEFAULT_BRIDGE_BASE_API = ".processors"
         const val DEFAULT_BRIDGE_BASE_DATA = ".data"
         const val DEFAULT_BRIDGE_BASE_STORAGE = ".storage"
     }
