@@ -36,7 +36,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.processors.combiners.combiner.CombineEvent
+import org.mikand.autonomous.services.processors.combiners.combiner.CombineInputEvent
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 import org.mikand.autonomous.services.processors.utils.JsonWeatherCombiner
 
@@ -58,7 +58,7 @@ class JsonCombinerImplTest : ConfigSupport {
         val async = context.async()
         val combiner = JsonWeatherCombiner()
 
-        combiner.combine(CombineEvent(JsonObject()), Handler {
+        combiner.combine(CombineInputEvent(JsonObject()), Handler {
             context.assertTrue(it.succeeded())
             async.complete()
         })

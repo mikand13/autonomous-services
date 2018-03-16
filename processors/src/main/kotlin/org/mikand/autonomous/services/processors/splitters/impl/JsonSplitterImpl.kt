@@ -11,6 +11,7 @@ import io.vertx.servicediscovery.Record
 import org.mikand.autonomous.services.processors.splitters.concretes.JsonSplitter
 import org.mikand.autonomous.services.processors.splitters.splitter.SplitEvent
 import org.mikand.autonomous.services.processors.splitters.splitter.SplitEventType
+import org.mikand.autonomous.services.processors.splitters.splitter.SplitInputEvent
 import org.mikand.autonomous.services.processors.splitters.splitter.SplitStatus
 
 open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticle(), JsonSplitter {
@@ -56,28 +57,28 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     }
 
     @Fluent
-    override fun split(data: JsonObject): JsonSplitter {
-        splitWithReceipt(data, Handler {
-            if (it.failed()) logger.error("Field splitting ${data.encodePrettily()}", it.cause())
+    override fun split(splitInputEvent: SplitInputEvent): JsonSplitter {
+        splitWithReceipt(splitInputEvent, Handler {
+            if (it.failed()) logger.error("Field splitting ${splitInputEvent.body.encodePrettily()}", it.cause())
         })
 
         return this
     }
 
     @Fluent
-    override fun splitWithReceipt(data: JsonObject, responseHandler: Handler<AsyncResult<SplitEvent>>): JsonSplitter {
+    override fun splitWithReceipt(splitInputEvent: SplitInputEvent, responseHandler: Handler<AsyncResult<SplitEvent>>): JsonSplitter {
         val output = JsonObject()
 
         try {
             extractables.forEach {
                 if (it.contains('.')) {
-                    recurseIntoKey(data, output, extractables, it)
+                    recurseIntoKey(splitInputEvent.body, output, extractables, it)
                 } else {
-                    output.put(it, data.getValue(it))
+                    output.put(it, splitInputEvent.body.getValue(it))
                 }
             }
         } catch (ise: IllegalStateException) {
-            logger.error("Field splitting ${data.encodePrettily()}", ise)
+            logger.error("Field splitting ${splitInputEvent.body.encodePrettily()}", ise)
 
             val splitEvent = SplitEvent(SplitEventType.COMMAND_FAILURE.name, "SPLIT", SplitStatus(500, "Unparseable"))
 

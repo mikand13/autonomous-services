@@ -37,14 +37,15 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         this.subscriptionAddress = "${Receiver::class.java.name}.${type.simpleName}"
     }
 
-    override fun receiverCreate(receiveEvent: ReceiveEvent): Receiver {
-        receiverCreateWithReceipt(receiveEvent, Handler {})
+    override fun receiverCreate(receiveInputEvent: ReceiveInputEvent): Receiver {
+        receiverCreateWithReceipt(receiveInputEvent, Handler {})
 
         return this
     }
 
-    override fun receiverCreateWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
-        val record: T = toT(receiveEvent.body.statusObject)
+    override fun receiverCreateWithReceipt(receiveInputEvent: ReceiveInputEvent,
+                                           resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        val record: T = toT(receiveInputEvent.body)
 
         create(record, {
             val result = it.result()
@@ -70,15 +71,16 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         return this
     }
 
-    override fun receiverUpdate(receiveEvent: ReceiveEvent): Receiver {
-        receiverUpdateWithReceipt(receiveEvent, Handler {})
+    override fun receiverUpdate(receiveInputEvent: ReceiveInputEvent): Receiver {
+        receiverUpdateWithReceipt(receiveInputEvent, Handler {})
 
         return this
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun receiverUpdateWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
-        val record: T = toT(receiveEvent.body.statusObject)
+    override fun receiverUpdateWithReceipt(receiveInputEvent: ReceiveInputEvent,
+                                           resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        val record: T = toT(receiveInputEvent.body)
 
         update(record, { r -> r.setModifiables(record) as T }) {
             if (it.succeeded()) {
@@ -102,8 +104,9 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         return this
     }
 
-    override fun receiverRead(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
-        read(receiveEvent.body.statusObject) {
+    override fun receiverRead(receiveInputEvent: ReceiveInputEvent,
+                              resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        read(receiveInputEvent.body) {
             if (it.succeeded()) {
                 val status = ReceiveEvent(ReceiveEventType.DATA.name, "RECEIVE_READ",
                         ReceiveStatus(200, statusObject = it.result().item.toJsonFormat()))
@@ -123,8 +126,9 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         return this
     }
 
-    override fun receiverIndex(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
-        val queryJson: JsonObject? = receiveEvent.metaData.getJsonObject("query")
+    override fun receiverIndex(receiveInputEvent: ReceiveInputEvent,
+                               resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        val queryJson: JsonObject? = receiveInputEvent.metaData.getJsonObject("query")
         val queryPack = if (queryJson == null) null else Json.decodeValue(
                 queryJson.encode(),
                 QueryPack::class.java
@@ -132,11 +136,11 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
 
         val query: QueryPack = queryPack ?:
             QueryPack.builder()
-                .withCustomRoute("receiverIndex-${receiveEvent.body.statusObject.encode().hashCode()}")
+                .withCustomRoute("receiverIndex-${receiveInputEvent.body.encode().hashCode()}")
                 .withProjections(arrayOf())
                 .build()
 
-        readAll(receiveEvent.body.statusObject, query, readAllResult(resultHandler))
+        readAll(receiveInputEvent.body, query, readAllResult(resultHandler))
 
         return this
     }
@@ -162,14 +166,15 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         }
     }
 
-    override fun receiverDelete(receiveEvent: ReceiveEvent): Receiver {
-        receiverDeleteWithReceipt(receiveEvent, Handler {})
+    override fun receiverDelete(receiveInputEvent: ReceiveInputEvent): Receiver {
+        receiverDeleteWithReceipt(receiveInputEvent, Handler {})
 
         return this
     }
 
-    override fun receiverDeleteWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
-        val record: T = toT(receiveEvent.body.statusObject)
+    override fun receiverDeleteWithReceipt(receiveInputEvent: ReceiveInputEvent,
+                                           resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        val record: T = toT(receiveInputEvent.body)
         val id = JsonObject()
                 .put("hash", record.hash)
                 .put("range", record.range)

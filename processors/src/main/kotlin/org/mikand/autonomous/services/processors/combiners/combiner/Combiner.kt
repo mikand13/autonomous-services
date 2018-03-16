@@ -33,7 +33,7 @@ import io.vertx.core.Handler
 @VertxGen(concrete = false)
 interface Combiner {
     @Fluent
-    fun combine(query: CombineEvent, responseHandler: Handler<AsyncResult<CombineEvent>>): Combiner
+    fun combine(combineInputEvent: CombineInputEvent, responseHandler: Handler<AsyncResult<CombineEvent>>): Combiner
 
     @Fluent
     fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<CombineEvent>>): Combiner

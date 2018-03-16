@@ -34,50 +34,55 @@ open class DynamoDBReceiverVerticle<T> : AbstractVerticle, Receiver
         this.dynamoDbReceiver = DynamoDBReceiver(vertx, type, config)
     }
 
-    override fun receiverCreate(receiveEvent: ReceiveEvent): Receiver {
-        dynamoDbReceiver.receiverCreate(receiveEvent)
+    override fun receiverCreate(receiveInputEvent: ReceiveInputEvent): Receiver {
+        dynamoDbReceiver.receiverCreate(receiveInputEvent)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverCreateWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
-        dynamoDbReceiver.receiverCreateWithReceipt(receiveEvent, resultHandler)
+    override fun receiverCreateWithReceipt(receiveInputEvent: ReceiveInputEvent,
+                                           resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        dynamoDbReceiver.receiverCreateWithReceipt(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverUpdate(receiveEvent: ReceiveEvent): Receiver {
-        dynamoDbReceiver.receiverUpdate(receiveEvent)
+    override fun receiverUpdate(receiveInputEvent: ReceiveInputEvent): Receiver {
+        dynamoDbReceiver.receiverUpdate(receiveInputEvent)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverUpdateWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
-        dynamoDbReceiver.receiverUpdateWithReceipt(receiveEvent, resultHandler)
+    override fun receiverUpdateWithReceipt(receiveInputEvent: ReceiveInputEvent,
+                                           resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        dynamoDbReceiver.receiverUpdateWithReceipt(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverRead(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
-        dynamoDbReceiver.receiverRead(receiveEvent, resultHandler)
+    override fun receiverRead(receiveInputEvent: ReceiveInputEvent,
+                              resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        dynamoDbReceiver.receiverRead(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverIndex(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
-        dynamoDbReceiver.receiverIndex(receiveEvent, resultHandler)
+    override fun receiverIndex(receiveInputEvent: ReceiveInputEvent,
+                               resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        dynamoDbReceiver.receiverIndex(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverDelete(receiveEvent: ReceiveEvent): Receiver {
-        dynamoDbReceiver.receiverDelete(receiveEvent)
+    override fun receiverDelete(receiveInputEvent: ReceiveInputEvent): Receiver {
+        dynamoDbReceiver.receiverDelete(receiveInputEvent)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverDeleteWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
-        dynamoDbReceiver.receiverDeleteWithReceipt(receiveEvent, resultHandler)
+    override fun receiverDeleteWithReceipt(receiveInputEvent: ReceiveInputEvent,
+                                           resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+        dynamoDbReceiver.receiverDeleteWithReceipt(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
     }

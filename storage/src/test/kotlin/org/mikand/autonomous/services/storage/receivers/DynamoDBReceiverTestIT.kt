@@ -15,6 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mikand.autonomous.services.storage.gen.TestModelReceiverImpl
 import org.mikand.autonomous.services.storage.gen.models.TestModel
+import org.mikand.autonomous.services.storage.receivers.ReceiveEventType.COMMAND
 import org.mikand.autonomous.services.storage.utils.DynamoDBTestClass
 import java.util.*
 
@@ -50,9 +51,7 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                             }
                         }
 
-
-                        service.receiverCreate(ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_CREATE",
-                                ReceiveStatus(201, statusObject = TestModel().toJson())))
+                        service.receiverCreate(ReceiveInputEvent(COMMAND.name, "RECEIVE_CREATE", TestModel().toJson()))
                     })
                 }
             }
@@ -71,8 +70,7 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
-                    val receiveEvent = ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_CREATE",
-                            ReceiveStatus(201, statusObject = TestModel().toJson()))
+                    val receiveEvent = ReceiveInputEvent(COMMAND.name, "RECEIVE_CREATE", TestModel().toJson())
 
                     service.receiverCreateWithReceipt(receiveEvent, Handler {
                         context.assertTrue(it.succeeded())
@@ -121,10 +119,9 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                     context.assertNotNull(updatedModel)
                                     context.assertTrue(updatedModel.getSomeBoolean()!!)
 
-                                    val idObject = ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_READ",
-                                            ReceiveStatus(200, statusObject = JsonObject()
+                                    val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
                                                     .put("hash", updatedModel.hash)
-                                                    .put("range", updatedModel.range)))
+                                                    .put("range", updatedModel.range))
 
                                     service.receiverRead(idObject, Handler {
                                         context.assertTrue(it.succeeded())
@@ -134,8 +131,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                 }
                             }
 
-                            service.receiverUpdate(ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_UPDATE",
-                                    ReceiveStatus(202, statusObject = testModel.toJsonFormat())))
+                            service.receiverUpdate(ReceiveInputEvent(
+                                    COMMAND.name, "RECEIVE_UPDATE", testModel.toJson()))
                         })
                     })
                 }
@@ -161,8 +158,7 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
 
                         val testModel = TestModel(it.result().body.statusObject)
                         testModel.setSomeBoolean(someBoolean = true)
-                        val updateEvent = ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_UPDATE",
-                                ReceiveStatus(202, statusObject = testModel.toJsonFormat()))
+                        val updateEvent = ReceiveInputEvent(COMMAND.name, "RECEIVE_UPDATE", testModel.toJsonFormat())
 
                         service.receiverUpdateWithReceipt(updateEvent, Handler {
                             context.assertEquals(202, it.result().body.statusCode)
@@ -172,10 +168,9 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                             context.assertNotNull(updatedModel)
                             context.assertTrue(updatedModel.getSomeBoolean()!!)
 
-                            val idObject = ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_READ",
-                                    ReceiveStatus(200, statusObject = JsonObject()
+                            val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
                                             .put("hash", updatedModel.hash)
-                                            .put("range", updatedModel.range)))
+                                            .put("range", updatedModel.range))
 
                             service.receiverRead(idObject, Handler {
                                 context.assertTrue(it.succeeded())
@@ -206,10 +201,9 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                         context.assertTrue(it.succeeded())
 
                         val testModel = TestModel(it.result().body.statusObject)
-                        val idObject = ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_READ",
-                                ReceiveStatus(200, statusObject = JsonObject()
+                        val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
                                         .put("hash", testModel.hash)
-                                        .put("range", testModel.range)))
+                                        .put("range", testModel.range))
 
                         service.receiverRead(idObject, Handler {
                             context.assertTrue(it.succeeded())
@@ -244,9 +238,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                         context.assertTrue(it.succeeded())
 
                         val testModel = it.result()[0]
-                        val idObject = ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_READ",
-                                ReceiveStatus(200, statusObject = JsonObject()
-                                        .put("hash", testModel.hash)))
+                        val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
+                                        .put("hash", testModel.hash))
 
                         service.receiverIndex(idObject, Handler {
                             context.assertTrue(it.succeeded())
@@ -296,9 +289,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                                 .build()))))
                                 .build()
 
-                        val indexEvent = ReceiveEvent(type = ReceiveEventType.COMMAND.name, action = "RECEIVE_INDEX",
-                                body = ReceiveStatus(200, statusObject = JsonObject()
-                                        .put("hash", testModel.hash)),
+                        val indexEvent = ReceiveInputEvent(type = COMMAND.name, action = "RECEIVE_INDEX",
+                                body = JsonObject().put("hash", testModel.hash),
                                 metaData = JsonObject().put("query", JsonObject(Json.encode(queryPack))))
 
                         service.receiverIndex(indexEvent, Handler {
@@ -326,9 +318,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                                 .build()))))
                                 .build()
 
-                        val indexEventTrue = ReceiveEvent(type = ReceiveEventType.COMMAND.name, action = "RECEIVE_INDEX",
-                                body = ReceiveStatus(200, statusObject = JsonObject()
-                                        .put("hash", testModel.hash)),
+                        val indexEventTrue = ReceiveInputEvent(type = COMMAND.name, action = "RECEIVE_INDEX",
+                                body = JsonObject().put("hash", testModel.hash),
                                 metaData = JsonObject().put("query", JsonObject(Json.encode(queryPackTrue))))
 
                         service.receiverIndex(indexEventTrue, Handler {
@@ -385,10 +376,9 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
 
                                     context.assertNotNull(updatedModel)
 
-                                    val idObject = ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_READ",
-                                            ReceiveStatus(200, statusObject = JsonObject()
+                                    val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
                                                     .put("hash", updatedModel.hash)
-                                                    .put("range", updatedModel.range)))
+                                                    .put("range", updatedModel.range))
 
                                     service.receiverRead(idObject, Handler {
                                         context.assertTrue(it.failed())
@@ -397,8 +387,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                 }
                             }
 
-                            service.receiverDelete(ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_DELETE",
-                                    ReceiveStatus(204, statusObject = TestModel().toJson())))
+                            service.receiverDelete(ReceiveInputEvent(
+                                    COMMAND.name, "RECEIVE_DELETE", TestModel().toJson()))
                         })
                     })
                 }
@@ -423,8 +413,7 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                         context.assertTrue(it.succeeded())
 
                         val testModel = TestModel(it.result().body.statusObject)
-                        val deleteEvent = ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_DELETE",
-                                ReceiveStatus(204, statusObject = testModel.toJsonFormat()))
+                        val deleteEvent = ReceiveInputEvent(COMMAND.name, "RECEIVE_DELETE", testModel.toJsonFormat())
 
                         service.receiverDeleteWithReceipt(deleteEvent, Handler {
                             context.assertEquals(204, it.result().body.statusCode)
@@ -433,10 +422,9 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
 
                             context.assertNotNull(updatedModel)
 
-                            val idObject = ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_READ",
-                                    ReceiveStatus(200, statusObject = JsonObject()
+                            val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
                                             .put("hash", updatedModel.hash)
-                                            .put("range", updatedModel.range)))
+                                            .put("range", updatedModel.range))
 
                             service.receiverRead(idObject, Handler {
                                 context.assertTrue(it.failed())

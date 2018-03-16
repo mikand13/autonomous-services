@@ -10,28 +10,28 @@ import io.vertx.core.Handler
 @ProxyGen
 interface Receiver {
     @Fluent
-    fun receiverCreate(receiveEvent: ReceiveEvent): Receiver
+    fun receiverCreate(receiveInputEvent: ReceiveInputEvent): Receiver
 
     @Fluent
-    fun receiverCreateWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver
+    fun receiverCreateWithReceipt(receiveInputEvent: ReceiveInputEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver
 
     @Fluent
-    fun receiverUpdate(receiveEvent: ReceiveEvent): Receiver
+    fun receiverUpdate(receiveInputEvent: ReceiveInputEvent): Receiver
 
     @Fluent
-    fun receiverUpdateWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver
+    fun receiverUpdateWithReceipt(receiveInputEvent: ReceiveInputEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver
 
     @Fluent
-    fun receiverRead(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver
+    fun receiverRead(receiveInputEvent: ReceiveInputEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver
 
     @Fluent
-    fun receiverIndex(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver
+    fun receiverIndex(receiveInputEvent: ReceiveInputEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver
 
     @Fluent
-    fun receiverDelete(receiveEvent: ReceiveEvent): Receiver
+    fun receiverDelete(receiveInputEvent: ReceiveInputEvent): Receiver
 
     @Fluent
-    fun receiverDeleteWithReceipt(receiveEvent: ReceiveEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver
+    fun receiverDeleteWithReceipt(receiveInputEvent: ReceiveInputEvent, resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver
 
     @Fluent
     fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver

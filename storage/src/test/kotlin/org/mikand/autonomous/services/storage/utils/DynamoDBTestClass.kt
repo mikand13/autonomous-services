@@ -20,8 +20,8 @@ import org.junit.runner.RunWith
 import org.mikand.autonomous.services.storage.gen.TestModelReceiverImpl
 import org.mikand.autonomous.services.storage.gen.models.TestModel
 import org.mikand.autonomous.services.storage.receivers.ReceiveEvent
-import org.mikand.autonomous.services.storage.receivers.ReceiveEventType
-import org.mikand.autonomous.services.storage.receivers.ReceiveStatus
+import org.mikand.autonomous.services.storage.receivers.ReceiveEventType.COMMAND
+import org.mikand.autonomous.services.storage.receivers.ReceiveInputEvent
 import java.time.LocalDate
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
@@ -102,8 +102,7 @@ abstract class DynamoDBTestClass : ConfigSupport {
     }
 
     fun createItem(repo: TestModelReceiverImpl, createHandler: Handler<AsyncResult<ReceiveEvent>>) {
-        val receiveEvent = ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_CREATE",
-                ReceiveStatus(201, statusObject = TestModel().toJson()))
+        val receiveEvent = ReceiveInputEvent(COMMAND.name, "RECEIVE_CREATE", TestModel().toJson())
 
         repo.receiverCreateWithReceipt(receiveEvent, createHandler)
     }
@@ -132,8 +131,7 @@ abstract class DynamoDBTestClass : ConfigSupport {
 
         items.forEach { item ->
             val future = Future.future<ReceiveEvent>()
-            val receiveEvent = ReceiveEvent(ReceiveEventType.COMMAND.name, "RECEIVE_CREATE",
-                    ReceiveStatus(201, statusObject = item.toJson()))
+            val receiveEvent = ReceiveInputEvent(COMMAND.name, "RECEIVE_CREATE", item.toJson())
 
             repo.receiverCreateWithReceipt(receiveEvent, future.completer())
 

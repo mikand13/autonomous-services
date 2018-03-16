@@ -38,6 +38,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mikand.autonomous.services.processors.splitters.concretes.JsonSplitter
 import org.mikand.autonomous.services.processors.splitters.impl.JsonSplitterImpl
+import org.mikand.autonomous.services.processors.splitters.splitter.SplitEventType.COMMAND
+import org.mikand.autonomous.services.processors.splitters.splitter.SplitInputEvent
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 
 @RunWith(VertxUnitRunner::class)
@@ -75,7 +77,7 @@ class JsonSplitterImplIT : ConfigSupport {
                         }))
                     }
 
-                    service.split(JsonObject())
+                    service.split(SplitInputEvent(type = COMMAND.name, action = "SPLIT", body = JsonObject()))
                 })
             }
         }))
@@ -92,7 +94,8 @@ class JsonSplitterImplIT : ConfigSupport {
                 context.assertTrue(it.succeeded())
                 val service = it.result()
 
-                service.splitWithReceipt(JsonObject(), Handler {
+                service.splitWithReceipt(
+                        SplitInputEvent(type = COMMAND.name, action = "SPLIT", body = JsonObject()), Handler {
                     context.assertTrue(it.succeeded())
                     context.assertEquals(200, it.result().body.statusCode, "Statuscode is not 200!")
 

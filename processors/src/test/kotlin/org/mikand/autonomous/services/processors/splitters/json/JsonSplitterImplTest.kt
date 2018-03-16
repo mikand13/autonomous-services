@@ -37,6 +37,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mikand.autonomous.services.processors.splitters.impl.JsonSplitterImpl
+import org.mikand.autonomous.services.processors.splitters.splitter.SplitEventType.COMMAND
+import org.mikand.autonomous.services.processors.splitters.splitter.SplitInputEvent
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 
 @RunWith(VertxUnitRunner::class)
@@ -57,7 +59,7 @@ class JsonSplitterImplTest : ConfigSupport {
         val async = context.async()
         val splitter = JsonSplitterImpl()
 
-        splitter.splitWithReceipt(JsonObject(), Handler {
+        splitter.splitWithReceipt(SplitInputEvent(type = COMMAND.name, action = "SPLIT", body = JsonObject()), Handler {
             context.assertEquals(200, it.result().body.statusCode, "Statuscode is not 200!")
             async.complete()
         })
@@ -80,7 +82,7 @@ class JsonSplitterImplTest : ConfigSupport {
                 async.complete()
             })
 
-            splitter.splitWithReceipt(JsonObject(), Handler {
+            splitter.splitWithReceipt(SplitInputEvent(type = COMMAND.name, action = "SPLIT", body = JsonObject()), Handler {
                 context.assertEquals(200, it.result().body.statusCode, "Statuscode is not 200!")
             })
         })
@@ -142,7 +144,9 @@ class JsonSplitterImplTest : ConfigSupport {
                 async.complete()
             })
 
-            splitter.splitWithReceipt(testObject, Handler {
+            val input = SplitInputEvent(type = COMMAND.name, action = "SPLIT", body = testObject)
+
+            splitter.splitWithReceipt(input, Handler {
                 context.assertEquals(200, it.result().body.statusCode, "Statuscode is not 200!")
             })
         })
