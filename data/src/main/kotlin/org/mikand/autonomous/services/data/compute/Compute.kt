@@ -10,7 +10,7 @@ import io.vertx.core.Handler
 @ProxyGen
 interface Compute {
     @Fluent
-    fun combine(computeInputEvent: ComputeInputEvent, responseHandler: Handler<AsyncResult<ComputeEvent>>): Compute
+    fun compute(computeInputEvent: ComputeInputEvent, responseHandler: Handler<AsyncResult<ComputeEvent>>): Compute
 
     @Fluent
     fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<ComputeEvent>>): Compute
