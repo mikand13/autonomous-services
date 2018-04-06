@@ -1,4 +1,4 @@
-package org.mikand.autonomous.services.storage.receivers
+package org.mikand.autonomous.services.storage.receivers.dynamodb
 
 import com.nannoq.tools.repository.dynamodb.DynamoDBRepository
 import com.nannoq.tools.repository.models.Cacheable
@@ -18,6 +18,7 @@ import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.serviceproxy.ServiceException
+import org.mikand.autonomous.services.storage.receivers.*
 
 class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         where T : Model, T : DynamoDBModel, T : Cacheable, T : ETagable {

@@ -1,4 +1,4 @@
-package org.mikand.autonomous.services.storage.receivers
+package org.mikand.autonomous.services.storage.receivers.dynamodb
 
 import com.nannoq.tools.repository.models.Cacheable
 import com.nannoq.tools.repository.models.DynamoDBModel
@@ -11,6 +11,9 @@ import io.vertx.core.Vertx
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
+import org.mikand.autonomous.services.storage.receivers.ReceiveEvent
+import org.mikand.autonomous.services.storage.receivers.ReceiveInputEvent
+import org.mikand.autonomous.services.storage.receivers.Receiver
 
 open class DynamoDBReceiverVerticle<T> : AbstractVerticle, Receiver
         where T : Model, T : DynamoDBModel, T : Cacheable, T : ETagable {

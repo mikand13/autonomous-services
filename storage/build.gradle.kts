@@ -141,6 +141,7 @@ dependencies {
     compile("com.nannoq:tools:$nannoq_tools_version")
     compile("com.nannoq:cluster:$nannoq_tools_version")
     compile("com.nannoq:repository:$nannoq_tools_version")
+    compile("com.nannoq:web:$nannoq_tools_version")
 
     // Vert.x
     compile("io.vertx:vertx-health-check:$vertx_version")
