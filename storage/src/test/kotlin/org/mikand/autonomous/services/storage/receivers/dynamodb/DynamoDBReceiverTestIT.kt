@@ -1,4 +1,4 @@
-package org.mikand.autonomous.services.storage.receivers
+package org.mikand.autonomous.services.storage.receivers.dynamodb
 
 import com.nannoq.tools.cluster.services.ServiceManager
 import com.nannoq.tools.repository.utils.FilterParameter
@@ -11,14 +11,18 @@ import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
 import io.vertx.ext.unit.junit.VertxUnitRunner
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mikand.autonomous.services.storage.gen.TestModelReceiverImpl
 import org.mikand.autonomous.services.storage.gen.models.TestModel
 import org.mikand.autonomous.services.storage.receivers.ReceiveEventType.COMMAND
+import org.mikand.autonomous.services.storage.receivers.ReceiveInputEvent
+import org.mikand.autonomous.services.storage.receivers.Receiver
 import org.mikand.autonomous.services.storage.utils.DynamoDBTestClass
 import java.util.*
 
+@Ignore
 @RunWith(VertxUnitRunner::class)
 class DynamoDBReceiverTestIT : DynamoDBTestClass() {
     @Suppress("unused")
@@ -120,8 +124,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                     context.assertTrue(updatedModel.getSomeBoolean()!!)
 
                                     val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
-                                                    .put("hash", updatedModel.hash)
-                                                    .put("range", updatedModel.range))
+                                            .put("hash", updatedModel.hash)
+                                            .put("range", updatedModel.range))
 
                                     service.receiverRead(idObject, Handler {
                                         context.assertTrue(it.succeeded())
@@ -169,8 +173,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                             context.assertTrue(updatedModel.getSomeBoolean()!!)
 
                             val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
-                                            .put("hash", updatedModel.hash)
-                                            .put("range", updatedModel.range))
+                                    .put("hash", updatedModel.hash)
+                                    .put("range", updatedModel.range))
 
                             service.receiverRead(idObject, Handler {
                                 context.assertTrue(it.succeeded())
@@ -202,8 +206,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
 
                         val testModel = TestModel(it.result().body.statusObject)
                         val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
-                                        .put("hash", testModel.hash)
-                                        .put("range", testModel.range))
+                                .put("hash", testModel.hash)
+                                .put("range", testModel.range))
 
                         service.receiverRead(idObject, Handler {
                             context.assertTrue(it.succeeded())
@@ -239,7 +243,7 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
 
                         val testModel = it.result()[0]
                         val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
-                                        .put("hash", testModel.hash))
+                                .put("hash", testModel.hash))
 
                         service.receiverIndex(idObject, Handler {
                             context.assertTrue(it.succeeded())
@@ -377,8 +381,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                     context.assertNotNull(updatedModel)
 
                                     val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
-                                                    .put("hash", updatedModel.hash)
-                                                    .put("range", updatedModel.range))
+                                            .put("hash", updatedModel.hash)
+                                            .put("range", updatedModel.range))
 
                                     service.receiverRead(idObject, Handler {
                                         context.assertTrue(it.failed())
@@ -423,8 +427,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                             context.assertNotNull(updatedModel)
 
                             val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
-                                            .put("hash", updatedModel.hash)
-                                            .put("range", updatedModel.range))
+                                    .put("hash", updatedModel.hash)
+                                    .put("range", updatedModel.range))
 
                             service.receiverRead(idObject, Handler {
                                 context.assertTrue(it.failed())

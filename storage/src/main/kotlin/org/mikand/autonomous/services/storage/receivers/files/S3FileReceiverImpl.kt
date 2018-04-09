@@ -1,55 +1,96 @@
 package org.mikand.autonomous.services.storage.receivers.files
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper
+import com.amazonaws.auth.AWSStaticCredentialsProvider
+import com.amazonaws.auth.AnonymousAWSCredentials
+import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model.AmazonS3Exception
-import com.nannoq.tools.repository.dynamodb.DynamoDBRepository
 import com.nannoq.tools.web.RoutingHelper
+import com.nannoq.tools.web.responsehandlers.ResponseLogHandler.BODY_CONTENT_TAG
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerOptions
+import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
+import io.vertx.core.shareddata.AsyncMap
 import io.vertx.ext.web.FileUpload
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import org.mikand.autonomous.services.storage.receivers.ReceiveEvent
-import org.mikand.autonomous.services.storage.receivers.ReceiveEventType
+import org.mikand.autonomous.services.storage.receivers.ReceiveEventType.DATA
+import org.mikand.autonomous.services.storage.receivers.ReceiveEventType.DATA_FAILURE
 import org.mikand.autonomous.services.storage.receivers.ReceiveInputEvent
 import org.mikand.autonomous.services.storage.receivers.ReceiveStatus
 import java.io.File
 import java.io.IOException
 import java.util.*
 
-class S3FileReceiverImpl(val config: JsonObject = JsonObject()) : FileReceiver, AbstractVerticle() {
+
+
+class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : FileReceiver, AbstractVerticle() {
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    private lateinit var mapper: DynamoDBMapper
+    private lateinit var client: AmazonS3
     private lateinit var region: String
+    private lateinit var protocol: String
     private lateinit var host: String
     private var port: Int? = null
     private lateinit var rootPath: String
     private lateinit var bucketName: String
+    private lateinit var s3Endpoint: String
     private lateinit var subscriptionAddress: String
     private lateinit var server: HttpServer
 
+    private lateinit var tokenMap: AsyncMap<String, JsonObject>
+
     override fun start(startFuture: Future<Void>?) {
+        protocol = if (config.getBoolean("ssl")) "https" else "http"
         region = config.getString("aws_s3_region") ?: "eu-west-1"
         host = config.getString("aws_s3_file_receiver_host") ?: "localhost"
         port = config.getInteger("aws_s3_file_receiver_port") ?: 5443
         rootPath = config.getString("aws_s3_file_receiver_rootPath") ?: "/uploads"
         bucketName = config.getString("aws_s3_file_receiver_bucketName") ?: "test-bucket"
+        s3Endpoint = config.getString("aws_s3_endPoint") ?: "s3.$region.amazonaws.com"
 
-        mapper = DynamoDBRepository.getS3DynamoDbMapper()
+        val dynamoDBId = config.getString("aws_s3_iam_id")
+        val dynamoDBKey = config.getString("aws_s3_iam_key")
+
+        val creds = if (dynamoDBId == null || dynamoDBKey == null) AnonymousAWSCredentials() else
+            BasicAWSCredentials(dynamoDBId, dynamoDBKey)
+        val statCreds = AWSStaticCredentialsProvider(creds)
+        val endpoint = EndpointConfiguration(s3Endpoint, region)
+
+        client = AmazonS3ClientBuilder
+              .standard()
+              .withPathStyleAccessEnabled(true)
+              .withEndpointConfiguration(endpoint)
+              .withCredentials(statCreds)
+              .build()
+
         subscriptionAddress = S3FileReceiverImpl::class.java.name
 
-        initializeHttpServer(startFuture?.completer())
+        val mapName = S3FileReceiverImpl::class.java.simpleName
+
+        vertx.sharedData().getAsyncMap<String, JsonObject>(mapName, {
+            if (it.succeeded()) {
+                tokenMap = it.result()
+                initializeHttpServer(startFuture)
+            } else {
+                logger.error("Unable to initialize tokenMap", it.cause())
+
+                startFuture?.fail(it.cause())
+            }
+        })
     }
 
-    private fun initializeHttpServer(completer: Handler<AsyncResult<Void>>?) {
+    private fun initializeHttpServer(startFuture: Future<Void>?) {
         val options = HttpServerOptions().setTcpKeepAlive(true)
         val router = createRouter()
 
@@ -59,9 +100,9 @@ class S3FileReceiverImpl(val config: JsonObject = JsonObject()) : FileReceiver, 
                     if (it.succeeded()) {
                         server = it.result()
 
-                        completer?.handle(Future.succeededFuture())
+                        startFuture?.complete()
                     } else {
-                        completer?.handle(Future.failedFuture(it.cause()))
+                        startFuture?.fail(it.cause())
                     }
                 })
     }
@@ -72,35 +113,47 @@ class S3FileReceiverImpl(val config: JsonObject = JsonObject()) : FileReceiver, 
         RoutingHelper.routeWithBodyAndLogger({
             router.put("$rootPath/:token")
         }, {
-            it.get().handler({ ctx ->
-                ctx.request().isExpectMultipart = true
-                ctx.next()
-            }).handler(this::uploadHandler)
+            it.get().handler(this::uploadHandler)
         })
 
         return router
     }
 
     private fun uploadHandler(routingContext: RoutingContext) {
-        val fileUploads = routingContext.fileUploads()
+        val token = routingContext.pathParam("token")
 
-        if (fileUploads.isEmpty()) {
-            noFilesResponse(routingContext)
-        } else if (fileUploads.size > 1) {
-            tooManyFilesResponse(routingContext)
+        if (token == null) {
+            routingContext.response().statusCode = 401
+            routingContext.next()
         } else {
-            handleFileUpload(routingContext, fileUploads.iterator().next())
+            tokenMap.get(token, {
+                if (it.succeeded()) {
+                    val fileUploads = routingContext.fileUploads()
+
+                    when {
+                        fileUploads.isEmpty() -> noFilesResponse(routingContext)
+                        fileUploads.size > 1 -> tooManyFilesResponse(routingContext)
+                        else -> handleFileUpload(routingContext, fileUploads.iterator().next(), token)
+                    }
+                } else {
+                    routingContext.response().statusCode = 404
+                    routingContext.put(BODY_CONTENT_TAG, JsonObject().put("error", "Token not found!").encode())
+                    routingContext.next()
+                }
+            })
         }
     }
 
     private fun noFilesResponse(routingContext: RoutingContext) {
         routingContext.response().statusCode = 400
-        routingContext.response().end(JsonObject().put("error", "No files received!").encode())
+        routingContext.put(BODY_CONTENT_TAG, JsonObject().put("error", "No files received!").encode())
+        routingContext.next()
     }
 
     private fun tooManyFilesResponse(routingContext: RoutingContext) {
         routingContext.response().statusCode = 400
-        routingContext.response().end(JsonObject().put("error", "Only one file per token!").encode())
+        routingContext.put(BODY_CONTENT_TAG, JsonObject().put("error", "Only one file per token!").encode())
+        routingContext.next()
     }
 
     override fun stop(stopFuture: Future<Void>?) {
@@ -110,11 +163,24 @@ class S3FileReceiverImpl(val config: JsonObject = JsonObject()) : FileReceiver, 
     override fun fileReceiverInitializeCreate(receiveInputEvent: ReceiveInputEvent,
                                               resultHandler: Handler<AsyncResult<ReceiveEvent>>): S3FileReceiverImpl {
         val token = UUID.randomUUID().toString()
-        val uploadJson = JsonObject().put("uploadUrl", "$host:$port:$rootPath/$token")
-        val receiveStatus = ReceiveStatus(202, statusObject = uploadJson)
-        val receiveEvent = ReceiveEvent(ReceiveEventType.DATA.name, "FILE_UPLOAD_URL", receiveStatus)
+        val uploadJson = JsonObject().put("uploadUrl", "$protocol://$host:$port$rootPath/$token")
 
-        resultHandler.handle(Future.succeededFuture(receiveEvent))
+        tokenMap.put(token, receiveInputEvent.body, {
+            if (it.succeeded()) {
+                val receiveStatus = ReceiveStatus(202, statusObject = uploadJson)
+                val receiveEvent = ReceiveEvent(DATA.name, "FILE_UPLOAD_URL", receiveStatus)
+
+                resultHandler.handle(Future.succeededFuture(receiveEvent))
+            } else {
+                val receiveStatus = ReceiveStatus(500, statusObject = JsonObject())
+                val receiveEvent = ReceiveEvent(DATA_FAILURE.name, "FILE_UPLOAD_URL_FAILURE", receiveStatus)
+
+                logger.error("Error creating URL!", it.cause())
+
+                resultHandler.handle(Future.failedFuture(Json.encodePrettily(receiveEvent)))
+            }
+        })
+
 
         return this
     }
@@ -134,26 +200,28 @@ class S3FileReceiverImpl(val config: JsonObject = JsonObject()) : FileReceiver, 
         return this
     }
 
-    private fun handleFileUpload(routingContext: RoutingContext, fileUpload: FileUpload) {
+    private fun handleFileUpload(routingContext: RoutingContext, fileUpload: FileUpload, token: String) {
         val tempFileName = fileUpload.uploadedFileName()
-        val S3Link = mapper.createS3Link(bucketName, tempFileName)
 
-        vertx.executeBlocking<Boolean>({
+        vertx.executeBlocking<String>({
             val javaFile = File(tempFileName)
-            val putObjectResult = S3Link.uploadFrom(javaFile)
+            val putObjectResult = client.putObject(bucketName, tempFileName, javaFile)
 
             if (putObjectResult != null) {
-                it.complete()
+                it.complete(tempFileName)
             } else {
                 it.fail(AmazonS3Exception("Unable to upload file!"))
             }
-        }, false, { res -> uploadResult(routingContext, res) })
+        }, false, { res -> uploadResult(routingContext, res, token) })
     }
 
-    private fun uploadResult(routingContext: RoutingContext, result: AsyncResult<Boolean>) {
+    private fun uploadResult(routingContext: RoutingContext, result: AsyncResult<String>, token: String) {
         if (result.succeeded()) {
-            routingContext.response().statusCode = 202
-            routingContext.response().end()
+            tokenMap.remove(token, {
+                routingContext.response().statusCode = 202
+                routingContext.put(BODY_CONTENT_TAG, JsonObject().put("key", result.result()))
+                routingContext.next()
+            })
         } else {
             val cause = result.cause()
 
@@ -169,17 +237,19 @@ class S3FileReceiverImpl(val config: JsonObject = JsonObject()) : FileReceiver, 
 
     private fun uploadFailedResponse(routingContext: RoutingContext) {
         routingContext.response().statusCode = 422
-        routingContext.response().end(JsonObject().put("error", "Unable to process file!").encode())
+        routingContext.put(BODY_CONTENT_TAG, JsonObject().put("error", "Unable to process file!").encode())
+        routingContext.next()
     }
 
     private fun unableToReadFileResponse(routingContext: RoutingContext) {
         routingContext.response().statusCode = 422
-        routingContext.response().end(JsonObject().put("error", "Unable to process file!").encode())
+        routingContext.put(BODY_CONTENT_TAG, JsonObject().put("error", "Unable to process file!").encode())
+        routingContext.next()
     }
 
     private fun handleFileDeletion(key: String, resultHandler: Handler<AsyncResult<ReceiveEvent>>) {
         vertx.executeBlocking<Boolean>({
-            mapper.s3ClientCache.getClient(region).deleteObject(bucketName, key)
+            client.deleteObject(bucketName, key)
 
             it.complete()
         }, false, { res -> deletionResult(res, resultHandler) })
@@ -195,7 +265,7 @@ class S3FileReceiverImpl(val config: JsonObject = JsonObject()) : FileReceiver, 
 
     private fun successFullDeleteResponse(resultHandler: Handler<AsyncResult<ReceiveEvent>>) {
         val receiveStatus = ReceiveStatus(204, statusObject = JsonObject())
-        val receiveEvent = ReceiveEvent(ReceiveEventType.DATA.name, "FILE_DELETION", receiveStatus)
+        val receiveEvent = ReceiveEvent(DATA.name, "FILE_DELETION", receiveStatus)
 
         resultHandler.handle(Future.succeededFuture(receiveEvent))
     }
@@ -205,7 +275,7 @@ class S3FileReceiverImpl(val config: JsonObject = JsonObject()) : FileReceiver, 
     }
 
     override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver {
-        addressHandler.handle(Future.succeededFuture(ReceiveEvent(ReceiveEventType.DATA.name, "ADDRESS",
+        addressHandler.handle(Future.succeededFuture(ReceiveEvent(DATA.name, "ADDRESS",
                 ReceiveStatus(200, statusObject = JsonObject().put("address", subscriptionAddress)))))
 
         return this

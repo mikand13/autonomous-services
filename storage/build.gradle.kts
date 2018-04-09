@@ -163,6 +163,7 @@ dependencies {
 
     // Test
     testCompile("junit:junit:$junit_version")
+    testCompile("org.apache.tika:tika-core:1.14")
     testCompile("org.jetbrains.kotlin:kotlin-test")
     testCompile("org.jetbrains.kotlin:kotlin-test-junit")
     testCompile("io.vertx:vertx-config:$vertx_version")
@@ -177,6 +178,9 @@ dependencies {
     testCompile("com.almworks.sqlite4java:libsqlite4java-osx:$sqlLiteVersion")
     testCompile("com.almworks.sqlite4java:libsqlite4java-linux-i386:$sqlLiteVersion")
     testCompile("com.almworks.sqlite4java:libsqlite4java-linux-amd64:$sqlLiteVersion")
+
+    // S3 Test
+    testCompile("io.findify:s3mock_2.12:0.2.4")
 }
 
 configure<ApplicationPluginConvention> {
