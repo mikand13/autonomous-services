@@ -22,7 +22,6 @@ import org.mikand.autonomous.services.storage.receivers.Receiver
 import org.mikand.autonomous.services.storage.utils.DynamoDBTestClass
 import java.util.*
 
-@Ignore
 @RunWith(VertxUnitRunner::class)
 class DynamoDBReceiverTestIT : DynamoDBTestClass() {
     @Suppress("unused")

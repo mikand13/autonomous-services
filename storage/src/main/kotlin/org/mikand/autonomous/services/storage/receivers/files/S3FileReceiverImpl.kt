@@ -56,8 +56,11 @@ class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : FileRe
         host = config.getString("aws_s3_file_receiver_host") ?: "localhost"
         port = config.getInteger("aws_s3_file_receiver_port") ?: 5443
         rootPath = config.getString("aws_s3_file_receiver_rootPath") ?: "/uploads"
-        bucketName = config.getString("aws_s3_file_receiver_bucketName") ?: "test-bucket"
+        bucketName = config.getString("aws_s3_file_receiver_bucketName") ?: "test-autonoumous-services-bucket"
         s3Endpoint = config.getString("aws_s3_endPoint") ?: "s3.$region.amazonaws.com"
+        subscriptionAddress = S3FileReceiverImpl::class.java.name
+
+        logger.info("Connecting to Region: $region, Endpoint: $s3Endpoint, using Bucket: $bucketName")
 
         val dynamoDBId = config.getString("aws_s3_iam_id")
         val dynamoDBKey = config.getString("aws_s3_iam_key")
@@ -67,14 +70,19 @@ class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : FileRe
         val statCreds = AWSStaticCredentialsProvider(creds)
         val endpoint = EndpointConfiguration(s3Endpoint, region)
 
-        client = AmazonS3ClientBuilder
+        val clientBuilder = AmazonS3ClientBuilder
               .standard()
-              .withPathStyleAccessEnabled(true)
-              .withEndpointConfiguration(endpoint)
               .withCredentials(statCreds)
-              .build()
 
-        subscriptionAddress = S3FileReceiverImpl::class.java.name
+        val dev = host.contains("localhost")
+
+        if (dev) {
+            clientBuilder
+                    .withPathStyleAccessEnabled(true)
+                    .withEndpointConfiguration(endpoint)
+        }
+
+        client = clientBuilder.build()
 
         val mapName = S3FileReceiverImpl::class.java.simpleName
 
@@ -185,14 +193,14 @@ class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : FileRe
         return this
     }
 
-    override fun fileReceiverInitializeDelete(receiveInputEvent: ReceiveInputEvent): S3FileReceiverImpl {
-        fileReceiverInitializeDeleteWithReceipt(receiveInputEvent, Handler {})
+    override fun fileReceiverDelete(receiveInputEvent: ReceiveInputEvent): S3FileReceiverImpl {
+        fileReceiverDeleteWithReceipt(receiveInputEvent, Handler {})
 
         return this
     }
 
-    override fun fileReceiverInitializeDeleteWithReceipt(receiveInputEvent: ReceiveInputEvent,
-                                                         resultHandler: Handler<AsyncResult<ReceiveEvent>>): S3FileReceiverImpl {
+    override fun fileReceiverDeleteWithReceipt(receiveInputEvent: ReceiveInputEvent,
+                                               resultHandler: Handler<AsyncResult<ReceiveEvent>>): S3FileReceiverImpl {
         val objectKey = receiveInputEvent.body.getString("key")
 
         handleFileDeletion(objectKey, resultHandler)

@@ -50,21 +50,56 @@ class S3FileReceiverImplTest : S3TestClass() {
     }
 
     @Test
-    fun testInitializeDelete(context: TestContext) {
+    fun testDeleteWithReceipt(context: TestContext) {
+        val async = context.async()
+        val vertx = rule.vertx()
 
+        vertx.deployVerticle(fileReceiver, {
+            if (it.failed()) logger.error("Failure!", it.cause())
+
+            context.assertTrue(it.succeeded())
+
+            fileReceiver.fileReceiverInitializeCreate(buildUploadEvent(), Handler {
+                context.assertTrue(it.succeeded())
+
+                uploadFile(it.result().body.statusObject.getString("uploadUrl"), imageFile.absolutePath, Handler {
+                    if (it.succeeded()) {
+                        fileReceiver.fileReceiverDeleteWithReceipt(buildDeletwEvent(it.result()), Handler {
+                            context.assertTrue(it.succeeded())
+                            async.complete()
+                        })
+                    } else {
+                        context.fail(it.cause())
+                    }
+                })
+            })
+        })
     }
 
     private fun buildUploadEvent(): ReceiveInputEvent {
         return ReceiveInputEvent(ReceiveEventType.COMMAND.name, "FILE_UPLOAD", JsonObject())
     }
 
-    @Test
-    fun testInitializeDeleteWithReceipt(context: TestContext) {
-
+    private fun buildDeletwEvent(key: String): ReceiveInputEvent {
+        return ReceiveInputEvent(ReceiveEventType.COMMAND.name, "FILE_DELETE", JsonObject().put("key", key))
     }
 
     @Test
     fun testFetchSubscriptionAddress(context: TestContext) {
+        val async = context.async()
+        val vertx = rule.vertx()
+        val address = S3FileReceiverImpl::class.java.name
 
+        vertx.deployVerticle(fileReceiver, {
+            if (it.failed()) logger.error("Failure!", it.cause())
+
+            context.assertTrue(it.succeeded())
+
+            fileReceiver.fetchSubscriptionAddress(Handler {
+                context.assertTrue(it.succeeded())
+                context.assertEquals(address, it.result().body.statusObject.getString("address"))
+                async.complete()
+            })
+        })
     }
 }

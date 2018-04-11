@@ -48,19 +48,25 @@ abstract class S3TestClass : ConfigSupport, RestAssuredFix {
         val vertx = rule.vertx()
         val s3Port = findFreePort()
         val port = findFreePort()
-        val api = S3Mock.Builder().withPort(s3Port).withInMemoryBackend().build()
+        val api = S3Mock.Builder()
+                .withPort(s3Port)
+                .withInMemoryBackend()
+                .build()
         val s3Endpoint = "http://localhost:$s3Port"
+        val bucketName = "test-autonomous-services-bucket$port"
 
         context.put<String>("${name.methodName}-s3", api)
         context.put<String>("${name.methodName}-s3-port", s3Port)
         context.put<String>("${name.methodName}-config", getTestConfig()
                 .put("aws_s3_file_receiver_port", port)
-                .put("aws_s3_endPoint", s3Endpoint))
+                .put("aws_s3_endPoint", s3Endpoint)
+                .put("aws_s3_region", "us-east-1")
+                .put("aws_s3_file_receiver_bucketName", bucketName))
 
         vertx.executeBlocking<Boolean>({
             api.start()
 
-            val endpoint = AwsClientBuilder.EndpointConfiguration(s3Endpoint, "eu-west-1")
+            val endpoint = AwsClientBuilder.EndpointConfiguration(s3Endpoint, "us-east-1")
             val client = AmazonS3ClientBuilder
                     .standard()
                     .withPathStyleAccessEnabled(true)
@@ -68,10 +74,18 @@ abstract class S3TestClass : ConfigSupport, RestAssuredFix {
                     .withCredentials(AWSStaticCredentialsProvider(AnonymousAWSCredentials()))
                     .build()
 
-            client.createBucket("test-bucket")
+            client.createBucket(bucketName)
+
+            context.assertTrue(client.doesBucketExistV2(bucketName))
 
             it.complete()
-        }, false, { async.complete() })
+        }, false, {
+            if (it.succeeded()) {
+                async.complete()
+            } else {
+                context.fail(it.cause())
+            }
+        })
     }
 
     @After
@@ -84,25 +98,27 @@ abstract class S3TestClass : ConfigSupport, RestAssuredFix {
         async.complete()
     }
 
-    fun uploadFile(url: String, path: String, resultHandler: Handler<AsyncResult<Boolean>>) {
+    fun uploadFile(url: String, path: String, resultHandler: Handler<AsyncResult<String>>) {
         val vertx = rule.vertx()
 
-        vertx.executeBlocking<Boolean>({
+        vertx.executeBlocking<String>({
             val file = File(path)
 
-            given().
+            val key = given().
                     multiPart("upload", file, Tika().detect(file)).
-            When()
-                    .put(url).
-            then()
+                When().
+                    put(url).
+                then()
                     .statusCode(202)
                         .extract()
                             .response()
+                                .jsonPath()
+                                    .getString("key")
 
-            it.complete()
+            it.complete(key)
         }, false, {
             if (it.succeeded()) {
-                resultHandler.handle(Future.succeededFuture())
+                resultHandler.handle(Future.succeededFuture(it.result()))
             } else {
                 resultHandler.handle(Future.failedFuture(it.cause()))
             }

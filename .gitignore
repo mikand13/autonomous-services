@@ -211,3 +211,5 @@ extractedProxies/
 *.iml
 
 out/
+tmp/
+file-uploads/

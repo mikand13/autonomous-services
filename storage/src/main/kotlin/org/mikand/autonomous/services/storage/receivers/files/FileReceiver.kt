@@ -16,11 +16,11 @@ interface FileReceiver {
                                      resultHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver
 
     @Fluent
-    fun fileReceiverInitializeDelete(receiveInputEvent: ReceiveInputEvent): FileReceiver
+    fun fileReceiverDelete(receiveInputEvent: ReceiveInputEvent): FileReceiver
 
     @Fluent
-    fun fileReceiverInitializeDeleteWithReceipt(receiveInputEvent: ReceiveInputEvent,
-                                                resultHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver
+    fun fileReceiverDeleteWithReceipt(receiveInputEvent: ReceiveInputEvent,
+                                      resultHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver
 
     @Fluent
     fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver
