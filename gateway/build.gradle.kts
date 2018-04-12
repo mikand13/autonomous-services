@@ -375,11 +375,7 @@ publishing {
 
     (publications) {
         "mavenJava"(MavenPublication::class) {
-            artifact(file("$projectDir/build/libs/$nameOfArchive")) {
-                builtBy(tasks.findByName("shadowJar"))
-
-                classifier = "jar"
-            }
+            from(components["java"])
 
             artifact(sourcesJar) {
                 classifier = "sources"
@@ -411,15 +407,6 @@ publishing {
                 developer.appendNode("id", "mikand13")
                 developer.appendNode("name", "Anders Mikkelsen")
                 developer.appendNode("email", "mikkelsen.anders@gmail.com")
-
-                val dependenciesNode = asNode().appendNode("dependencies")
-
-                configurations.compile.allDependencies.forEach {
-                    val dependencyNode = dependenciesNode.appendNode("dependency")
-                    dependencyNode.appendNode("groupId", it.group)
-                    dependencyNode.appendNode("artifactId", it.name)
-                    dependencyNode.appendNode("version", it.version)
-                }
             }
         }
     }
