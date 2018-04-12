@@ -481,7 +481,7 @@ fun writeCustomConfToConf(vertxPort: Int): String {
 
     val builder = JsonBuilder(config)
     val openJson = builder.toPrettyString().removeSuffix("}")
-    val newConfig = JsonBuilder(JsonSlurper().parseText("$openJson, \"bridgePort\":$vertxPort}")).toPrettyString()
+    val newConfig = JsonBuilder(JsonSlurper().parseText("$openJson, \"gateway\":{\"bridgePort\":$vertxPort}}")).toPrettyString()
 
     outPutConfig.bufferedWriter().use { out ->
         out.write(newConfig)
