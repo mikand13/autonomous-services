@@ -27,13 +27,8 @@ package org.mikand.autonomous.services.gateway
 import com.nannoq.tools.cluster.services.HeartbeatService
 import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.*
-import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.web.Router
-import io.vertx.ext.web.handler.CookieHandler
-import io.vertx.ext.web.handler.sockjs.SockJSHandler
-import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions
 import io.vertx.servicediscovery.Record
 import org.mikand.autonomous.services.gateway.bridge.BridgeVerticle.Companion.DEFAULT_BRIDGE_PORT
 
@@ -63,6 +58,8 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
         val heartBeatFuture = Future.future<Record>()
         val depOptions = deploymentOptions.setConfig(config())
 
+        logger.info("Launching gateway with config: " + config().encodePrettily())
+
         deployBridgeAndHealthCheck(BRIDGE_VERTICLE, depOptions, bridgeFuture, heartBeatFuture)
 
         CompositeFuture.all(bridgeFuture, heartBeatFuture).setHandler({
@@ -86,7 +83,7 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
                                            deploymentOptions: DeploymentOptions?,
                                            bridgeFuture: Future<String>,
                                            heartBeatFuture: Future<Record>) {
-        vertx.deployVerticle(bridgeVerticle, deploymentOptions?.setConfig(config()), { deploymentID ->
+        vertx.deployVerticle(bridgeVerticle, deploymentOptions, { deploymentID ->
             if (deploymentID.succeeded()) {
                 val result = deploymentID.result()
                 logger.info("Deployed bridge: $result")

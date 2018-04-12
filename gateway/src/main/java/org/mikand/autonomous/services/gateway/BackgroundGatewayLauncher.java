@@ -46,6 +46,7 @@ public class BackgroundGatewayLauncher extends VertxCommandLauncher implements V
     private static final Logger logger = LoggerFactory.getLogger(GatewayLauncher.class.getSimpleName());
 
     private GatewayDeploymentVerticle gatewayDeploymentVerticle;
+    private JsonObject config;
 
     public static void main(final String[] args) {
         logger.info("Running from main with: " + Arrays.toString(args));
@@ -61,7 +62,9 @@ public class BackgroundGatewayLauncher extends VertxCommandLauncher implements V
 
     @Override
     public void afterConfigParsed(final JsonObject config) {
+        logger.info("Config parsed for BackgrounGatewayLauncher: " + config.encodePrettily());
 
+        this.config = config;
     }
 
     @Override
@@ -73,7 +76,12 @@ public class BackgroundGatewayLauncher extends VertxCommandLauncher implements V
     public void afterStartingVertx(final Vertx vertx) {
         gatewayDeploymentVerticle = new GatewayDeploymentVerticle();
 
-        vertx.deployVerticle(gatewayDeploymentVerticle, res -> {
+        final JsonObject gatewayConfig = config.getJsonObject("gateway");
+
+        final DeploymentOptions opts = new DeploymentOptions()
+                .setConfig(gatewayConfig == null ? new JsonObject() : gatewayConfig);
+
+        vertx.deployVerticle(gatewayDeploymentVerticle, opts, res -> {
             if (res.failed()) {
                 logger.error("Failed to deploy Gateway!", res.cause());
             }
