@@ -32,9 +32,7 @@ import java.io.File
 import java.io.IOException
 import java.util.*
 
-
-
-class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : FileReceiver, AbstractVerticle() {
+open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : FileReceiver, AbstractVerticle() {
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
     private lateinit var client: AmazonS3
@@ -45,25 +43,28 @@ class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : FileRe
     private lateinit var rootPath: String
     private lateinit var bucketName: String
     private lateinit var s3Endpoint: String
-    private lateinit var subscriptionAddress: String
     private lateinit var server: HttpServer
 
     private lateinit var tokenMap: AsyncMap<String, JsonObject>
 
+    private var subscriptionAddress: String? =
+            config.getString("subscriptionAddress") ?: "${S3FileReceiverImpl::class.java.name}.data"
+
     override fun start(startFuture: Future<Void>?) {
-        protocol = if (config.getBoolean("ssl")) "https" else "http"
-        region = config.getString("aws_s3_region") ?: "eu-west-1"
-        host = config.getString("aws_s3_file_receiver_host") ?: "localhost"
-        port = config.getInteger("aws_s3_file_receiver_port") ?: 5443
-        rootPath = config.getString("aws_s3_file_receiver_rootPath") ?: "/uploads"
-        bucketName = config.getString("aws_s3_file_receiver_bucketName") ?: "test-autonoumous-services-bucket"
-        s3Endpoint = config.getString("aws_s3_endPoint") ?: "s3.$region.amazonaws.com"
-        subscriptionAddress = S3FileReceiverImpl::class.java.name
+        val finalConfig = config.mergeIn(config())
+        protocol = if (finalConfig.getBoolean("ssl")) "https" else "http"
+        region = finalConfig.getString("aws_s3_region") ?: "eu-west-1"
+        host = finalConfig.getString("aws_s3_file_receiver_host") ?: "localhost"
+        port = finalConfig.getInteger("aws_s3_file_receiver_port") ?: 5443
+        rootPath = finalConfig.getString("aws_s3_file_receiver_rootPath") ?: "/uploads"
+        bucketName = finalConfig.getString("aws_s3_file_receiver_bucketName") ?: "test-autonoumous-services-bucket"
+        s3Endpoint = finalConfig.getString("aws_s3_endPoint") ?: "s3.$region.amazonaws.com"
+        subscriptionAddress = finalConfig.getString("subscriptionAddress") ?: subscriptionAddress
 
         logger.info("Connecting to Region: $region, Endpoint: $s3Endpoint, using Bucket: $bucketName")
 
-        val dynamoDBId = config.getString("aws_s3_iam_id")
-        val dynamoDBKey = config.getString("aws_s3_iam_key")
+        val dynamoDBId = finalConfig.getString("aws_s3_iam_id")
+        val dynamoDBKey = finalConfig.getString("aws_s3_iam_key")
 
         val creds = if (dynamoDBId == null || dynamoDBKey == null) AnonymousAWSCredentials() else
             BasicAWSCredentials(dynamoDBId, dynamoDBKey)

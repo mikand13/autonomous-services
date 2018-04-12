@@ -88,7 +88,7 @@ class S3FileReceiverImplTest : S3TestClass() {
     fun testFetchSubscriptionAddress(context: TestContext) {
         val async = context.async()
         val vertx = rule.vertx()
-        val address = S3FileReceiverImpl::class.java.name
+        val address = "${S3FileReceiverImpl::class.java.name}.data"
 
         vertx.deployVerticle(fileReceiver, {
             if (it.failed()) logger.error("Failure!", it.cause())

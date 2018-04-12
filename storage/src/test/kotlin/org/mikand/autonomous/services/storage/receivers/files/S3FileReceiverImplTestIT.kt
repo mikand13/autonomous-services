@@ -108,7 +108,7 @@ class S3FileReceiverImplTestIT : S3TestClass() {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
-                    val address = S3FileReceiverImpl::class.java.name
+                    val address = "${S3FileReceiverImpl::class.java.name}.data"
 
                     service.fetchSubscriptionAddress(Handler {
                         context.assertTrue(it.succeeded())
