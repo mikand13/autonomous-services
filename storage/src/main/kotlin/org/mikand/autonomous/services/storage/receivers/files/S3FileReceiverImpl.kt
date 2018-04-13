@@ -252,14 +252,24 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
         if (result.succeeded()) {
             tokenMap.remove(token, {
                 val key = result.result()
-                val output = JsonObject().put("key", key)
+                val output = JsonObject()
+                        .put("key", key)
+                        .put("extension", "mpp")
+                val outputEvent = ReceiveEvent(DATA.name, "MPP_UPLOADED", ReceiveStatus(200, statusObject = output))
+                val encode = Json.encode(outputEvent)
 
                 routingContext.response().statusCode = 202
                 routingContext.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
-                routingContext.put(BODY_CONTENT_TAG, output)
+                routingContext.put(BODY_CONTENT_TAG, encode)
                 routingContext.next()
 
-                vertx.eventBus().publish(subscriptionAddress, output)
+                vertx.eventBus().publish(subscriptionAddress, encode)
+
+                vertx.fileSystem().delete("file-uploads/$key", {
+                    if (it.failed()) {
+                        logger.error("Failed deletion of temporary file upload!", it.cause())
+                    }
+                })
             })
         } else {
             val cause = result.cause()

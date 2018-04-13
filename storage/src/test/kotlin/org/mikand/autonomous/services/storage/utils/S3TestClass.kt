@@ -9,6 +9,7 @@ import io.restassured.RestAssured.given
 import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
+import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
@@ -21,6 +22,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.rules.TestName
 import org.junit.runner.RunWith
+import org.mikand.autonomous.services.storage.receivers.ReceiveEvent
 import java.io.File
 
 @RunWith(VertxUnitRunner::class)
@@ -104,7 +106,7 @@ abstract class S3TestClass : ConfigSupport, RestAssuredFix {
         vertx.executeBlocking<String>({
             val file = File(path)
 
-            val key = given().
+            val key = ReceiveEvent(JsonObject(given().
                     multiPart("upload", file, Tika().detect(file)).
                 When().
                     post(url).
@@ -112,8 +114,8 @@ abstract class S3TestClass : ConfigSupport, RestAssuredFix {
                     .statusCode(202)
                         .extract()
                             .response()
-                                .jsonPath()
-                                    .getString("key")
+                                .asString()))
+                                    .body.statusObject.getString("key")
 
             it.complete(key)
         }, false, {
