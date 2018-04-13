@@ -107,7 +107,7 @@ abstract class S3TestClass : ConfigSupport, RestAssuredFix {
             val key = given().
                     multiPart("upload", file, Tika().detect(file)).
                 When().
-                    put(url).
+                    post(url).
                 then()
                     .statusCode(202)
                         .extract()

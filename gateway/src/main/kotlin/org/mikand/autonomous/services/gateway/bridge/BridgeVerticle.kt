@@ -203,7 +203,7 @@ internal class BridgeVerticle() : AbstractVerticle() {
         val address = rawMessage.getString("address")
 
         if (address != null) {
-            bridgeEvent.complete(java.lang.Boolean.TRUE)
+            bridgeEvent.complete(true)
         } else {
             bridgeEvent.fail("Unknown address!")
         }

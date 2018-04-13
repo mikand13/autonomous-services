@@ -23,6 +23,7 @@ import io.vertx.core.shareddata.AsyncMap
 import io.vertx.ext.web.FileUpload
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
+import org.apache.http.HttpHeaders
 import org.mikand.autonomous.services.storage.receivers.ReceiveEvent
 import org.mikand.autonomous.services.storage.receivers.ReceiveEventType.DATA
 import org.mikand.autonomous.services.storage.receivers.ReceiveEventType.DATA_FAILURE
@@ -85,17 +86,35 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
 
         client = clientBuilder.build()
 
-        val mapName = S3FileReceiverImpl::class.java.simpleName
-
-        vertx.sharedData().getAsyncMap<String, JsonObject>(mapName, {
-            if (it.succeeded()) {
-                tokenMap = it.result()
-                initializeHttpServer(startFuture)
-            } else {
-                logger.error("Unable to initialize tokenMap", it.cause())
-
-                startFuture?.fail(it.cause())
+        vertx.executeBlocking<Boolean>({
+            try {
+                if (!client.doesBucketExist(bucketName)) {
+                    try {
+                        client.createBucket(bucketName)
+                    } catch (e: AmazonS3Exception) {
+                        if (e.errorCode != "BucketAlreadyExists") {
+                            logger.error("Error in initializing bucket!", e)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                logger.error("Unable to access S3 to Verify Bucket!", e)
             }
+
+            it.complete()
+        }, false, {
+            val mapName = S3FileReceiverImpl::class.java.simpleName
+
+            vertx.sharedData().getAsyncMap<String, JsonObject>(mapName, {
+                if (it.succeeded()) {
+                    tokenMap = it.result()
+                    initializeHttpServer(startFuture)
+                } else {
+                    logger.error("Unable to initialize tokenMap", it.cause())
+
+                    startFuture?.fail(it.cause())
+                }
+            })
         })
     }
 
@@ -120,7 +139,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
         val router = Router.router(vertx)
 
         RoutingHelper.routeWithBodyAndLogger({
-            router.put("$rootPath/:token")
+            router.post("$rootPath/:token")
         }, {
             it.get().handler(this::uploadHandler)
         })
@@ -146,6 +165,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
                     }
                 } else {
                     routingContext.response().statusCode = 404
+                    routingContext.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
                     routingContext.put(BODY_CONTENT_TAG, JsonObject().put("error", "Token not found!").encode())
                     routingContext.next()
                 }
@@ -155,12 +175,14 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
 
     private fun noFilesResponse(routingContext: RoutingContext) {
         routingContext.response().statusCode = 400
+        routingContext.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
         routingContext.put(BODY_CONTENT_TAG, JsonObject().put("error", "No files received!").encode())
         routingContext.next()
     }
 
     private fun tooManyFilesResponse(routingContext: RoutingContext) {
         routingContext.response().statusCode = 400
+        routingContext.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
         routingContext.put(BODY_CONTENT_TAG, JsonObject().put("error", "Only one file per token!").encode())
         routingContext.next()
     }
@@ -214,10 +236,12 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
 
         vertx.executeBlocking<String>({
             val javaFile = File(tempFileName)
-            val putObjectResult = client.putObject(bucketName, tempFileName, javaFile)
+            val finalName = tempFileName.removePrefix("file-uploads/")
+
+            val putObjectResult = client.putObject(bucketName, finalName, javaFile)
 
             if (putObjectResult != null) {
-                it.complete(tempFileName)
+                it.complete(finalName)
             } else {
                 it.fail(AmazonS3Exception("Unable to upload file!"))
             }
@@ -227,9 +251,15 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
     private fun uploadResult(routingContext: RoutingContext, result: AsyncResult<String>, token: String) {
         if (result.succeeded()) {
             tokenMap.remove(token, {
+                val key = result.result()
+                val output = JsonObject().put("key", key)
+
                 routingContext.response().statusCode = 202
-                routingContext.put(BODY_CONTENT_TAG, JsonObject().put("key", result.result()))
+                routingContext.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                routingContext.put(BODY_CONTENT_TAG, output)
                 routingContext.next()
+
+                vertx.eventBus().publish(subscriptionAddress, output)
             })
         } else {
             val cause = result.cause()
@@ -246,12 +276,14 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
 
     private fun uploadFailedResponse(routingContext: RoutingContext) {
         routingContext.response().statusCode = 422
+        routingContext.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
         routingContext.put(BODY_CONTENT_TAG, JsonObject().put("error", "Unable to process file!").encode())
         routingContext.next()
     }
 
     private fun unableToReadFileResponse(routingContext: RoutingContext) {
         routingContext.response().statusCode = 422
+        routingContext.response().putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
         routingContext.put(BODY_CONTENT_TAG, JsonObject().put("error", "Unable to process file!").encode())
         routingContext.next()
     }
