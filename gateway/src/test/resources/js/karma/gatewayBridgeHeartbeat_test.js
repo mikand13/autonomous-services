@@ -61,27 +61,29 @@ describe('NotNull', function() {
     });
 });
 
-describe('HeartBeatService should return true', function() {
-    const url = "http://localhost:" + appConf.bridgePort + "/eventbus";
+for(var i = 0; i < 50; ++i) {
+    describe('HeartBeatService should return true', function () {
+        const url = "http://localhost:" + appConf.bridgePort + "/eventbus";
 
-    var eb;
-    var HeartbeatService;
+        var eb;
+        var HeartbeatService;
 
-    beforeEach(function() {
-        eb = new EventBus(url);
-        HeartbeatService = new HeartBeatService(eb, "GatewayHeartbeat");
+        beforeEach(function () {
+            eb = new EventBus(url);
+            HeartbeatService = new HeartBeatService(eb, "GatewayHeartbeat");
+        });
+
+        it('HeartBeatService should return true!', function (done) {
+            eb.onopen = function () {
+                HeartbeatService.ping(function (error, result) {
+                    expect(error).toBeNull();
+                    expect(result).toBe(true);
+
+                    eb.close();
+
+                    done();
+                });
+            }
+        });
     });
-
-    it('HeartBeatService should return true!', function (done) {
-        eb.onopen = function() {
-            HeartbeatService.ping(function (error, result) {
-                expect(error).toBeNull();
-                expect(result).toBe(true);
-
-                eb.close();
-
-                done();
-            });
-        }
-    });
-});
+}

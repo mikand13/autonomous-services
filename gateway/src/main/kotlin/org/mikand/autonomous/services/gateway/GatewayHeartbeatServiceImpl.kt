@@ -30,9 +30,11 @@ import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
 import io.vertx.core.Vertx
+import io.vertx.core.http.HttpClient
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
+import io.vertx.serviceproxy.ServiceException
 import org.mikand.autonomous.services.gateway.bridge.BridgeVerticle.Companion.DEFAULT_BRIDGE_PATH
 import org.mikand.autonomous.services.gateway.bridge.BridgeVerticle.Companion.DEFAULT_BRIDGE_PORT
 
@@ -43,38 +45,43 @@ internal class GatewayHeartbeatServiceImpl : HeartbeatService {
     private val vertx: Vertx
     private val config: JsonObject
 
-    private val bridgePath: String
-    private val bridgePort: Int
+    private val client: HttpClient
+    private val path: String
 
     @Suppress("ConvertSecondaryConstructorToPrimary")
     constructor(vertx: Vertx, config: JsonObject) {
         this.vertx = vertx
         this.config = config
+        this.client = vertx.createHttpClient()
 
         val customBridgePath = config.getString("bridgePath")
+        val bridgePath = if (customBridgePath == null) DEFAULT_BRIDGE_PATH else customBridgePath + DEFAULT_BRIDGE_PATH
+        val bridgePort = config.getInteger("bridgePort") ?: DEFAULT_BRIDGE_PORT
 
-        bridgePath = if (customBridgePath == null) DEFAULT_BRIDGE_PATH else customBridgePath + DEFAULT_BRIDGE_PATH
-        bridgePort = config.getInteger("bridgePort") ?: DEFAULT_BRIDGE_PORT
+        val ssl = if (config.getBoolean("ssl") == true) "s" else ""
+        path = "http$ssl://localhost:$bridgePort${bridgePath.removeSuffix("/*")}"
     }
 
     @Fluent
     override fun ping(resultHandler: Handler<AsyncResult<Boolean>>?): GatewayHeartbeatServiceImpl {
         logger.debug("Ping!")
 
-        val ssl = if (config.getBoolean("ssl") == true) "s" else ""
-        val path = "http$ssl://localhost:$bridgePort${bridgePath.removeSuffix("/*")}"
+        client.getAbs(path)
+            .handler({
+                if (it.statusCode() == 200) {
+                    resultHandler?.handle(Future.succeededFuture(true))
+                } else {
+                    logger.error("Error in ping communication after connection: ${it.statusMessage()}")
 
-        vertx.createHttpClient()
-                .getAbs(path)
-                .handler({
-                    if (it.statusCode() == 200) {
-                        resultHandler?.handle(Future.succeededFuture(true))
-                    } else {
-                        resultHandler?.handle(Future.failedFuture(it.statusMessage()))
-                    }
-                })
-                .exceptionHandler({ resultHandler?.handle(Future.failedFuture(it.cause)) })
-                .end()
+                    resultHandler?.handle(ServiceException.fail(it.statusCode(), it.statusMessage()))
+                }
+            })
+            .exceptionHandler({
+                logger.error("Error in ping communication!", it.cause)
+
+                resultHandler?.handle(ServiceException.fail(503, "Unavailable"))
+            })
+            .end()
 
         return this
     }

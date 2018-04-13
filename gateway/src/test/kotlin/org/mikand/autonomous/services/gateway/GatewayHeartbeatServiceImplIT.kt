@@ -32,6 +32,7 @@ import io.vertx.core.VertxOptions
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
+import io.vertx.ext.unit.junit.Repeat
 import io.vertx.ext.unit.junit.RunTestOnContext
 import io.vertx.ext.unit.junit.Timeout
 import io.vertx.ext.unit.junit.VertxUnitRunner
@@ -65,6 +66,7 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     val timeout = Timeout.seconds(15)
 
     @Test
+    @Repeat(50)
     fun testPing(context: TestContext) {
         val async = context.async()
         val verticle = BridgeVerticle()
@@ -96,6 +98,31 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     }
 
     @Test
+    @Repeat(50)
+    fun testPingHttp(context: TestContext) {
+        val async = context.async()
+        val verticle = GatewayDeploymentVerticle()
+        val port = findFreePort()
+        val config = getTestConfig().put("bridgePort", port)
+        val depOptions = DeploymentOptions().setConfig(config)
+        val vertx = rule.vertx()
+
+        vertx.deployVerticle(verticle, depOptions, {
+            context.assertTrue(it.succeeded())
+
+            vertx.createHttpClient().getAbs("http://localhost:$port/eventbus-health")
+                    .handler({
+                        context.assertTrue(it.statusCode() == 200)
+
+                        async.complete()
+                    })
+                    .exceptionHandler({ context.fail(it) })
+                    .end()
+        })
+    }
+
+    @Test
+    @Repeat(50)
     fun testFailedPing(context: TestContext) {
         val async = context.async()
         val config = getTestConfig().put("bridgePort", findFreePort())
@@ -121,11 +148,13 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     }
 
     @Test
+    @Repeat(50)
     fun testPingRuby(context: TestContext) {
         testLang(context, "rb/gateway_heartbeat_service_impl_test.rb")
     }
 
     @Test
+    @Repeat(50)
     fun testPingJs(context: TestContext) {
         testLang(context, "js/gatewayHeartbeatServiceImplTest.js")
     }
