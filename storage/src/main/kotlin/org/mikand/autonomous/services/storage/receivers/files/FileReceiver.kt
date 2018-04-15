@@ -12,6 +12,10 @@ import org.mikand.autonomous.services.storage.receivers.ReceiveInputEvent
 @ProxyGen
 interface FileReceiver {
     @Fluent
+    fun fileReceiverInitializeRead(receiveInputEvent: ReceiveInputEvent,
+                                   resultHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver
+
+    @Fluent
     fun fileReceiverInitializeCreate(receiveInputEvent: ReceiveInputEvent,
                                      resultHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver
 
