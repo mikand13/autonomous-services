@@ -25,6 +25,7 @@ import io.vertx.ext.web.FileUpload
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.serviceproxy.ServiceException
+import org.apache.commons.io.FilenameUtils
 import org.apache.http.HttpHeaders
 import org.mikand.autonomous.services.storage.receivers.ReceiveEvent
 import org.mikand.autonomous.services.storage.receivers.ReceiveEventType.DATA
@@ -40,6 +41,7 @@ import java.util.*
 open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : FileReceiver, AbstractVerticle() {
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
+    private lateinit var finalConfig: JsonObject
     private lateinit var client: AmazonS3
     private lateinit var region: String
     private lateinit var protocol: String
@@ -56,7 +58,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
             config.getString("subscriptionAddress") ?: "${S3FileReceiverImpl::class.java.name}.data"
 
     override fun start(startFuture: Future<Void>?) {
-        val finalConfig = config.mergeIn(config())
+        finalConfig = config.mergeIn(config())
         protocol = if (finalConfig.getBoolean("ssl")) "https" else "http"
         region = finalConfig.getString("aws_s3_region") ?: "eu-west-1"
         host = finalConfig.getString("aws_s3_file_receiver_host") ?: "localhost"
@@ -71,26 +73,22 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
         val dynamoDBId = finalConfig.getString("aws_s3_iam_id")
         val dynamoDBKey = finalConfig.getString("aws_s3_iam_key")
 
-        val creds = if (dynamoDBId == null || dynamoDBKey == null) AnonymousAWSCredentials() else
-            BasicAWSCredentials(dynamoDBId, dynamoDBKey)
-        val statCreds = AWSStaticCredentialsProvider(creds)
-        val endpoint = EndpointConfiguration(s3Endpoint, region)
-
-        val clientBuilder = AmazonS3ClientBuilder
-              .standard()
-              .withCredentials(statCreds)
-
-        val dev = host.contains("localhost")
-
-        if (dev) {
-            clientBuilder
-                    .withPathStyleAccessEnabled(true)
-                    .withEndpointConfiguration(endpoint)
-        }
-
-        client = clientBuilder.build()
-
         vertx.executeBlocking<Boolean>({
+            val creds = if (dynamoDBId == null || dynamoDBKey == null) AnonymousAWSCredentials() else
+                BasicAWSCredentials(dynamoDBId, dynamoDBKey)
+            val statCreds = AWSStaticCredentialsProvider(creds)
+            val endpoint = EndpointConfiguration(s3Endpoint, region)
+
+            val dev = finalConfig.getBoolean("dev") ?: false
+            val test = finalConfig.getBoolean("test") ?: false
+
+            client = AmazonS3ClientBuilder
+                    .standard()
+                    .withEndpointConfiguration(endpoint)
+                    .withCredentials(statCreds)
+                    .withPathStyleAccessEnabled(dev || test)
+                    .build()
+
             try {
                 if (!client.doesBucketExist(bucketName)) {
                     try {
@@ -107,18 +105,22 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
 
             it.complete()
         }, false, {
-            val mapName = S3FileReceiverImpl::class.java.simpleName
+            if (it.succeeded()) {
+                val mapName = S3FileReceiverImpl::class.java.simpleName
 
-            vertx.sharedData().getAsyncMap<String, JsonObject>(mapName, {
-                if (it.succeeded()) {
-                    tokenMap = it.result()
-                    initializeHttpServer(startFuture)
-                } else {
-                    logger.error("Unable to initialize tokenMap", it.cause())
+                vertx.sharedData().getAsyncMap<String, JsonObject>(mapName, {
+                    if (it.succeeded()) {
+                        tokenMap = it.result()
+                        initializeHttpServer(startFuture)
+                    } else {
+                        logger.error("Unable to initialize tokenMap", it.cause())
 
-                    startFuture?.fail(it.cause())
-                }
-            })
+                        startFuture?.fail(it.cause())
+                    }
+                })
+            } else {
+                startFuture?.fail(it.cause())
+            }
         })
     }
 
@@ -248,7 +250,10 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
             }
         }, false, {
             if (it.succeeded()) {
-                val url = "$protocol://$host:$port$rootPath/$objectKey"
+                val alternateDownloadHost = finalConfig.getString("custom_download_host") ?: "localhost"
+                val dev = finalConfig.getBoolean("dev") ?: false
+                val downloadHost = if (dev) alternateDownloadHost else host
+                val url = "$protocol://$downloadHost:$port$rootPath/$objectKey"
 
                 resultHandler.handle(Future.succeededFuture(ReceiveEvent(DATA.name, "${objectKey}_DOWNLOAD_URL",
                         ReceiveStatus(200, statusObject = JsonObject()
@@ -336,10 +341,11 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
 
         vertx.executeBlocking<UploadResult>({ fut ->
             val javaFile = File(tempFileName)
-            val extension = javaFile.extension
+            val extension = FilenameUtils.getExtension(fileUpload.fileName())
             val finalName = tempFileName.removePrefix("file-uploads/")
             val metaData = ObjectMetadata()
             metaData.userMetadata["extension"] = extension
+            metaData.contentLength = javaFile.length()
 
             javaFile.inputStream().use {
                 val putObjectResult = client.putObject(bucketName, finalName, it, metaData)
@@ -362,7 +368,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
                 val output = JsonObject()
                         .put("key", key)
                         .put("extension", extension)
-                        .put("fullName", "$key.$upload.extension}")
+                        .put("fullName", "$key.${upload.extension}")
                 val outputEvent = ReceiveEvent(DATA.name, "${extension.toUpperCase()}_UPLOADED",
                         ReceiveStatus(200, statusObject = output))
                 val encode = Json.encode(outputEvent)
