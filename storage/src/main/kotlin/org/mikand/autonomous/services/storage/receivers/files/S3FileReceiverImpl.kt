@@ -240,16 +240,22 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
                                             resultHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver {
         val objectKey = receiveInputEvent.body.getString("key")
 
-        vertx.executeBlocking<Boolean>({
-            it.complete(client.doesObjectExist(bucketName, objectKey))
+        vertx.executeBlocking<String>({
+            if (client.doesObjectExist(bucketName, objectKey)) {
+                it.complete(client.getObjectMetadata(bucketName, objectKey).userMetadata["extension"])
+            } else {
+                it.fail(IllegalArgumentException())
+            }
         }, false, {
             if (it.succeeded()) {
                 val url = "$protocol://$host:$port$rootPath/$objectKey"
 
                 resultHandler.handle(Future.succeededFuture(ReceiveEvent(DATA.name, "${objectKey}_DOWNLOAD_URL",
-                        ReceiveStatus(200, statusObject = JsonObject().put("downloadUrl", url)))))
+                        ReceiveStatus(200, statusObject = JsonObject()
+                                .put("downloadUrl", url)
+                                .put("extension", it.result())))))
             } else {
-                fileDoesNotExistResponse(it, resultHandler, "FILE_UPLOAD_URL")
+                fileDoesNotExistResponse(it.map(false), resultHandler, "FILE_UPLOAD_URL")
             }
         })
 
