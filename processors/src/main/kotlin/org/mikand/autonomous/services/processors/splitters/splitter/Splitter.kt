@@ -29,6 +29,7 @@ import io.vertx.codegen.annotations.Fluent
 import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
+import org.mikand.autonomous.services.core.events.DataEventImpl
 
 @VertxGen(concrete = false)
 interface Splitter<Input, Output> {
@@ -36,8 +37,8 @@ interface Splitter<Input, Output> {
     fun split(data: Input): Splitter<Input, Output>
 
     @Fluent
-    fun splitWithReceipt(data: Input, responseHandler: Handler<AsyncResult<SplitEvent>>): Splitter<Input, Output>
+    fun splitWithReceipt(data: Input, responseHandler: Handler<AsyncResult<DataEventImpl>>): Splitter<Input, Output>
 
     @Fluent
-    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<SplitEvent>>): Splitter<Input, Output>
+    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<DataEventImpl>>): Splitter<Input, Output>
 }

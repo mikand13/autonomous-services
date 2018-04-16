@@ -29,12 +29,14 @@ import io.vertx.codegen.annotations.Fluent
 import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
+import org.mikand.autonomous.services.core.events.CommandEventImpl
+import org.mikand.autonomous.services.core.events.DataEventImpl
 
 @VertxGen(concrete = false)
 interface Combiner {
     @Fluent
-    fun combine(combineInputEvent: CombineInputEvent, responseHandler: Handler<AsyncResult<CombineEvent>>): Combiner
+    fun combine(combineInputEvent: CommandEventImpl, responseHandler: Handler<AsyncResult<DataEventImpl>>): Combiner
 
     @Fluent
-    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<CombineEvent>>): Combiner
+    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<DataEventImpl>>): Combiner
 }

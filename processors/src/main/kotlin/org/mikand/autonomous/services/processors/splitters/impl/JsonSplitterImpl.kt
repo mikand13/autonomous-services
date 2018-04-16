@@ -8,11 +8,11 @@ import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.servicediscovery.Record
+import org.mikand.autonomous.services.core.events.CommandEventBuilder
+import org.mikand.autonomous.services.core.events.CommandEventImpl
+import org.mikand.autonomous.services.core.events.DataEventBuilder
+import org.mikand.autonomous.services.core.events.DataEventImpl
 import org.mikand.autonomous.services.processors.splitters.concretes.JsonSplitter
-import org.mikand.autonomous.services.processors.splitters.splitter.SplitEvent
-import org.mikand.autonomous.services.processors.splitters.splitter.SplitEventType
-import org.mikand.autonomous.services.processors.splitters.splitter.SplitInputEvent
-import org.mikand.autonomous.services.processors.splitters.splitter.SplitStatus
 
 open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticle(), JsonSplitter {
     @Suppress("unused")
@@ -57,7 +57,7 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     }
 
     @Fluent
-    override fun split(splitInputEvent: SplitInputEvent): JsonSplitter {
+    override fun split(splitInputEvent: CommandEventImpl): JsonSplitter {
         splitWithReceipt(splitInputEvent, Handler {
             if (it.failed()) logger.error("Field splitting ${splitInputEvent.body.encodePrettily()}", it.cause())
         })
@@ -66,7 +66,7 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     }
 
     @Fluent
-    override fun splitWithReceipt(splitInputEvent: SplitInputEvent, responseHandler: Handler<AsyncResult<SplitEvent>>): JsonSplitter {
+    override fun splitWithReceipt(splitInputEvent: CommandEventImpl, responseHandler: Handler<AsyncResult<DataEventImpl>>): JsonSplitter {
         val output = JsonObject()
 
         try {
@@ -80,15 +80,25 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
         } catch (ise: IllegalStateException) {
             logger.error("Field splitting ${splitInputEvent.body.encodePrettily()}", ise)
 
-            val splitEvent = SplitEvent(SplitEventType.COMMAND_FAILURE.name, "SPLIT", SplitStatus(500, "Unparseable"))
+            val errorEvent = CommandEventBuilder()
+                    .withFailure()
+                    .withAction("SPLIT_FAILURE")
+                    .withMetadata(JsonObject().put("statusCode", 500))
+                    .withBody(JsonObject().put("error", "Unparseable"))
+                    .build()
 
-            responseHandler.handle(Future.failedFuture(Json.encodePrettily(splitEvent)))
+            responseHandler.handle(Future.failedFuture(Json.encodePrettily(errorEvent)))
         } finally {
-            val splitEvent = SplitEvent(SplitEventType.DATA.name, "SPLIT", SplitStatus(200, "Processed", output))
+            val outputEvent = DataEventBuilder()
+                    .withSuccess()
+                    .withAction("SPLIT")
+                    .withMetadata(JsonObject().put("statusCode", 200))
+                    .withBody(output)
+                    .build()
 
-            responseHandler.handle(Future.succeededFuture(splitEvent))
+            responseHandler.handle(Future.succeededFuture(outputEvent))
 
-            thisVertx.eventBus().publish(subscriptionAddress, JsonObject(Json.encode(splitEvent)))
+            thisVertx.eventBus().publish(subscriptionAddress, outputEvent.toJson())
         }
 
         return this
@@ -127,9 +137,15 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     }
 
     @Fluent
-    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<SplitEvent>>): JsonSplitter {
-        addressHandler.handle(Future.succeededFuture(SplitEvent(SplitEventType.DATA.name, "ADDRESS",
-                SplitStatus(200, statusObject = JsonObject().put("address", subscriptionAddress)))))
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<DataEventImpl>>): JsonSplitter {
+        val outputEvent = DataEventBuilder()
+                .withSuccess()
+                .withAction("ADDRESS")
+                .withMetadata(JsonObject().put("statusCode", 200))
+                .withBody(JsonObject().put("address", subscriptionAddress))
+                .build()
+
+        addressHandler.handle(Future.succeededFuture(outputEvent))
 
         return this
     }

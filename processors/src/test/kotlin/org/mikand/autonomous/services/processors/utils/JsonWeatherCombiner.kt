@@ -29,16 +29,18 @@ import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
 import io.vertx.core.json.JsonObject
-import org.mikand.autonomous.services.processors.combiners.combiner.CombineEvent
-import org.mikand.autonomous.services.processors.combiners.combiner.CombineEventType
-import org.mikand.autonomous.services.processors.combiners.combiner.CombineInputEvent
-import org.mikand.autonomous.services.processors.combiners.combiner.CombineStatus
+import org.mikand.autonomous.services.core.events.CommandEventImpl
+import org.mikand.autonomous.services.core.events.DataEventBuilder
+import org.mikand.autonomous.services.core.events.DataEventImpl
 import org.mikand.autonomous.services.processors.combiners.impl.JsonCombinerImpl
 
 class JsonWeatherCombiner(config: JsonObject = JsonObject()): JsonCombinerImpl(config) {
-    override fun combine(combineInputEvent: CombineInputEvent, responseHandler: Handler<AsyncResult<CombineEvent>>): JsonWeatherCombiner {
-        responseHandler.handle(Future.succeededFuture(CombineEvent(type = CombineEventType.DATA.name, action = "WEATHER",
-                body = CombineStatus(200, statusObject = JsonObject()))))
+    override fun combine(combineInputEvent: CommandEventImpl, responseHandler: Handler<AsyncResult<DataEventImpl>>): JsonWeatherCombiner {
+        responseHandler.handle(Future.succeededFuture(DataEventBuilder()
+                .withSuccess()
+                .withAction("WEATHER")
+                .withMetadata(JsonObject().put("statusCode", 200))
+                .build()))
 
         return this
     }

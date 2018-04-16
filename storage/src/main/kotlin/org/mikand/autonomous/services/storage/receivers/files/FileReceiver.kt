@@ -5,27 +5,27 @@ import io.vertx.codegen.annotations.ProxyGen
 import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
-import org.mikand.autonomous.services.storage.receivers.ReceiveEvent
-import org.mikand.autonomous.services.storage.receivers.ReceiveInputEvent
+import org.mikand.autonomous.services.core.events.CommandEventImpl
+import org.mikand.autonomous.services.core.events.DataEventImpl
 
 @VertxGen
 @ProxyGen
 interface FileReceiver {
     @Fluent
-    fun fileReceiverInitializeRead(receiveInputEvent: ReceiveInputEvent,
-                                   resultHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver
+    fun fileReceiverInitializeRead(receiveInputEvent: CommandEventImpl,
+                                   resultHandler: Handler<AsyncResult<DataEventImpl>>): FileReceiver
 
     @Fluent
-    fun fileReceiverInitializeCreate(receiveInputEvent: ReceiveInputEvent,
-                                     resultHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver
+    fun fileReceiverInitializeCreate(receiveInputEvent: CommandEventImpl,
+                                     resultHandler: Handler<AsyncResult<DataEventImpl>>): FileReceiver
 
     @Fluent
-    fun fileReceiverDelete(receiveInputEvent: ReceiveInputEvent): FileReceiver
+    fun fileReceiverDelete(receiveInputEvent: CommandEventImpl): FileReceiver
 
     @Fluent
-    fun fileReceiverDeleteWithReceipt(receiveInputEvent: ReceiveInputEvent,
-                                      resultHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver
+    fun fileReceiverDeleteWithReceipt(receiveInputEvent: CommandEventImpl,
+                                      resultHandler: Handler<AsyncResult<DataEventImpl>>): FileReceiver
 
     @Fluent
-    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver
+    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<DataEventImpl>>): FileReceiver
 }

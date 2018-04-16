@@ -27,11 +27,10 @@ import io.vertx.ext.web.RoutingContext
 import io.vertx.serviceproxy.ServiceException
 import org.apache.commons.io.FilenameUtils
 import org.apache.http.HttpHeaders
-import org.mikand.autonomous.services.storage.receivers.ReceiveEvent
-import org.mikand.autonomous.services.storage.receivers.ReceiveEventType.DATA
-import org.mikand.autonomous.services.storage.receivers.ReceiveEventType.DATA_FAILURE
-import org.mikand.autonomous.services.storage.receivers.ReceiveInputEvent
-import org.mikand.autonomous.services.storage.receivers.ReceiveStatus
+import org.mikand.autonomous.services.core.events.CommandEventBuilder
+import org.mikand.autonomous.services.core.events.CommandEventImpl
+import org.mikand.autonomous.services.core.events.DataEventBuilder
+import org.mikand.autonomous.services.core.events.DataEventImpl
 import java.io.File
 import java.io.IOException
 import java.time.Instant
@@ -238,8 +237,8 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
         server.close(stopFuture?.completer())
     }
 
-    override fun fileReceiverInitializeRead(receiveInputEvent: ReceiveInputEvent,
-                                            resultHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver {
+    override fun fileReceiverInitializeRead(receiveInputEvent: CommandEventImpl,
+                                            resultHandler: Handler<AsyncResult<DataEventImpl>>): FileReceiver {
         val objectKey = receiveInputEvent.body.getString("key")
 
         vertx.executeBlocking<String>({
@@ -255,10 +254,14 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
                 val downloadHost = if (dev) alternateDownloadHost else host
                 val url = "$protocol://$downloadHost:$port$rootPath/$objectKey"
 
-                resultHandler.handle(Future.succeededFuture(ReceiveEvent(DATA.name, "${objectKey}_DOWNLOAD_URL",
-                        ReceiveStatus(200, statusObject = JsonObject()
+                resultHandler.handle(Future.succeededFuture(DataEventBuilder()
+                        .withSuccess()
+                        .withAction("${objectKey}_DOWNLOAD_URL")
+                        .withMetadata(JsonObject().put("statusCode", 200))
+                        .withBody(JsonObject()
                                 .put("downloadUrl", url)
-                                .put("extension", it.result())))))
+                                .put("extension", it.result()))
+                        .build()))
             } else {
                 fileDoesNotExistResponse(it.map(false), resultHandler, "FILE_UPLOAD_URL")
             }
@@ -267,24 +270,30 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
         return this
     }
 
-    override fun fileReceiverInitializeCreate(receiveInputEvent: ReceiveInputEvent,
-                                              resultHandler: Handler<AsyncResult<ReceiveEvent>>): S3FileReceiverImpl {
+    override fun fileReceiverInitializeCreate(receiveInputEvent: CommandEventImpl,
+                                              resultHandler: Handler<AsyncResult<DataEventImpl>>): S3FileReceiverImpl {
         val token = UUID.randomUUID().toString()
         val uploadJson = JsonObject().put("uploadUrl", "$protocol://$host:$port$rootPath/$token")
+        val eventBuilder = DataEventBuilder()
 
         tokenMap.put(token, receiveInputEvent.body, {
             if (it.succeeded()) {
-                val receiveStatus = ReceiveStatus(202, statusObject = uploadJson)
-                val receiveEvent = ReceiveEvent(DATA.name, "FILE_UPLOAD_URL", receiveStatus)
+                eventBuilder
+                        .withSuccess()
+                        .withAction("FILE_UPLOAD_URL")
+                        .withMetadata(JsonObject().put("statusCode", 202))
+                        .withBody(uploadJson)
 
-                resultHandler.handle(Future.succeededFuture(receiveEvent))
+                resultHandler.handle(Future.succeededFuture(eventBuilder.build()))
             } else {
-                val receiveStatus = ReceiveStatus(500, statusObject = JsonObject())
-                val receiveEvent = ReceiveEvent(DATA_FAILURE.name, "FILE_UPLOAD_URL_FAILURE", receiveStatus)
+                eventBuilder
+                        .withFailure()
+                        .withAction("FILE_UPLOAD_URL_FAILURE")
+                        .withMetadata(JsonObject().put("statusCode", 500))
 
                 logger.error("Error creating URL!", it.cause())
 
-                resultHandler.handle(ServiceException.fail(500, "", JsonObject(Json.encode(receiveEvent))))
+                resultHandler.handle(ServiceException.fail(500, "", eventBuilder.build().toJson()))
             }
         })
 
@@ -292,14 +301,14 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
         return this
     }
 
-    override fun fileReceiverDelete(receiveInputEvent: ReceiveInputEvent): S3FileReceiverImpl {
+    override fun fileReceiverDelete(receiveInputEvent: CommandEventImpl): S3FileReceiverImpl {
         fileReceiverDeleteWithReceipt(receiveInputEvent, Handler {})
 
         return this
     }
 
-    override fun fileReceiverDeleteWithReceipt(receiveInputEvent: ReceiveInputEvent,
-                                               resultHandler: Handler<AsyncResult<ReceiveEvent>>): S3FileReceiverImpl {
+    override fun fileReceiverDeleteWithReceipt(receiveInputEvent: CommandEventImpl,
+                                               resultHandler: Handler<AsyncResult<DataEventImpl>>): S3FileReceiverImpl {
         val objectKey = receiveInputEvent.body.getString("key")
 
         vertx.executeBlocking<Boolean>({
@@ -315,22 +324,25 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
         return this
     }
 
-    private fun fileDoesNotExistResponse(it: AsyncResult<Boolean>, resultHandler: Handler<AsyncResult<ReceiveEvent>>,
+    private fun fileDoesNotExistResponse(it: AsyncResult<Boolean>, resultHandler: Handler<AsyncResult<DataEventImpl>>,
                                          failureRoot: String) {
         if (it.cause() != null) {
             logger.error("Error creating URL!", it.cause())
 
-            val receiveStatus = ReceiveStatus(500,
-                    statusObject = JsonObject())
-            val receiveEvent = ReceiveEvent(DATA_FAILURE.name, "${failureRoot}_FAILURE", receiveStatus)
+            val eventBuilder = DataEventBuilder()
+                    .withFailure()
+                    .withAction("FILE_UPLOAD_URL_FAILURE")
+                    .withMetadata(JsonObject().put("statusCode", 500))
 
-            resultHandler.handle(ServiceException.fail(500, "", JsonObject(Json.encode(receiveEvent))))
+            resultHandler.handle(ServiceException.fail(500, "", eventBuilder.build().toJson()))
         } else {
-            val receiveStatus = ReceiveStatus(404,
-                    statusObject = JsonObject().put("error", "File does not exist!"))
-            val receiveEvent = ReceiveEvent(DATA_FAILURE.name, "${failureRoot}_FAILURE", receiveStatus)
+            val eventBuilder = CommandEventBuilder()
+                    .withFailure()
+                    .withAction("${failureRoot}_FAILURE")
+                    .withMetadata(JsonObject().put("statusCode", 404))
+                    .withBody(JsonObject().put("error", "File does not exist!"))
 
-            resultHandler.handle(ServiceException.fail(404, "", JsonObject(Json.encode(receiveEvent))))
+            resultHandler.handle(ServiceException.fail(404, "", eventBuilder.build().toJson()))
         }
     }
 
@@ -369,8 +381,13 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
                         .put("key", key)
                         .put("extension", extension)
                         .put("fullName", "$key.${upload.extension}")
-                val outputEvent = ReceiveEvent(DATA.name, "${extension.toUpperCase()}_UPLOADED",
-                        ReceiveStatus(200, statusObject = output))
+                val outputEvent = DataEventBuilder()
+                        .withSuccess()
+                        .withAction("${extension.toUpperCase()}_UPLOADED")
+                        .withMetadata(JsonObject().put("statusCode", 200))
+                        .withBody(output)
+                        .build()
+
                 val encode = Json.encode(outputEvent)
 
                 routingContext.response().statusCode = 202
@@ -413,7 +430,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
         routingContext.next()
     }
 
-    private fun handleFileDeletion(key: String, resultHandler: Handler<AsyncResult<ReceiveEvent>>) {
+    private fun handleFileDeletion(key: String, resultHandler: Handler<AsyncResult<DataEventImpl>>) {
         vertx.executeBlocking<Boolean>({
             client.deleteObject(bucketName, key)
 
@@ -421,7 +438,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
         }, false, { res -> deletionResult(res, resultHandler) })
     }
 
-    private fun deletionResult(res: AsyncResult<Boolean>, resultHandler: Handler<AsyncResult<ReceiveEvent>>) {
+    private fun deletionResult(res: AsyncResult<Boolean>, resultHandler: Handler<AsyncResult<DataEventImpl>>) {
         if (res.succeeded()) {
             successFullDeleteResponse(resultHandler)
         } else {
@@ -429,25 +446,37 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) : F
         }
     }
 
-    private fun successFullDeleteResponse(resultHandler: Handler<AsyncResult<ReceiveEvent>>) {
-        val receiveStatus = ReceiveStatus(204, statusObject = JsonObject())
-        val receiveEvent = ReceiveEvent(DATA.name, "FILE_DELETION", receiveStatus)
+    private fun successFullDeleteResponse(resultHandler: Handler<AsyncResult<DataEventImpl>>) {
+        val outputEvent = DataEventBuilder()
+                .withSuccess()
+                .withAction("FILE_DELETION")
+                .withMetadata(JsonObject().put("statusCode", 204))
+                .build()
 
-        resultHandler.handle(Future.succeededFuture(receiveEvent))
+        resultHandler.handle(Future.succeededFuture(outputEvent))
     }
 
-    private fun failedDeleteResponse(res: AsyncResult<Boolean>, resultHandler: Handler<AsyncResult<ReceiveEvent>>) {
+    private fun failedDeleteResponse(res: AsyncResult<Boolean>, resultHandler: Handler<AsyncResult<DataEventImpl>>) {
         logger.error("Failed deletion", res.cause())
 
-        val receiveStatus = ReceiveStatus(500, statusObject = JsonObject())
-        val receiveEvent = ReceiveEvent(DATA_FAILURE.name, "FILE_DELETION_FAILURE", receiveStatus)
+        val outputEvent = DataEventBuilder()
+                .withFailure()
+                .withAction("FILE_DELETION_FAILURE")
+                .withMetadata(JsonObject().put("statusCode", 500))
+                .build()
 
-        resultHandler.handle(ServiceException.fail(500, "", JsonObject(Json.encode(receiveEvent))))
+        resultHandler.handle(ServiceException.fail(500, "", outputEvent.toJson()))
     }
 
-    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<ReceiveEvent>>): FileReceiver {
-        addressHandler.handle(Future.succeededFuture(ReceiveEvent(DATA.name, "ADDRESS",
-                ReceiveStatus(200, statusObject = JsonObject().put("address", subscriptionAddress)))))
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<DataEventImpl>>): FileReceiver {
+        val outputEvent = DataEventBuilder()
+                .withSuccess()
+                .withAction("ADDRESS")
+                .withMetadata(JsonObject().put("statusCode", 200))
+                .withBody(JsonObject().put("address", subscriptionAddress))
+                .build()
+
+        addressHandler.handle(Future.succeededFuture(outputEvent))
 
         return this
     }

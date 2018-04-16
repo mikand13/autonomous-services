@@ -10,8 +10,8 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.storage.receivers.ReceiveEventType
-import org.mikand.autonomous.services.storage.receivers.ReceiveInputEvent
+import org.mikand.autonomous.services.core.events.CommandEventBuilder
+import org.mikand.autonomous.services.core.events.CommandEventImpl
 import org.mikand.autonomous.services.storage.utils.S3TestClass
 
 @RunWith(VertxUnitRunner::class)
@@ -41,7 +41,7 @@ class S3FileReceiverImplTestIT : S3TestClass() {
                     service.fileReceiverInitializeCreate(buildUploadEvent(), Handler {
                         context.assertTrue(it.succeeded())
 
-                        val uploadUrl = it.result().body.statusObject.getString("uploadUrl")
+                        val uploadUrl = it.result().body.getString("uploadUrl")
 
                         uploadFile(uploadUrl, imageFile.absolutePath, Handler {
                             if (it.succeeded()) {
@@ -71,7 +71,7 @@ class S3FileReceiverImplTestIT : S3TestClass() {
                     service.fileReceiverInitializeCreate(buildUploadEvent(), Handler {
                         context.assertTrue(it.succeeded())
 
-                        val uploadUrl = it.result().body.statusObject.getString("uploadUrl")
+                        val uploadUrl = it.result().body.getString("uploadUrl")
 
                         uploadFile(uploadUrl, imageFile.absolutePath, Handler {
                             if (it.succeeded()) {
@@ -89,12 +89,19 @@ class S3FileReceiverImplTestIT : S3TestClass() {
         }))
     }
 
-    private fun buildUploadEvent(): ReceiveInputEvent {
-        return ReceiveInputEvent(ReceiveEventType.COMMAND.name, "FILE_UPLOAD", JsonObject())
+    private fun buildUploadEvent(): CommandEventImpl {
+        return CommandEventBuilder()
+                .withSuccess()
+                .withAction("FILE_UPLOAD")
+                .build()
     }
 
-    private fun buildDeletwEvent(key: String): ReceiveInputEvent {
-        return ReceiveInputEvent(ReceiveEventType.COMMAND.name, "FILE_DELETE", JsonObject().put("key", key))
+    private fun buildDeletwEvent(key: String): CommandEventImpl {
+        return CommandEventBuilder()
+                .withSuccess()
+                .withAction("FILE_DELETE")
+                .withBody(JsonObject().put("key", key))
+                .build()
     }
 
     @Test
@@ -112,7 +119,7 @@ class S3FileReceiverImplTestIT : S3TestClass() {
 
                     service.fetchSubscriptionAddress(Handler {
                         context.assertTrue(it.succeeded())
-                        context.assertEquals(address, it.result().body.statusObject.getString("address"))
+                        context.assertEquals(address, it.result().body.getString("address"))
                         async.complete()
                     })
                 }

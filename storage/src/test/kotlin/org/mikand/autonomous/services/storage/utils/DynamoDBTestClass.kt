@@ -17,11 +17,10 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.*
 import org.junit.rules.TestName
 import org.junit.runner.RunWith
+import org.mikand.autonomous.services.core.events.CommandEventBuilder
+import org.mikand.autonomous.services.core.events.DataEventImpl
 import org.mikand.autonomous.services.storage.gen.TestModelReceiverImpl
 import org.mikand.autonomous.services.storage.gen.models.TestModel
-import org.mikand.autonomous.services.storage.receivers.ReceiveEvent
-import org.mikand.autonomous.services.storage.receivers.ReceiveEventType.COMMAND
-import org.mikand.autonomous.services.storage.receivers.ReceiveInputEvent
 import java.time.LocalDate
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
@@ -101,8 +100,12 @@ abstract class DynamoDBTestClass : ConfigSupport {
         dynamoDBUtils.stopDynamoDB(freePort)
     }
 
-    fun createItem(repo: TestModelReceiverImpl, createHandler: Handler<AsyncResult<ReceiveEvent>>) {
-        val receiveEvent = ReceiveInputEvent(COMMAND.name, "RECEIVE_CREATE", TestModel().toJson())
+    fun createItem(repo: TestModelReceiverImpl, createHandler: Handler<AsyncResult<DataEventImpl>>) {
+        val receiveEvent = CommandEventBuilder()
+                .withSuccess()
+                .withAction("RECEIVE_CREATE")
+                .withBody(TestModel().toJson())
+                .build()
 
         repo.receiverCreateWithReceipt(receiveEvent, createHandler)
     }
@@ -130,8 +133,12 @@ abstract class DynamoDBTestClass : ConfigSupport {
         }
 
         items.forEach { item ->
-            val future = Future.future<ReceiveEvent>()
-            val receiveEvent = ReceiveInputEvent(COMMAND.name, "RECEIVE_CREATE", item.toJson())
+            val future = Future.future<DataEventImpl>()
+            val receiveEvent = CommandEventBuilder()
+                    .withSuccess()
+                    .withAction("RECEIVE_CREATE")
+                    .withBody(item.toJson())
+                    .build()
 
             repo.receiverCreateWithReceipt(receiveEvent, future.completer())
 
@@ -145,7 +152,7 @@ abstract class DynamoDBTestClass : ConfigSupport {
                 resultHandler.handle(Future.failedFuture(res.cause()))
             } else {
                 val collect = futures
-                        .map { TestModel((it.result() as ReceiveEvent).body.statusObject) }
+                        .map { TestModel((it.result() as DataEventImpl).body) }
 
                 resultHandler.handle(Future.succeededFuture(collect))
             }

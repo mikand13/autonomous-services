@@ -27,7 +27,6 @@ package org.mikand.autonomous.services.data.compute
 
 import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.Handler
-import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
@@ -37,7 +36,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.data.compute.ComputeEventType.COMMAND
+import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.data.model.JsonCompute
 import org.mikand.autonomous.services.gateway.utils.ConfigSupport
 
@@ -67,7 +66,10 @@ class ComputeIT : ConfigSupport {
                 context.assertTrue(it.succeeded())
 
                 val computeService = it.result()
-                val inputEvent = ComputeInputEvent(type = COMMAND.name, action = "JSON_COMPUTE", body = JsonObject())
+                val inputEvent = CommandEventBuilder()
+                        .withSuccess()
+                        .withAction("JSON_COMPUTE")
+                        .build()
 
                 computeService.compute(inputEvent, Handler {
                     context.assertTrue(it.succeeded())
@@ -92,7 +94,7 @@ class ComputeIT : ConfigSupport {
                 computeService.fetchSubscriptionAddress(Handler {
                     context.assertTrue(it.succeeded())
                     context.assertEquals(JsonCompute::class.java.simpleName,
-                            it.result().body.statusObject.getString("address"))
+                            it.result().body.getString("address"))
                     async.complete()
                 })
             })

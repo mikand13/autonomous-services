@@ -22,7 +22,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.rules.TestName
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.storage.receivers.ReceiveEvent
+import org.mikand.autonomous.services.core.events.DataEventImpl
 import java.io.File
 
 @RunWith(VertxUnitRunner::class)
@@ -106,7 +106,7 @@ abstract class S3TestClass : ConfigSupport, RestAssuredFix {
         vertx.executeBlocking<String>({
             val file = File(path)
 
-            val key = ReceiveEvent(JsonObject(given().
+            val key = DataEventImpl(JsonObject(given().
                     multiPart("upload", file, Tika().detect(file)).
                 When().
                     post(url).
@@ -115,7 +115,7 @@ abstract class S3TestClass : ConfigSupport, RestAssuredFix {
                         .extract()
                             .response()
                                 .asString()))
-                                    .body.statusObject.getString("key")
+                                    .body.getString("key")
 
             it.complete(key)
         }, false, {

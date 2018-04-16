@@ -5,13 +5,15 @@ import io.vertx.codegen.annotations.ProxyGen
 import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
+import org.mikand.autonomous.services.core.events.CommandEventImpl
+import org.mikand.autonomous.services.core.events.DataEventImpl
 
 @VertxGen
 @ProxyGen
 interface Compute {
     @Fluent
-    fun compute(computeInputEvent: ComputeInputEvent, responseHandler: Handler<AsyncResult<ComputeEvent>>): Compute
+    fun compute(computeInputEvent: CommandEventImpl, responseHandler: Handler<AsyncResult<DataEventImpl>>): Compute
 
     @Fluent
-    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<ComputeEvent>>): Compute
+    fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<DataEventImpl>>): Compute
 }

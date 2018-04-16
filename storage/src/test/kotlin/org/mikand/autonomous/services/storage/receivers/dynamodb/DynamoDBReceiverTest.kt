@@ -10,13 +10,11 @@ import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
 import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.storage.gen.TestModelReceiverImpl
 import org.mikand.autonomous.services.storage.gen.models.TestModel
-import org.mikand.autonomous.services.storage.receivers.ReceiveEventType.COMMAND
-import org.mikand.autonomous.services.storage.receivers.ReceiveInputEvent
 import org.mikand.autonomous.services.storage.receivers.Receiver
 import org.mikand.autonomous.services.storage.utils.DynamoDBTestClass
 import java.util.*
@@ -34,18 +32,22 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
         repo.fetchSubscriptionAddress(Handler {
             context.assertTrue(it.succeeded())
 
-            val address = it.result().body.statusObject.getString("address")
+            val address = it.result().body.getString("address")
 
             rule.vertx().eventBus().consumer<JsonObject>(address) {
-                val statusCode = it.body().getJsonObject("body").getInteger("statusCode")
+                val statusCode = it.body().getJsonObject("metadata").getInteger("statusCode")
 
                 if (statusCode == 201) {
-                    context.assertNotNull(it.body().getJsonObject("body").getJsonObject("statusObject"))
+                    context.assertNotNull(it.body().getJsonObject("body"))
                     async.complete()
                 }
             }
 
-            repo.receiverCreate(ReceiveInputEvent(COMMAND.name, "RECEIVE_CREATE", TestModel().toJson()))
+            repo.receiverCreate(CommandEventBuilder()
+                    .withSuccess()
+                    .withAction("RECEIVE_CREATE")
+                    .withBody(TestModel().toJson())
+                    .build())
         })
     }
 
@@ -54,12 +56,16 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
         val async = context.async()
         val repo: TestModelReceiverImpl = context.get("${name.methodName}-repo")
 
-        val receiveEvent = ReceiveInputEvent(COMMAND.name, "RECEIVE_CREATE", TestModel().toJson())
+        val receiveEvent = CommandEventBuilder()
+                .withSuccess()
+                .withAction("RECEIVE_CREATE")
+                .withBody(TestModel().toJson())
+                .build()
 
         repo.receiverCreateWithReceipt(receiveEvent, Handler {
             context.assertTrue(it.succeeded())
-            context.assertEquals(201, it.result().body.statusCode)
-            context.assertNotNull(it.result().body.statusObject)
+            context.assertEquals(201, it.result().metadata.getInteger("statusCode"))
+            context.assertNotNull(it.result().body)
             async.complete()
         })
     }
@@ -72,7 +78,7 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
         createItem(repo, Handler {
             context.assertTrue(it.succeeded())
 
-            val testModel = TestModel(it.result().body.statusObject)
+            val testModel = TestModel(it.result().body)
             testModel.setSomeBoolean(someBoolean = true)
 
             context.assertTrue(testModel.getSomeBoolean()!!)
@@ -80,31 +86,38 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
             repo.fetchSubscriptionAddress(Handler {
                 context.assertTrue(it.succeeded())
 
-                val address = it.result().body.statusObject.getString("address")
+                val address = it.result().body.getString("address")
 
                 rule.vertx().eventBus().consumer<JsonObject>(address) {
-                    val statusCode = it.body().getJsonObject("body").getInteger("statusCode")
+                    val statusCode = it.body().getJsonObject("metadata").getInteger("statusCode")
 
                     if (statusCode == 202) {
-                        val updatedModel = TestModel(it.body().getJsonObject("body").getJsonObject("statusObject"))
+                        val updatedModel = TestModel(it.body().getJsonObject("body"))
 
                         context.assertNotNull(updatedModel)
                         context.assertTrue(updatedModel.getSomeBoolean()!!)
 
-                        val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
-                                .put("hash", updatedModel.hash)
-                                .put("range", updatedModel.range))
+                        val idObject = CommandEventBuilder()
+                                .withSuccess()
+                                .withAction("RECEIVE_READ")
+                                .withBody(JsonObject()
+                                        .put("hash", updatedModel.hash)
+                                        .put("range", updatedModel.range))
+                                .build()
 
                         repo.receiverRead(idObject, Handler {
                             context.assertTrue(it.succeeded())
-                            context.assertTrue(TestModel(it.result().body.statusObject).getSomeBoolean()!!)
+                            context.assertTrue(TestModel(it.result().body).getSomeBoolean()!!)
                             async.complete()
                         })
                     }
                 }
 
-                repo.receiverUpdate(ReceiveInputEvent(
-                        COMMAND.name, "RECEIVE_UPDATE", testModel.toJson()))
+                repo.receiverUpdate(CommandEventBuilder()
+                        .withSuccess()
+                        .withAction("RECEIVE_UPDATE")
+                        .withBody(testModel.toJson())
+                        .build())
             })
         })
     }
@@ -117,25 +130,33 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
         createItem(repo, Handler {
             context.assertTrue(it.succeeded())
 
-            val testModel = TestModel(it.result().body.statusObject)
+            val testModel = TestModel(it.result().body)
             testModel.setSomeBoolean(someBoolean = true)
-            val updateEvent = ReceiveInputEvent(COMMAND.name, "RECEIVE_UPDATE", testModel.toJsonFormat())
+            val updateEvent = CommandEventBuilder()
+                    .withSuccess()
+                    .withAction("RECEIVE_UPDATE")
+                    .withBody(testModel.toJson())
+                    .build()
 
             repo.receiverUpdateWithReceipt(updateEvent, Handler {
-                context.assertEquals(202, it.result().body.statusCode)
+                context.assertEquals(202, it.result().metadata.getInteger("statusCode"))
 
-                val updatedModel = TestModel(it.result().body.statusObject)
+                val updatedModel = TestModel(it.result().body)
 
                 context.assertNotNull(updatedModel)
                 context.assertTrue(updatedModel.getSomeBoolean()!!)
 
-                val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
-                        .put("hash", updatedModel.hash)
-                        .put("range", updatedModel.range))
+                val idObject = CommandEventBuilder()
+                        .withSuccess()
+                        .withAction("RECEIVE_READ")
+                        .withBody(JsonObject()
+                                .put("hash", updatedModel.hash)
+                                .put("range", updatedModel.range))
+                        .build()
 
                 repo.receiverRead(idObject, Handler {
                     context.assertTrue(it.succeeded())
-                    context.assertTrue(TestModel(it.result().body.statusObject).getSomeBoolean()!!)
+                    context.assertTrue(TestModel(it.result().body).getSomeBoolean()!!)
                     async.complete()
                 })
             })
@@ -150,16 +171,20 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
         createItem(repo, Handler {
             context.assertTrue(it.succeeded())
 
-            val testModel = TestModel(it.result().body.statusObject)
-            val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
-                    .put("hash", testModel.hash)
-                    .put("range", testModel.range))
+            val testModel = TestModel(it.result().body)
+            val idObject = CommandEventBuilder()
+                    .withSuccess()
+                    .withAction("RECEIVE_READ")
+                    .withBody(JsonObject()
+                            .put("hash", testModel.hash)
+                            .put("range", testModel.range))
+                    .build()
 
             repo.receiverRead(idObject, Handler {
                 context.assertTrue(it.succeeded())
                 context.assertNotNull(it.result())
 
-                val record = TestModel(it.result().body.statusObject)
+                val record = TestModel(it.result().body)
 
                 context.assertNotNull(record)
 
@@ -177,15 +202,20 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
             context.assertTrue(it.succeeded())
 
             val testModel = it.result()[0]
-            val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
-                    .put("hash", testModel.hash))
+            val idObject = CommandEventBuilder()
+                    .withSuccess()
+                    .withAction("RECEIVE_READ")
+                    .withBody(JsonObject()
+                            .put("hash", testModel.hash)
+                            .put("range", testModel.range))
+                    .build()
 
             repo.receiverIndex(idObject, Handler {
                 context.assertTrue(it.succeeded())
                 context.assertNotNull(it.result())
 
                 val list = Json.decodeValue(
-                        it.result().body.statusObject.encode(), GenericItemList::class.java)
+                        it.result().body.encode(), GenericItemList::class.java)
 
                 context.assertNotNull(list)
                 context.assertEquals(20, list.count)
@@ -217,16 +247,20 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
                                     .build()))))
                     .build()
 
-            val indexEvent = ReceiveInputEvent(type = COMMAND.name, action = "RECEIVE_INDEX",
-                    body = JsonObject().put("hash", testModel.hash),
-                    metaData = JsonObject().put("query", JsonObject(Json.encode(queryPack))))
+            val indexEvent = CommandEventBuilder()
+                    .withSuccess()
+                    .withAction("RECEIVE_INDEX")
+                    .withBody(JsonObject()
+                            .put("hash", testModel.hash))
+                    .withMetadata(JsonObject().put("query", JsonObject(Json.encode(queryPack))))
+                    .build()
 
             repo.receiverIndex(indexEvent, Handler {
                 context.assertTrue(it.succeeded())
                 context.assertNotNull(it.result())
 
                 val list = Json.decodeValue(
-                        it.result().body.statusObject.encode(), GenericItemList::class.java)
+                        it.result().body.encode(), GenericItemList::class.java)
 
                 context.assertNotNull(list)
                 context.assertEquals(20, list.count)
@@ -246,16 +280,20 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
                                     .build()))))
                     .build()
 
-            val indexEventTrue = ReceiveInputEvent(type = COMMAND.name, action = "RECEIVE_INDEX",
-                    body = JsonObject().put("hash", testModel.hash),
-                    metaData = JsonObject().put("query", JsonObject(Json.encode(queryPackTrue))))
+            val indexEventTrue = CommandEventBuilder()
+                    .withSuccess()
+                    .withAction("RECEIVE_INDEX")
+                    .withBody(JsonObject()
+                            .put("hash", testModel.hash))
+                    .withMetadata(JsonObject().put("query", JsonObject(Json.encode(queryPackTrue))))
+                    .build()
 
             repo.receiverIndex(indexEventTrue, Handler {
                 context.assertTrue(it.succeeded())
                 context.assertNotNull(it.result())
 
                 val list = Json.decodeValue(
-                        it.result().body.statusObject.encode(), GenericItemList::class.java)
+                        it.result().body.encode(), GenericItemList::class.java)
 
                 context.assertNotNull(list)
                 context.assertEquals(0, list.count)
@@ -278,21 +316,25 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
             repo.fetchSubscriptionAddress(Handler {
                 context.assertTrue(it.succeeded())
 
-                val address = it.result().body.statusObject.getString("address")
+                val address = it.result().body.getString("address")
 
                 rule.vertx().eventBus().consumer<JsonObject>(address) {
-                    val statusCode = it.body().getJsonObject("body").getInteger("statusCode")
+                    val statusCode = it.body().getJsonObject("metadata").getInteger("statusCode")
 
                     if (statusCode == 204) {
-                        context.assertEquals(204, it.body().getJsonObject("body").getInteger("statusCode"))
+                        context.assertEquals(204, it.body().getJsonObject("metadata").getInteger("statusCode"))
 
-                        val updatedModel = TestModel(it.body().getJsonObject("body").getJsonObject("statusObject"))
+                        val updatedModel = TestModel(it.body().getJsonObject("body"))
 
                         context.assertNotNull(updatedModel)
 
-                        val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
-                                .put("hash", updatedModel.hash)
-                                .put("range", updatedModel.range))
+                        val idObject = CommandEventBuilder()
+                                .withSuccess()
+                                .withAction("RECEIVE_READ")
+                                .withBody(JsonObject()
+                                        .put("hash", updatedModel.hash)
+                                        .put("range", updatedModel.range))
+                                .build()
 
                         repo.receiverRead(idObject, Handler {
                             context.assertTrue(it.failed())
@@ -301,7 +343,11 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
                     }
                 }
 
-                val deleteEvent = ReceiveInputEvent(COMMAND.name, "RECEIVE_DELETE", TestModel().toJsonFormat())
+                val deleteEvent = CommandEventBuilder()
+                        .withSuccess()
+                        .withAction("RECEIVE_DELETE")
+                        .withBody(TestModel().toJsonFormat())
+                        .build()
 
                 repo.receiverDelete(deleteEvent)
             })
@@ -316,19 +362,27 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
         createItem(repo, Handler {
             context.assertTrue(it.succeeded())
 
-            val testModel = TestModel(it.result().body.statusObject)
-            val deleteEvent = ReceiveInputEvent(COMMAND.name, "RECEIVE_DELETE", testModel.toJsonFormat())
+            val testModel = TestModel(it.result().body)
+            val deleteEvent = CommandEventBuilder()
+                    .withSuccess()
+                    .withAction("RECEIVE_DELETE")
+                    .withBody(testModel.toJsonFormat())
+                    .build()
 
             repo.receiverDeleteWithReceipt(deleteEvent, Handler {
-                context.assertEquals(204, it.result().body.statusCode)
+                context.assertEquals(204, it.result().metadata.getInteger("statusCode"))
 
-                val updatedModel = TestModel(it.result().body.statusObject)
+                val updatedModel = TestModel(it.result().body)
 
                 context.assertNotNull(updatedModel)
 
-                val idObject = ReceiveInputEvent(COMMAND.name, "RECEIVE_READ", JsonObject()
-                        .put("hash", updatedModel.hash)
-                        .put("range", updatedModel.range))
+                val idObject = CommandEventBuilder()
+                        .withSuccess()
+                        .withAction("RECEIVE_READ")
+                        .withBody(JsonObject()
+                                .put("hash", updatedModel.hash)
+                                .put("range", updatedModel.range))
+                        .build()
 
                 repo.receiverRead(idObject, Handler {
                     context.assertTrue(it.failed())
@@ -346,7 +400,7 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
 
         repo.fetchSubscriptionAddress(Handler {
             context.assertTrue(it.succeeded())
-            context.assertEquals(address, it.result().body.statusObject.getString("address"))
+            context.assertEquals(address, it.result().body.getString("address"))
             async.complete()
         })
     }

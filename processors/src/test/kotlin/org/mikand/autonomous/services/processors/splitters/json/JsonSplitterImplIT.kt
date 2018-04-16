@@ -36,10 +36,9 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.processors.splitters.concretes.JsonSplitter
 import org.mikand.autonomous.services.processors.splitters.impl.JsonSplitterImpl
-import org.mikand.autonomous.services.processors.splitters.splitter.SplitEventType.COMMAND
-import org.mikand.autonomous.services.processors.splitters.splitter.SplitInputEvent
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 
 @RunWith(VertxUnitRunner::class)
@@ -69,7 +68,7 @@ class JsonSplitterImplIT : ConfigSupport {
                 service.fetchSubscriptionAddress(Handler {
                     context.assertTrue(it.succeeded())
 
-                    vertx.eventBus().consumer<JsonObject>(it.result().body.statusObject.getString("address")) {
+                    vertx.eventBus().consumer<JsonObject>(it.result().body.getString("address")) {
                         context.assertNotNull(it.body())
 
                         vertx.undeploy(id, context.asyncAssertSuccess({
@@ -77,7 +76,10 @@ class JsonSplitterImplIT : ConfigSupport {
                         }))
                     }
 
-                    service.split(SplitInputEvent(type = COMMAND.name, action = "SPLIT", body = JsonObject()))
+                    service.split(CommandEventBuilder()
+                            .withSuccess()
+                            .withAction("SPLIT")
+                            .build())
                 })
             }
         }))
@@ -94,10 +96,12 @@ class JsonSplitterImplIT : ConfigSupport {
                 context.assertTrue(it.succeeded())
                 val service = it.result()
 
-                service.splitWithReceipt(
-                        SplitInputEvent(type = COMMAND.name, action = "SPLIT", body = JsonObject()), Handler {
+                service.splitWithReceipt(CommandEventBuilder()
+                        .withSuccess()
+                        .withAction("SPLIT")
+                        .build(), Handler {
                     context.assertTrue(it.succeeded())
-                    context.assertEquals(200, it.result().body.statusCode, "Statuscode is not 200!")
+                    context.assertEquals(200, it.result().metadata.getInteger("statusCode"), "Statuscode is not 200!")
 
                     vertx.undeploy(id, context.asyncAssertSuccess({
                         async.complete()

@@ -23,37 +23,7 @@
  *
  */
 
-package org.mikand.autonomous.services.data.compute
+@ModuleGen(name = "autonomous-services-core", groupPackage="org.mikand.autonomous.services.core.events")
+package org.mikand.autonomous.services.core.events;
 
-import io.vertx.codegen.annotations.DataObject
-import io.vertx.core.json.JsonObject
-import java.util.*
-
-@DataObject(generateConverter = true)
-class ComputeEvent {
-    var id: String = UUID.randomUUID().toString()
-    var type: String = ""
-    var action: String = ""
-    var metaData: JsonObject = JsonObject()
-    var body: ComputeStatus = ComputeStatus(500, "Unknown Error")
-
-    constructor(type: String, action: String, body: ComputeStatus) :
-            this(UUID.randomUUID().toString(), type, action, JsonObject(), body)
-
-    constructor(id: String = UUID.randomUUID().toString(), type: String, action: String,
-                metaData: JsonObject = JsonObject(), body: ComputeStatus) {
-        this.id = id;
-        this.body = body
-        this.type = type
-        this.action = action
-        this.metaData = metaData
-    }
-
-    constructor(jsonObject: JsonObject) {
-        ComputeEventConverter.fromJson(jsonObject, this)
-    }
-
-    fun toJson(): JsonObject {
-        return JsonObject.mapFrom(this)
-    }
-}
+import io.vertx.codegen.annotations.ModuleGen;

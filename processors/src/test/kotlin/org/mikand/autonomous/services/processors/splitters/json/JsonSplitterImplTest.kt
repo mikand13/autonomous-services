@@ -36,9 +36,9 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mikand.autonomous.services.core.events.CommandEventBuilder
+import org.mikand.autonomous.services.core.events.DataEventImpl
 import org.mikand.autonomous.services.processors.splitters.impl.JsonSplitterImpl
-import org.mikand.autonomous.services.processors.splitters.splitter.SplitEventType.COMMAND
-import org.mikand.autonomous.services.processors.splitters.splitter.SplitInputEvent
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 
 @RunWith(VertxUnitRunner::class)
@@ -59,8 +59,11 @@ class JsonSplitterImplTest : ConfigSupport {
         val async = context.async()
         val splitter = JsonSplitterImpl()
 
-        splitter.splitWithReceipt(SplitInputEvent(type = COMMAND.name, action = "SPLIT", body = JsonObject()), Handler {
-            context.assertEquals(200, it.result().body.statusCode, "Statuscode is not 200!")
+        splitter.splitWithReceipt(CommandEventBuilder()
+                .withSuccess()
+                .withAction("SPLIT")
+                .build(), Handler {
+            context.assertEquals(200, it.result().metadata.getInteger("statusCode"), "Statuscode is not 200!")
             async.complete()
         })
     }
@@ -77,13 +80,16 @@ class JsonSplitterImplTest : ConfigSupport {
 
             context.assertNotNull(address, "Address is null!")
 
-            rule.vertx().eventBus().consumer<JsonObject>(address.body.statusObject.getString("address")).handler({
+            rule.vertx().eventBus().consumer<JsonObject>(address.body.getString("address")).handler({
                 context.assertNotNull(it.body(), "Body is null!")
                 async.complete()
             })
 
-            splitter.splitWithReceipt(SplitInputEvent(type = COMMAND.name, action = "SPLIT", body = JsonObject()), Handler {
-                context.assertEquals(200, it.result().body.statusCode, "Statuscode is not 200!")
+            splitter.splitWithReceipt(CommandEventBuilder()
+                    .withSuccess()
+                    .withAction("SPLIT")
+                    .build(), Handler {
+                context.assertEquals(200, it.result().metadata.getInteger("statusCode"), "Statuscode is not 200!")
             })
         })
     }
@@ -117,8 +123,8 @@ class JsonSplitterImplTest : ConfigSupport {
 
             context.assertNotNull(address, "Address is null!")
 
-            rule.vertx().eventBus().consumer<JsonObject>(address.body.statusObject.getString("address")).handler({
-                val body = it.body().getJsonObject("body").getJsonObject("statusObject")
+            rule.vertx().eventBus().consumer<JsonObject>(address.body.getString("address")).handler({
+                val body = DataEventImpl(it.body()).body
 
                 context.assertNotNull(body, "Body is null!")
                 context.assertNotNull(body.getJsonObject("someObjectOne"), "Object 1 is null!")
@@ -144,10 +150,14 @@ class JsonSplitterImplTest : ConfigSupport {
                 async.complete()
             })
 
-            val input = SplitInputEvent(type = COMMAND.name, action = "SPLIT", body = testObject)
+            val input = CommandEventBuilder()
+                    .withSuccess()
+                    .withAction("SPLIT")
+                    .withBody(testObject)
+                    .build()
 
             splitter.splitWithReceipt(input, Handler {
-                context.assertEquals(200, it.result().body.statusCode, "Statuscode is not 200!")
+                context.assertEquals(200, it.result().metadata.getInteger("statusCode"), "Statuscode is not 200!")
             })
         })
     }

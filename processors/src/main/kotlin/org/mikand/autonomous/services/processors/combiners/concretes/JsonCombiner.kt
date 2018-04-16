@@ -29,14 +29,14 @@ import io.vertx.codegen.annotations.ProxyGen
 import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
-import org.mikand.autonomous.services.processors.combiners.combiner.CombineEvent
-import org.mikand.autonomous.services.processors.combiners.combiner.CombineInputEvent
+import org.mikand.autonomous.services.core.events.CommandEventImpl
+import org.mikand.autonomous.services.core.events.DataEventImpl
 import org.mikand.autonomous.services.processors.combiners.combiner.Combiner
 
 @VertxGen
 @ProxyGen
 interface JsonCombiner : Combiner {
-    override fun combine(combineInputEvent: CombineInputEvent, responseHandler: Handler<AsyncResult<CombineEvent>>): JsonCombiner
+    override fun combine(combineInputEvent: CommandEventImpl, responseHandler: Handler<AsyncResult<DataEventImpl>>): JsonCombiner
 
-    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<CombineEvent>>): JsonCombiner
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<DataEventImpl>>): JsonCombiner
 }

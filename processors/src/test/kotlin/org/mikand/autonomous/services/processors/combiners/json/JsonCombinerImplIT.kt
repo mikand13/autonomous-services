@@ -27,7 +27,6 @@ package org.mikand.autonomous.services.processors.splitters.json
 
 import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.Handler
-import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
@@ -37,7 +36,7 @@ import io.vertx.ext.unit.junit.VertxUnitRunner
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mikand.autonomous.services.processors.combiners.combiner.CombineInputEvent
+import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.processors.combiners.concretes.JsonCombiner
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 import org.mikand.autonomous.services.processors.utils.JsonWeatherCombiner
@@ -66,7 +65,10 @@ class JsonCombinerImplIT : ConfigSupport {
                 context.assertTrue(it.succeeded())
                 val service = it.result()
 
-                service.combine(CombineInputEvent(JsonObject()), Handler {
+                service.combine(CommandEventBuilder()
+                        .withSuccess()
+                        .withAction("COMBINE")
+                        .build(), Handler {
                     context.assertTrue(it.succeeded())
                     async.complete()
                 })

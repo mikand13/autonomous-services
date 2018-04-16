@@ -11,8 +11,8 @@ import io.vertx.core.Vertx
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import org.mikand.autonomous.services.storage.receivers.ReceiveEvent
-import org.mikand.autonomous.services.storage.receivers.ReceiveInputEvent
+import org.mikand.autonomous.services.core.events.CommandEventImpl
+import org.mikand.autonomous.services.core.events.DataEventImpl
 import org.mikand.autonomous.services.storage.receivers.Receiver
 
 open class DynamoDBReceiverVerticle<T> : AbstractVerticle, Receiver
@@ -37,60 +37,60 @@ open class DynamoDBReceiverVerticle<T> : AbstractVerticle, Receiver
         this.dynamoDbReceiver = DynamoDBReceiver(vertx, type, config)
     }
 
-    override fun receiverCreate(receiveInputEvent: ReceiveInputEvent): Receiver {
+    override fun receiverCreate(receiveInputEvent: CommandEventImpl): Receiver {
         dynamoDbReceiver.receiverCreate(receiveInputEvent)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverCreateWithReceipt(receiveInputEvent: ReceiveInputEvent,
-                                           resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+    override fun receiverCreateWithReceipt(receiveInputEvent: CommandEventImpl,
+                                           resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
         dynamoDbReceiver.receiverCreateWithReceipt(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverUpdate(receiveInputEvent: ReceiveInputEvent): Receiver {
+    override fun receiverUpdate(receiveInputEvent: CommandEventImpl): Receiver {
         dynamoDbReceiver.receiverUpdate(receiveInputEvent)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverUpdateWithReceipt(receiveInputEvent: ReceiveInputEvent,
-                                           resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+    override fun receiverUpdateWithReceipt(receiveInputEvent: CommandEventImpl,
+                                           resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
         dynamoDbReceiver.receiverUpdateWithReceipt(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverRead(receiveInputEvent: ReceiveInputEvent,
-                              resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+    override fun receiverRead(receiveInputEvent: CommandEventImpl,
+                              resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
         dynamoDbReceiver.receiverRead(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverIndex(receiveInputEvent: ReceiveInputEvent,
-                               resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+    override fun receiverIndex(receiveInputEvent: CommandEventImpl,
+                               resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
         dynamoDbReceiver.receiverIndex(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverDelete(receiveInputEvent: ReceiveInputEvent): Receiver {
+    override fun receiverDelete(receiveInputEvent: CommandEventImpl): Receiver {
         dynamoDbReceiver.receiverDelete(receiveInputEvent)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverDeleteWithReceipt(receiveInputEvent: ReceiveInputEvent,
-                                           resultHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+    override fun receiverDeleteWithReceipt(receiveInputEvent: CommandEventImpl,
+                                           resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
         dynamoDbReceiver.receiverDeleteWithReceipt(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<ReceiveEvent>>): Receiver {
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
         dynamoDbReceiver.fetchSubscriptionAddress(addressHandler)
 
         return dynamoDbReceiver

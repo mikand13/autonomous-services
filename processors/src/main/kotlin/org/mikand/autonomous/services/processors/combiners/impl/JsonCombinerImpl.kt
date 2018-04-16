@@ -32,9 +32,8 @@ import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.servicediscovery.Record
-import org.mikand.autonomous.services.processors.combiners.combiner.CombineEvent
-import org.mikand.autonomous.services.processors.combiners.combiner.CombineEventType
-import org.mikand.autonomous.services.processors.combiners.combiner.CombineStatus
+import org.mikand.autonomous.services.core.events.DataEventBuilder
+import org.mikand.autonomous.services.core.events.DataEventImpl
 import org.mikand.autonomous.services.processors.combiners.concretes.JsonCombiner
 
 abstract class JsonCombinerImpl(config: JsonObject = JsonObject()) : AbstractVerticle(), JsonCombiner {
@@ -80,9 +79,15 @@ abstract class JsonCombinerImpl(config: JsonObject = JsonObject()) : AbstractVer
     }
 
     @Fluent
-    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<CombineEvent>>): JsonCombiner {
-        addressHandler.handle(Future.succeededFuture(CombineEvent(CombineEventType.DATA.name, "ADDRESS",
-                CombineStatus(200, statusObject = JsonObject().put("address", subscriptionAddress)))))
+    override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<DataEventImpl>>): JsonCombiner {
+        val outputEvent = DataEventBuilder()
+                .withSuccess()
+                .withAction("ADDRESS")
+                .withMetadata(JsonObject().put("statusCode", 200))
+                .withBody(JsonObject().put("address", subscriptionAddress))
+                .build()
+
+        addressHandler.handle(Future.succeededFuture(outputEvent))
 
         return this
     }

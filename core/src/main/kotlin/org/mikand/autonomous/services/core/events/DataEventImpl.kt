@@ -23,34 +23,31 @@
  *
  */
 
-package org.mikand.autonomous.services.processors.splitters.splitter
+package org.mikand.autonomous.services.core.events
 
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonObject
 import java.util.*
 
 @DataObject(generateConverter = true)
-class SplitInputEvent {
+class DataEventImpl : DataEvent {
     var id: String = UUID.randomUUID().toString()
     var type: String = ""
     var action: String = ""
-    var metaData: JsonObject = JsonObject()
+    var metadata: JsonObject = JsonObject()
     var body: JsonObject = JsonObject()
 
-    constructor(type: String, action: String, body: JsonObject) :
-            this(UUID.randomUUID().toString(), type, action, JsonObject(), body)
-
-    constructor(id: String = UUID.randomUUID().toString(), type: String, action: String,
-                metaData: JsonObject = JsonObject(), body: JsonObject) {
-        this.id = id;
-        this.body = body
-        this.type = type
+    internal constructor(id: String = UUID.randomUUID().toString(), type: DataEventType, action: String,
+                         metadata: JsonObject = JsonObject(), body: JsonObject) {
+        this.id = id
+        this.type = type.name
         this.action = action
-        this.metaData = metaData
+        this.metadata = metadata
+        this.body = body
     }
 
     constructor(jsonObject: JsonObject) {
-        SplitInputEventConverter.fromJson(jsonObject, this)
+        DataEventImplConverter.fromJson(jsonObject, this)
     }
 
     fun toJson(): JsonObject {
