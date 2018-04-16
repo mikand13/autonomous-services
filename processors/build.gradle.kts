@@ -143,6 +143,9 @@ dependencies {
     compile("io.vertx:vertx-health-check:$vertx_version")
     compile("io.vertx:vertx-lang-kotlin-coroutines:$vertx_version")
 
+    // AS
+    compile(project(":core"))
+
     // Kapt
     kapt("io.vertx:vertx-codegen:$vertx_version:processor")
     kapt("io.vertx:vertx-service-proxy:$vertx_version:processor")

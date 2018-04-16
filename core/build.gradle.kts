@@ -30,12 +30,10 @@ import com.palantir.gradle.docker.DockerRunExtension
 import com.wiredforcode.gradle.spawn.KillProcessTask
 import com.wiredforcode.gradle.spawn.SpawnProcessTask
 import groovy.json.JsonBuilder
-import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
-import groovy.util.Eval
 import org.gradle.api.tasks.JavaExec
+import org.gradle.internal.impldep.org.bouncycastle.pqc.crypto.gmss.GMSSKeyPairGenerator
 import org.gradle.kotlin.dsl.*
-import org.gradle.language.assembler.plugins.internal.AssembleTaskConfig
 import org.gradle.script.lang.kotlin.*
 import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.dsl.Coroutines
@@ -43,28 +41,28 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 import org.jetbrains.kotlin.gradle.plugin.KaptAnnotationProcessorOptions
 import org.jetbrains.kotlin.gradle.plugin.KaptJavacOptionsDelegate
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 import java.net.ServerSocket
 
-val mainClass = "org.mikand.autonomous.services.gateway.GatewayLauncher"
-val mainVerticleName = "org.mikand.autonomous.services.gateway.GatewayDeploymentVerticle"
+val mainClass = "org.mikand.autonomous.services.core.CoreLauncher"
+val mainVerticleName = "org.mikand.autonomous.services.core.CoreDeploymentVerticle"
 
 val watchForChange = "src/**/*"
 val confFile = "src/main/resources/app-conf.json"
 var doOnChange : String
+val groupId = project.group
 val projectName = project.name
 val projectVersion = project.version
-val nameOfArchive = "$projectName-$projectVersion-fat.jar"
+val nameOfArchive = "$projectName-$projectVersion.jar"
 val dockerImageName = "autonomous_services/$projectName"
 val dockerFileLocation = "src/main/docker/Dockerfile"
 
 val vertxPort = findFreePort()
 
 doOnChange = if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-    "..\\gradlew :gateway:classes"
+    "..\\gradlew :core:classes"
 } else {
-    "../gradlew :gateway:classes"
+    "../gradlew :core:classes"
 }
 
 val kotlin_version by project
@@ -145,9 +143,6 @@ dependencies {
     // Vert.x
     compile("io.vertx:vertx-health-check:$vertx_version")
     compile("io.vertx:vertx-lang-kotlin-coroutines:$vertx_version")
-
-    // AS
-    compile(project(":core"))
 
     // Kapt
     kapt("io.vertx:vertx-codegen:$vertx_version:processor")
@@ -234,7 +229,7 @@ val sourcesJar by tasks.creating(Jar::class) {
 }
 
 val shadowJar by tasks.getting(ShadowJar::class) {
-    classifier = "fat"
+    classifier = "jar"
     archiveName = nameOfArchive
 
     manifest {
@@ -266,46 +261,25 @@ tasks {
         dependsOn("docker")
     }
 
-    "copyJsServiceProxies"(Copy::class) {
-        delete("$projectDir/src/test/resources/js/extractedProxies")
-
-        configurations.getByName("compile").resolvedConfiguration.resolvedArtifacts.forEach({
-            if (isExtract(it.id.componentIdentifier.displayName)) {
-                copy {
-                    from(zipTree(it.file))
-                    into(file("$buildDir/nannoq-artifacts/${it.name}"))
-                }
-
-                copy {
-                    from("$buildDir/nannoq-artifacts/${it.name}/nannoqHeartbeatService-js") {
-                        include("*-proxy.js")
-                    }
-
-                    into("$projectDir/src/test/resources/js/karma/extractedProxies")
-                }
-            }
-        })
-    }
-    
     "startServer"(SpawnProcessTask::class) {
         dependsOn("shadowJar")
         doFirst({
-            command = "java -jar $projectDir/build/libs/$nameOfArchive -conf ${writeCustomConfToConf(vertxPort)}"
+            command = "java -jar ${projectDir}/build/libs/$nameOfArchive -conf ${writeCustomConfToConf(vertxPort)}"
         })
 
         ready = "running"
-        directory = "gateway/build/tmp"
-        pidLockFileName = ".gateway.pid.lock"
+        directory = "core/build/tmp"
+        pidLockFileName = ".core.pid.lock"
     }
 
     "stopServer"(KillProcessTask::class) {
-        directory = "gateway/build/tmp"
-        pidLockFileName = ".gateway.pid.lock"
+        directory = "core/build/tmp"
+        pidLockFileName = ".core.pid.lock"
     }
 
     "karmaRun" {
-        dependsOn(listOf("startServer", "copyJsServiceProxies"))
-        delete("$buildDir/karma.conf.js")
+        dependsOn("startServer")
+        delete("${buildDir}/karma.conf.js")
         finalizedBy("stopServer")
     }
 
@@ -324,6 +298,7 @@ tasks {
 
     "docker" {
         mustRunAfter("test")
+
         doLast({
             println("Built image for $nameOfArchive!")
         })
@@ -389,8 +364,8 @@ publishing {
             }
 
             pom.withXml {
-                asNode().appendNode("name", "AS Gateway")
-                asNode().appendNode("description", "Gateway Layer of AS")
+                asNode().appendNode("name", "AS Core")
+                asNode().appendNode("description", "Core Components of AS")
                 asNode().appendNode("url", "https://github.com/mikand13/autonomous-services")
 
                 val scmNode = asNode().appendNode("scm")
@@ -415,22 +390,18 @@ publishing {
     }
 }
 
-fun isExtract(componentIdentifier: String) : Boolean {
-    return componentIdentifier.contains("com.nannoq:cluster")
-}
-
 fun findFreePort() = ServerSocket(0).use {
     it.localPort
 }
 
 fun writeCustomConfToConf(vertxPort: Int): String {
-    val config = JsonSlurper().parseText(File("$projectDir/src/test/resources/app-conf.json").readText())
-    val outPutConfig = File("$buildDir/tmp/app-conf-test.json")
+    val config = JsonSlurper().parseText(File("${projectDir}/src/test/resources/app-conf.json").readText())
+    val outPutConfig = file("${buildDir}/tmp/app-conf-test.json")
     outPutConfig.createNewFile()
 
     val builder = JsonBuilder(config)
     val openJson = builder.toPrettyString().removeSuffix("}")
-    val newConfig = JsonBuilder(JsonSlurper().parseText("$openJson, \"bridgePort\":$vertxPort}")).toPrettyString()
+    val newConfig = JsonBuilder(JsonSlurper().parseText("$openJson, \"gateway\":{\"bridgePort\":$vertxPort}}")).toPrettyString()
 
     outPutConfig.bufferedWriter().use { out ->
         out.write(newConfig)

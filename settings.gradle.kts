@@ -1,1 +1,1 @@
-include("gateway", "processors", "storage", "data")
+include("core", "gateway", "processors", "storage", "data")
