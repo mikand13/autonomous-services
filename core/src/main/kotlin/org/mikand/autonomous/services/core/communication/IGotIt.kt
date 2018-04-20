@@ -8,7 +8,7 @@ import io.vertx.core.json.JsonObject
 import io.vertx.serviceproxy.ServiceException
 import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.core.events.CommandEventImpl
-import java.time.Instant
+import java.time.Instant.now
 import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.collections.HashSet
@@ -35,12 +35,12 @@ interface IGotIt<T> {
         if (gotItObject == null) throw IllegalArgumentException("The gotItObject cannot be null!")
 
         val vertx = getVertx()
-        val timeStamp: Long = Instant.now()
+        val timeStamp: Long = now()
                 .plus((Random().nextInt(1_000 - 1) + 1).toLong(), ChronoUnit.DAYS)
                 .plus((Random().nextInt(1_000 - 1) + 1).toLong(), ChronoUnit.HOURS)
                 .plus((Random().nextInt(1_000 - 1) + 1).toLong(), ChronoUnit.MINUTES)
                 .toEpochMilli()
-        val initialTime: Long = Instant.now().toEpochMilli()
+        val initialTime: Long = now().toEpochMilli()
         val objectHash: Int = gotItObject.hashCode()
         val gotItEvent = CommandEventBuilder()
                 .withSuccess()
@@ -65,7 +65,7 @@ interface IGotIt<T> {
 
                 resultHandler.handle(ServiceException.fail(400, "Already Taken!"))
             } else {
-                if (Instant.now().toEpochMilli() > (initialTime + getIGotItTimeout())) {
+                if (now().toEpochMilli() > (initialTime + getIGotItTimeout())) {
                     gotItMap.remove(objectHash)
 
                     resultHandler.handle(Future.succeededFuture(gotItObject))
