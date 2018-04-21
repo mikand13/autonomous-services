@@ -18,9 +18,9 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    private val publishAddress: String = config.getString("customPublishAddress") ?: JsonSplitter::class.java.simpleName
+    private val publishAddress: String = config.getString("customPublishAddress") ?: javaClass.name
     private val deployService: Boolean = config.getBoolean("deployAsService") ?: true
-    private val subscriptionAddress: String = config.getString("customSubscriptionAddress") ?: javaClass.name
+    private val subscriptionAddress: String = config.getString("customSubscriptionAddress") ?: "${javaClass.name}.data"
     private val extractables: List<String> = config.getJsonArray("extractables")?.map { it.toString() } ?: ArrayList()
     private val thisVertx: Vertx = vertx ?: Vertx.currentContext().owner()
 
