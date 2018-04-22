@@ -40,7 +40,8 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         this.type = type
         this.config = config
         this.vertx = vertx
-        this.subscriptionAddress = "${Receiver::class.java.name}.${type.simpleName}"
+        this.subscriptionAddress = config.getString("subscriptionAddress") ?:
+                "${Receiver::class.java.name}.${type.simpleName}"
     }
 
     override fun receiverCreate(receiveInputEvent: CommandEventImpl): Receiver {
