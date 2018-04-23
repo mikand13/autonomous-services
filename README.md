@@ -28,7 +28,7 @@ First install with either Maven:
 
 <dependency>
     <groupId>org.mikand.autonomous.services</groupId>
-    <artifactId><module-name></artifactId>
+    <artifactId>module-name</artifactId>
     <version>1.0.0</version>
 </dependency>
 ```
@@ -38,7 +38,7 @@ or Gradle:
 ```groovy
 
 dependencies {
-    compile 'org.mikand.autonomous.services:<modeul-name>:1.0.0'
+    compile 'org.mikand.autonomous.services:module-name:1.0.0'
 }
 ```
 
@@ -56,7 +56,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 ## Authors
 
-* **Anders Mikkelsen** - *Initial work* - [Norigin Media](http://noriginmedia.com/)
+* **Anders Mikkelsen**
 
 See also the list of [contributors](https://github.com/mikand13/autonomous-services/contributors) who participated in this project.
 
