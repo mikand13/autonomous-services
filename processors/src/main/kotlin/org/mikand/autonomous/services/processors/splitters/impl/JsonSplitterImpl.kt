@@ -20,7 +20,7 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
 
     private val publishAddress: String = config.getString("customPublishAddress") ?: javaClass.name
     private val deployService: Boolean = config.getBoolean("deployAsService") ?: true
-    private val subscriptionAddress: String = config.getString("customSubscriptionAddress") ?: "${javaClass.name}.data"
+    private val subscriptionAddress: String = config.getString("customSubscriptionAddress") ?: "$publishAddress.data"
     private val extractables: List<String> = config.getJsonArray("extractables")?.map { it.toString() } ?: ArrayList()
     private val thisVertx: Vertx = vertx ?: Vertx.currentContext().owner()
 
@@ -66,10 +66,11 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     }
 
     @Fluent
-    override fun splitWithReceipt(splitInputEvent: CommandEventImpl, responseHandler: Handler<AsyncResult<DataEventImpl>>): JsonSplitter {
-        val output = JsonObject()
+    override fun splitWithReceipt(splitInputEvent: CommandEventImpl,
+                                  responseHandler: Handler<AsyncResult<DataEventImpl>>): JsonSplitter {
+        thisVertx.executeBlocking<JsonObject>({
+            val output = JsonObject()
 
-        try {
             extractables.forEach {
                 if (it.contains('.')) {
                     recurseIntoKey(splitInputEvent.body, output, extractables, it)
@@ -77,29 +78,33 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
                     output.put(it, splitInputEvent.body.getValue(it))
                 }
             }
-        } catch (ise: IllegalStateException) {
-            logger.error("Field splitting ${splitInputEvent.body.encodePrettily()}", ise)
 
-            val errorEvent = CommandEventBuilder()
-                    .withFailure()
-                    .withAction("SPLIT_FAILURE")
-                    .withMetadata(JsonObject().put("statusCode", 500))
-                    .withBody(JsonObject().put("error", "Unparseable"))
-                    .build()
+            it.complete(output)
+        }, false, {
+            if (it.succeeded()) {
+                val outputEvent = DataEventBuilder()
+                        .withSuccess()
+                        .withAction("SPLIT")
+                        .withMetadata(JsonObject().put("statusCode", 200))
+                        .withBody(it.result())
+                        .build()
 
-            responseHandler.handle(Future.failedFuture(Json.encodePrettily(errorEvent)))
-        } finally {
-            val outputEvent = DataEventBuilder()
-                    .withSuccess()
-                    .withAction("SPLIT")
-                    .withMetadata(JsonObject().put("statusCode", 200))
-                    .withBody(output)
-                    .build()
+                responseHandler.handle(Future.succeededFuture(outputEvent))
 
-            responseHandler.handle(Future.succeededFuture(outputEvent))
+                thisVertx.eventBus().publish(subscriptionAddress, outputEvent.toJson())
+            } else {
+                logger.error("Field splitting ${splitInputEvent.body.encodePrettily()}", it.cause())
 
-            thisVertx.eventBus().publish(subscriptionAddress, outputEvent.toJson())
-        }
+                val errorEvent = CommandEventBuilder()
+                        .withFailure()
+                        .withAction("SPLIT_FAILURE")
+                        .withMetadata(JsonObject().put("statusCode", 500))
+                        .withBody(JsonObject().put("error", "Unparseable"))
+                        .build()
+
+                responseHandler.handle(Future.failedFuture(Json.encodePrettily(errorEvent)))
+            }
+        })
 
         return this
     }
