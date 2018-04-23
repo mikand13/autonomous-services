@@ -111,17 +111,17 @@ internal class BridgeVerticle() : AbstractVerticle() {
                 if (it.succeeded()) {
                     it.result().ping({
                         if (it.succeeded() && it.result()) {
-                            future.complete(Status.OK(JsonObject().put("bridge", "UP")))
+                            if (!future.isComplete) future.complete(Status.OK(JsonObject().put("bridge", "UP")))
                         } else {
                             logger.error("Failed heartbeat ping!", it.cause())
 
-                            future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
+                            if (!future.isComplete) future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
                         }
                     })
                 } else {
                     logger.error("Failed fetching HeartBeatService!", it.cause())
 
-                    future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
+                    if (!future.isComplete) future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
                 }
             })
         })
