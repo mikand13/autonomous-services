@@ -20,9 +20,11 @@ pipeline {
   stages {
     stage("Build AS") {
       steps {
-        script {
-          sh "./gradlew install -Pcentral --info --stacktrace"
-        } 
+        withCredentials([string(credentialsId: 'gpg-pass-nannoq', variable: 'TOKEN')]) {
+          script {
+            sh "./gradlew install -Dsigning.gnupg.passphrase=$TOKEN -Pcentral --info --stacktrace"
+          }
+        }
       }
     }
   }
