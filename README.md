@@ -1,4 +1,4 @@
-## Welcome to Nannoq Tools
+## Welcome to Autonomous Services
 
 [![Build Status](https://www.tomrom.net/buildStatus/icon?job=autonomous-services/master)](https://www.tomrom.net/job/autonomous-services/job/master/)
 
