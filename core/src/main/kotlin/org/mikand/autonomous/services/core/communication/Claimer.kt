@@ -13,26 +13,26 @@ import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.collections.HashSet
 
-interface IGotIt<T> {
-    val gotItMap: HashMap<Int, HashSet<Long>>
-    val gotItAddress: String
-        get() = "${javaClass.name}.gotIt"
+interface Claimer<T> {
+    val claimerMap: HashMap<Int, HashSet<Long>>
+    val claimerAddress: String
+        get() = "${javaClass.name}.claimer"
     @Suppress("PropertyName")
-    val DEFAULT_GOT_IT_TIMEOUT: Long
+    val DEFAULT_CLAIMER_TIMEOUT: Long
         get() = 1000
 
-    fun initializeIGotIt() : IGotIt<T> {
-        getVertx().eventBus().consumer<JsonObject>(getIGotItTAddress(), {
+    fun inititializeClaimer() : Claimer<T> {
+        getVertx().eventBus().consumer<JsonObject>(claimerAddress, {
             val inputEvent = CommandEventImpl(it.body())
 
-            gotItMap[inputEvent.body.getInteger("hash")]?.add(inputEvent.body.getLong("time"))
+            claimerMap[inputEvent.body.getInteger("hash")]?.add(inputEvent.body.getLong("time"))
         })
 
         return this
     }
 
-    fun iGotIt(gotItObject: T, resultHandler: Handler<AsyncResult<T>>) : IGotIt<T> {
-        if (gotItObject == null) throw IllegalArgumentException("The gotItObject cannot be null!")
+    fun claim(claimObject: T, resultHandler: Handler<AsyncResult<T>>) : Claimer<T> {
+        if (claimObject == null) throw IllegalArgumentException("The claimObject cannot be null!")
 
         val vertx = getVertx()
         val timeStamp: Long = now()
@@ -41,7 +41,7 @@ interface IGotIt<T> {
                 .plus((Random().nextInt(1_000 - 1) + 1).toLong(), ChronoUnit.MINUTES)
                 .toEpochMilli()
         val initialTime: Long = now().toEpochMilli()
-        val objectHash: Int = gotItObject.hashCode()
+        val objectHash: Int = claimObject.hashCode()
         val gotItEvent = CommandEventBuilder()
                 .withSuccess()
                 .withAction("GOT_IT")
@@ -50,27 +50,27 @@ interface IGotIt<T> {
                     .put("hash", objectHash))
                 .build()
 
-        gotItMap[objectHash] = HashSet()
+        claimerMap[objectHash] = HashSet()
 
-        vertx.eventBus().publish(getIGotItTAddress(), gotItEvent.toJson())
+        vertx.eventBus().publish(claimerAddress, gotItEvent.toJson())
 
-        return checkIfIGotIt(initialTime, vertx, gotItObject, objectHash, timeStamp, resultHandler)
+        return checkIfIveClaimedIt(initialTime, vertx, claimObject, objectHash, timeStamp, resultHandler)
     }
 
-    private fun checkIfIGotIt(initialTime: Long, vertx: Vertx, gotItObject: T, objectHash: Int, timeStamp: Long,
-                             resultHandler: Handler<AsyncResult<T>>) : IGotIt<T> {
+    private fun checkIfIveClaimedIt(initialTime: Long, vertx: Vertx, gotItObject: T, objectHash: Int, timeStamp: Long,
+                                    resultHandler: Handler<AsyncResult<T>>) : Claimer<T> {
         vertx.setTimer(200L, {
-            if (gotItMap[objectHash]!!.any { it < timeStamp }) {
-                gotItMap.remove(objectHash)
+            if (claimerMap[objectHash]!!.any { it < timeStamp }) {
+                claimerMap.remove(objectHash)
 
                 resultHandler.handle(ServiceException.fail(400, "Already Taken!"))
             } else {
-                if (now().toEpochMilli() > (initialTime + getIGotItTimeout())) {
-                    gotItMap.remove(objectHash)
+                if (now().toEpochMilli() > (initialTime + getClaimerTimeout())) {
+                    claimerMap.remove(objectHash)
 
                     resultHandler.handle(Future.succeededFuture(gotItObject))
                 } else {
-                    checkIfIGotIt(initialTime, vertx, gotItObject, objectHash, timeStamp, resultHandler)
+                    checkIfIveClaimedIt(initialTime, vertx, gotItObject, objectHash, timeStamp, resultHandler)
                 }
             }
         })
@@ -78,12 +78,8 @@ interface IGotIt<T> {
         return this
     }
 
-    fun getIGotItTAddress() : String {
-        return gotItAddress
-    }
-
-    fun getIGotItTimeout() : Long {
-        return DEFAULT_GOT_IT_TIMEOUT
+    fun getClaimerTimeout() : Long {
+        return DEFAULT_CLAIMER_TIMEOUT
     }
 
     fun getVertx() : Vertx {

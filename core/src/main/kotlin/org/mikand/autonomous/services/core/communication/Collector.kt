@@ -11,22 +11,22 @@ import org.mikand.autonomous.services.core.events.CommandEventImpl
 import org.mikand.autonomous.services.core.events.DataEventBuilder
 import java.util.*
 
-interface IHaveIt<T> {
-    val haveItResponseMap: HashMap<String, Handler<AsyncResult<T>>>
-    val haveItAddress: String
-        get() = "${javaClass.name}.haveIt"
+interface Collector<T> {
+    val collectorMap: HashMap<String, Handler<AsyncResult<T>>>
+    val collectorAddress: String
+        get() = "${javaClass.name}.collector"
     @Suppress("PropertyName")
-    val DEFAULT_HAVE_IT_TIMEOUT: Long
+    val DEFAULT_COLLECTOR_TIMEOUT: Long
         get() = 1000
 
-    fun initializeIHaveIt() : IHaveIt<T> {
-        getVertx().eventBus().consumer<JsonObject>(getIHaveItTAddress(), {
+    fun initializeCollector() : Collector<T> {
+        getVertx().eventBus().consumer<JsonObject>(collectorAddress, {
             val inputEvent = CommandEventImpl(it.body())
             val key = inputEvent.body.getString("key")
 
             iHaveIt(key, Handler {
                 if (it.succeeded()) {
-                    val handler = haveItResponseMap.remove(key)
+                    val handler = collectorMap.remove(key)
 
                     handler?.handle(Future.succeededFuture(it.result()))
                 }
@@ -36,19 +36,19 @@ interface IHaveIt<T> {
         return this
     }
 
-    fun doesAnyoneHaveIt(key: String, resultHandler: Handler<AsyncResult<T>>) : IHaveIt<T> {
+    fun hasAnyoneCollectedIt(key: String, resultHandler: Handler<AsyncResult<T>>) : Collector<T> {
         val vertx = getVertx()
         val haveIt = CommandEventBuilder()
                 .withSuccess()
-                .withAction("HAVE_IT")
+                .withAction("COLLECT_IT")
                 .withBody(JsonObject().put("key", key))
                 .build()
-        haveItResponseMap[key] = resultHandler
+        collectorMap[key] = resultHandler
 
-        vertx.eventBus().publish(getIHaveItTAddress(), haveIt.toJson())
+        vertx.eventBus().publish(collectorAddress, haveIt.toJson())
 
-        vertx.setTimer(getIHaveItTimeout(), {
-            val handler = haveItResponseMap.remove(key)
+        vertx.setTimer(getCollectorTimeout(), {
+            val handler = collectorMap.remove(key)
 
             handler?.handle(ServiceException.fail(404, "", DataEventBuilder()
                     .withFailure()
@@ -62,12 +62,8 @@ interface IHaveIt<T> {
 
     fun iHaveIt(key: String, resultHandler: Handler<AsyncResult<T>>)
 
-    fun getIHaveItTAddress() : String {
-        return haveItAddress
-    }
-
-    fun getIHaveItTimeout() : Long {
-        return DEFAULT_HAVE_IT_TIMEOUT
+    fun getCollectorTimeout() : Long {
+        return DEFAULT_COLLECTOR_TIMEOUT
     }
 
     fun getVertx() : Vertx {

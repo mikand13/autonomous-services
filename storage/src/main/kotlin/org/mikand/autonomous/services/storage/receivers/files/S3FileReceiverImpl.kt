@@ -23,7 +23,7 @@ import io.vertx.ext.web.RoutingContext
 import io.vertx.serviceproxy.ServiceException
 import org.apache.commons.io.FilenameUtils
 import org.apache.http.HttpHeaders
-import org.mikand.autonomous.services.core.communication.IHaveIt
+import org.mikand.autonomous.services.core.communication.Collector
 import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.core.events.CommandEventImpl
 import org.mikand.autonomous.services.core.events.DataEventBuilder
@@ -36,11 +36,11 @@ import java.util.*
 import kotlin.collections.HashMap
 
 open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
-        FileReceiver, IHaveIt<String>, AbstractVerticle() {
-    private val haveItMap = HashMap<String, Handler<AsyncResult<String>>>()
+        FileReceiver, Collector<String>, AbstractVerticle() {
+    private val itMap = HashMap<String, Handler<AsyncResult<String>>>()
 
-    override val haveItResponseMap: HashMap<String, Handler<AsyncResult<String>>>
-        get() = haveItMap
+    override val collectorMap: HashMap<String, Handler<AsyncResult<String>>>
+        get() = itMap
 
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
@@ -76,7 +76,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
         val dynamoDBId = finalConfig.getString("aws_s3_iam_id")
         val dynamoDBKey = finalConfig.getString("aws_s3_iam_key")
 
-        initializeIHaveIt()
+        initializeCollector()
 
         vertx.executeBlocking<Boolean>({
             val creds = if (dynamoDBId == null || dynamoDBKey == null) AnonymousAWSCredentials() else
@@ -163,7 +163,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
             val mappedToken = tokenMap.contains(token)
 
             if (mappedToken) {
-                doesAnyoneHaveIt(token, Handler {
+                hasAnyoneCollectedIt(token, Handler {
                     if (it.succeeded()) {
                         doUpload(routingContext, token)
                     } else {
