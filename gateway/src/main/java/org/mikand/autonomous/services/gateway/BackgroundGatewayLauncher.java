@@ -43,10 +43,11 @@ public class BackgroundGatewayLauncher extends VertxCommandLauncher implements V
                 "vertx.logger-delegate-factory-class-name", "io.vertx.core.logging.Log4j2LogDelegateFactory");
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(GatewayLauncher.class.getSimpleName());
-
-    private GatewayDeploymentVerticle gatewayDeploymentVerticle;
-    private JsonObject config;
+    protected static final Logger logger = LoggerFactory.getLogger(GatewayLauncher.class.getSimpleName());
+    @SuppressWarnings("WeakerAccess")
+    protected GatewayDeploymentVerticle gatewayDeploymentVerticle;
+    @SuppressWarnings("WeakerAccess")
+    protected JsonObject config;
 
     public static void main(final String[] args) {
         logger.info("Running from main with: " + Arrays.toString(args));
