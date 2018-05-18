@@ -32,7 +32,6 @@ import io.vertx.core.Handler
 import org.mikand.autonomous.services.core.events.CommandEventImpl
 import org.mikand.autonomous.services.core.events.DataEventImpl
 
-@VertxGen(concrete = false)
 interface Combiner {
     @Fluent
     fun combine(combineInputEvent: CommandEventImpl, responseHandler: Handler<AsyncResult<DataEventImpl>>): Combiner

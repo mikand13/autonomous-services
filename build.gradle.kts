@@ -25,7 +25,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val groupValue : String = "org.mikand.autonomous.services"
-val versionValue : String = "1.0.0-SNAPSHOT"
+val versionValue : String = "1.0.0"
 val jvmTargetValue : String = "1.8"
 
 repositories {
