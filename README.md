@@ -1,6 +1,6 @@
 ## Welcome to Autonomous Services
 
-[![Build Status](https://www.tomrom.net/buildStatus/icon?job=autonomous-services/master)](https://www.tomrom.net/job/autonomous-services/job/master/)
+[![Build Status](https://www.tomrom.net/buildStatus/icon?job=autonomous-services)](https://www.tomrom.net/job/autonomous-services)
 
 This repo is a collection of the most current version of all autonomous-services modules.
 
