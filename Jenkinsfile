@@ -22,7 +22,7 @@ pipeline {
       steps {
         withCredentials([string(credentialsId: 'gpg-pass-nannoq', variable: 'TOKEN')]) {
           script {
-            sh "./gradlew install -Dsigning.password=$TOKEN -Pcentral --info --stacktrace"
+            sh "./gradlew install -Dsigning.password=$TOKEN -Dorg.gradle.parallel=false -Pcentral --info --stacktrace"
           }
         }
       }
