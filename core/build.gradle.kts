@@ -65,20 +65,20 @@ doOnChange = if (System.getProperty("os.name").toLowerCase().contains("windows")
     "../gradlew :core:classes"
 }
 
-val kotlin_version by project
-val vertx_version by project
-val hazelcast_version by project
-val log4j_version by project
-val com_lmax_version by project
-val junit_version by project
-val rest_assured_version by project
-val logger_factory_version by project
-val nannoq_tools_version by project
+val kotlin_version: String by project
+val vertx_version: String by project
+val hazelcast_version: String by project
+val log4j_version: String by project
+val com_lmax_version: String by project
+val junit_version: String by project
+val rest_assured_version: String by project
+val logger_factory_version: String by project
+val nannoq_tools_version: String by project
 
 buildscript {
     var kotlin_version: String by extra
     var dokka_version: String by extra
-    kotlin_version = "1.2.21"
+    kotlin_version = "1.2.41"
     dokka_version = "0.9.16"
 
     repositories {
@@ -89,7 +89,7 @@ buildscript {
 
     dependencies {
         classpath("gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.13.0")
-        classpath("com.github.jengelman.gradle.plugins:shadow:2.0.2")
+        classpath("com.github.jengelman.gradle.plugins:shadow:2.0.3")
         classpath("com.wiredforcode:gradle-spawn-plugin:0.8.0")
         classpath(kotlin("gradle-plugin", kotlin_version))
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:$dokka_version")
@@ -328,6 +328,8 @@ signing {
     sign(sourcesJar)
     sign(packageJavadoc)
     sign(shadowJar)
+
+    sign(publishing.publications)
 }
 
 publishing {
