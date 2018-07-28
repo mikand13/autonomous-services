@@ -28,6 +28,7 @@ import com.nannoq.tools.cluster.services.HeartbeatService
 import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.Future
+import io.vertx.core.Handler
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.json.Json
@@ -107,21 +108,24 @@ internal class BridgeVerticle() : AbstractVerticle() {
         val healthCheckHandler = HealthCheckHandler.create(vertx)
 
         healthCheckHandler.register("bridge-is-live", { future ->
-            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, {
-                if (it.succeeded()) {
-                    it.result().ping({
-                        if (it.succeeded() && it.result()) {
-                            if (!future.isComplete) future.complete(Status.OK(JsonObject().put("bridge", "UP")))
-                        } else {
-                            logger.error("Failed heartbeat ping!", it.cause())
+            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, Handler {
+                when {
+                    it.succeeded() -> it.result().ping(Handler {
+                        when {
+                            it.succeeded() && it.result() ->
+                                if (!future.isComplete) future.complete(Status.OK(JsonObject().put("bridge", "UP")))
+                            else -> {
+                                logger.error("Failed heartbeat ping!", it.cause())
 
-                            if (!future.isComplete) future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
+                                if (!future.isComplete) future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
+                            }
                         }
                     })
-                } else {
-                    logger.error("Failed fetching HeartBeatService!", it.cause())
+                    else -> {
+                        logger.error("Failed fetching HeartBeatService!", it.cause())
 
-                    if (!future.isComplete) future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
+                        if (!future.isComplete) future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
+                    }
                 }
             })
         })
@@ -134,8 +138,8 @@ internal class BridgeVerticle() : AbstractVerticle() {
         ebHandler.bridge(createBridgeOptions(bridgeBase), { bridgeEvent ->
             logger.debug("Event received from external client!")
 
-            if (bridgeEvent.type() != null) {
-                when (bridgeEvent.type()) {
+            when {
+                bridgeEvent.type() != null -> when (bridgeEvent.type()) {
                     SEND -> {
                         logger.debug("Send Event is: " + Json.encodePrettily(bridgeEvent))
 
@@ -187,8 +191,7 @@ internal class BridgeVerticle() : AbstractVerticle() {
                         bridgeEvent.complete(true)
                     }
                 }
-            } else {
-                logger.error("Type is null!, Message is: " + Json.encodePrettily(bridgeEvent))
+                else -> logger.error("Type is null!, Message is: " + Json.encodePrettily(bridgeEvent))
             }
         })
 
@@ -202,10 +205,9 @@ internal class BridgeVerticle() : AbstractVerticle() {
         val rawMessage = bridgeEvent.rawMessage
         val address = rawMessage.getString("address")
 
-        if (address != null) {
-            bridgeEvent.complete(true)
-        } else {
-            bridgeEvent.fail("Unknown address!")
+        when {
+            address != null -> bridgeEvent.complete(true)
+            else -> bridgeEvent.fail("Unknown address!")
         }
     }
 
@@ -245,14 +247,15 @@ internal class BridgeVerticle() : AbstractVerticle() {
         vertx.createHttpServer(options)
                 .requestHandler(router::accept)
                 .listen(bridgePort, { server ->
-                    if (server.succeeded()) {
-                        this.server = server.result()
+                    when {
+                        server.succeeded() -> {
+                            this.server = server.result()
 
-                        logger.info("Bridge deployed on: $bridgePort")
+                            logger.info("Bridge deployed on: $bridgePort")
 
-                        startFuture?.complete()
-                    } else {
-                        startFuture?.fail(server.cause())
+                            startFuture?.complete()
+                        }
+                        else -> startFuture?.fail(server.cause())
                     }
                 })
     }

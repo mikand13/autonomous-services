@@ -62,8 +62,8 @@ class TypedCombinerIT : ConfigSupport {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(combiner, context.asyncAssertSuccess({
-            ServiceManager.getInstance(vertx).publishService(TestModelCombiner::class.java, combiner) {
-                ServiceManager.getInstance().consumeService(TestModelCombiner::class.java) {
+            ServiceManager.getInstance(vertx).publishService(TestModelCombiner::class.java, combiner, Handler {
+                ServiceManager.getInstance().consumeService(TestModelCombiner::class.java, Handler {
                     context.assertTrue(it.succeeded())
                     val service = it.result()
 
@@ -71,8 +71,8 @@ class TypedCombinerIT : ConfigSupport {
                         context.assertTrue(it.succeeded())
                         async.complete()
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -83,8 +83,8 @@ class TypedCombinerIT : ConfigSupport {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(combiner, context.asyncAssertSuccess({
-            ServiceManager.getInstance(vertx).publishService(TestModelCombiner::class.java, combiner) {
-                ServiceManager.getInstance().consumeService(TestModelCombiner::class.java) {
+            ServiceManager.getInstance(vertx).publishService(TestModelCombiner::class.java, combiner, Handler {
+                ServiceManager.getInstance().consumeService(TestModelCombiner::class.java, Handler {
                     context.assertTrue(it.succeeded())
                     val service = it.result()
 
@@ -92,8 +92,8 @@ class TypedCombinerIT : ConfigSupport {
                         context.assertTrue(it.succeeded())
                         async.complete()
                     })
-                }
-            }
+                })
+            })
         }))
     }
 }

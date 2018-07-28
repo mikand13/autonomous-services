@@ -35,7 +35,6 @@ import io.vertx.ext.unit.TestContext
 import io.vertx.ext.unit.junit.RunTestOnContext
 import io.vertx.ext.unit.junit.Timeout
 import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -64,8 +63,8 @@ class TypedSplitterIT : ConfigSupport {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(splitter, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter) {
-                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
+            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter, Handler {
+                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java, Handler {
                     context.assertTrue(it.succeeded())
                     val service = it.result()
 
@@ -79,8 +78,8 @@ class TypedSplitterIT : ConfigSupport {
 
                         service.splitCreate(TestModel())
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -93,8 +92,8 @@ class TypedSplitterIT : ConfigSupport {
         model.setSomeStringOne("String")
 
         vertx.deployVerticle(splitter, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter) {
-                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
+            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter, Handler {
+                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java, Handler {
                     context.assertTrue(it.succeeded())
                     val service = it.result()
 
@@ -103,8 +102,8 @@ class TypedSplitterIT : ConfigSupport {
                         context.assertEquals(model.getSomeStringOne(), it.result().getSomeStringOne())
                         async.complete()
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -115,8 +114,8 @@ class TypedSplitterIT : ConfigSupport {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(splitter, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter) {
-                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
+            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter, Handler {
+                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java, Handler {
                     context.assertTrue(it.succeeded())
                     val service = it.result()
 
@@ -130,8 +129,8 @@ class TypedSplitterIT : ConfigSupport {
 
                         service.splitUpdate(TestModel())
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -144,8 +143,8 @@ class TypedSplitterIT : ConfigSupport {
         model.setSomeStringOne("String")
 
         vertx.deployVerticle(splitter, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter) {
-                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
+            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter, Handler {
+                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java, Handler {
                     context.assertTrue(it.succeeded())
                     val service = it.result()
 
@@ -154,8 +153,8 @@ class TypedSplitterIT : ConfigSupport {
                         context.assertEquals(model.getSomeStringOne(), it.result().getSomeStringOne())
                         async.complete()
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -166,8 +165,8 @@ class TypedSplitterIT : ConfigSupport {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(splitter, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter) {
-                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
+            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter, Handler {
+                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java, Handler {
                     context.assertTrue(it.succeeded())
                     val service = it.result()
 
@@ -181,8 +180,8 @@ class TypedSplitterIT : ConfigSupport {
 
                         service.splitDelete(TestModel())
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -195,8 +194,8 @@ class TypedSplitterIT : ConfigSupport {
         model.setSomeStringOne("String")
 
         vertx.deployVerticle(splitter, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter) {
-                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java) {
+            ServiceManager.getInstance().publishService(TestModelSplitter::class.java, splitter, Handler {
+                ServiceManager.getInstance().consumeService(TestModelSplitter::class.java, Handler {
                     context.assertTrue(it.succeeded())
                     val service = it.result()
 
@@ -205,8 +204,8 @@ class TypedSplitterIT : ConfigSupport {
                         context.assertEquals(model.getSomeStringOne(), it.result().getSomeStringOne())
                         async.complete()
                     })
-                }
-            }
+                })
+            })
         }))
     }
 }

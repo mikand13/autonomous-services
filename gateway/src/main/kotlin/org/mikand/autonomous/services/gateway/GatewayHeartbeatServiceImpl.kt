@@ -63,23 +63,24 @@ internal class GatewayHeartbeatServiceImpl : HeartbeatService {
     }
 
     @Fluent
-    override fun ping(resultHandler: Handler<AsyncResult<Boolean>>?): GatewayHeartbeatServiceImpl {
+    override fun ping(resultHandler: Handler<AsyncResult<Boolean>>): GatewayHeartbeatServiceImpl {
         logger.debug("Ping!")
 
         client.getAbs(path)
             .handler({
-                if (it.statusCode() == 200) {
-                    resultHandler?.handle(Future.succeededFuture(true))
-                } else {
-                    logger.error("Error in ping communication after connection: ${it.statusMessage()}")
+                when {
+                    it.statusCode() == 200 -> resultHandler.handle(Future.succeededFuture(true))
+                    else -> {
+                        logger.error("Error in ping communication after connection: ${it.statusMessage()}")
 
-                    resultHandler?.handle(ServiceException.fail(it.statusCode(), it.statusMessage()))
+                        resultHandler.handle(ServiceException.fail(it.statusCode(), it.statusMessage()))
+                    }
                 }
             })
             .exceptionHandler({
                 logger.error("Error in ping communication!", it.cause)
 
-                resultHandler?.handle(ServiceException.fail(503, "Unavailable"))
+                resultHandler.handle(ServiceException.fail(503, "Unavailable"))
             })
             .end()
 

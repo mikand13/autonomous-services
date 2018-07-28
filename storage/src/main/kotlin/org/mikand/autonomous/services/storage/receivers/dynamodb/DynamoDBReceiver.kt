@@ -24,6 +24,7 @@ import org.mikand.autonomous.services.core.events.CommandEventType.COMMAND_FAILU
 import org.mikand.autonomous.services.core.events.DataEventBuilder
 import org.mikand.autonomous.services.core.events.DataEventImpl
 import org.mikand.autonomous.services.storage.receivers.Receiver
+import java.util.function.Function
 
 class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         where T : Model, T : DynamoDBModel, T : Cacheable, T : ETagable {
@@ -54,31 +55,34 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
                                            resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
         val record: T = toT(receiveInputEvent.body)
 
-        create(record, {
+        create(record, Handler {
             val result = it.result()
 
-            if (it.succeeded()) {
-                val outputEvent = DataEventBuilder()
-                        .withSuccess()
-                        .withAction("RECEIVE_CREATE")
-                        .withMetadata(JsonObject().put("statusCode", 201))
-                        .withBody(result.item.toJsonFormat())
-                        .build()
+            when {
+                it.succeeded() -> {
+                    val outputEvent = DataEventBuilder()
+                            .withSuccess()
+                            .withAction("RECEIVE_CREATE")
+                            .withMetadata(JsonObject().put("statusCode", 201))
+                            .withBody(result.item.toJsonFormat())
+                            .build()
 
-                resultHandler.handle(Future.succeededFuture(outputEvent))
+                    resultHandler.handle(Future.succeededFuture(outputEvent))
 
-                vertx.eventBus().publish(subscriptionAddress, outputEvent.toJson())
-            } else {
-                logger.error("Error in receiverCreateWithReceipt for ${type.simpleName}", it.cause())
+                    vertx.eventBus().publish(subscriptionAddress, outputEvent.toJson())
+                }
+                else -> {
+                    logger.error("Error in receiverCreateWithReceipt for ${type.simpleName}", it.cause())
 
-                val errorEvent = CommandEventBuilder()
-                        .withFailure()
-                        .withAction("RECEIVE_CREATE")
-                        .withMetadata(JsonObject().put("statusCode", 500))
-                        .withBody(JsonObject().put("error", "Unparseable"))
-                        .build()
+                    val errorEvent = CommandEventBuilder()
+                            .withFailure()
+                            .withAction("RECEIVE_CREATE")
+                            .withMetadata(JsonObject().put("statusCode", 500))
+                            .withBody(JsonObject().put("error", "Unparseable"))
+                            .build()
 
-                resultHandler.handle(ServiceException.fail(500, COMMAND_FAILURE.name, errorEvent.toJson()))
+                    resultHandler.handle(ServiceException.fail(500, COMMAND_FAILURE.name, errorEvent.toJson()))
+                }
             }
         })
 
@@ -96,60 +100,66 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
                                            resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
         val record: T = toT(receiveInputEvent.body)
 
-        update(record, { r -> r.setModifiables(record) as T }) {
-            if (it.succeeded()) {
-                val outputEvent = DataEventBuilder()
-                        .withSuccess()
-                        .withAction("RECEIVE_UPDATE")
-                        .withMetadata(JsonObject().put("statusCode", 202))
-                        .withBody(it.result().item.toJsonFormat())
-                        .build()
+        update(record, Function { r -> r.setModifiables(record) as T }, Handler {
+            when {
+                it.succeeded() -> {
+                    val outputEvent = DataEventBuilder()
+                            .withSuccess()
+                            .withAction("RECEIVE_UPDATE")
+                            .withMetadata(JsonObject().put("statusCode", 202))
+                            .withBody(it.result().item.toJsonFormat())
+                            .build()
 
-                resultHandler.handle(Future.succeededFuture(outputEvent))
+                    resultHandler.handle(Future.succeededFuture(outputEvent))
 
-                vertx.eventBus().publish(subscriptionAddress, outputEvent.toJson())
-            } else {
-                logger.error("Error in receiverRead for ${type.simpleName}", it.cause())
+                    vertx.eventBus().publish(subscriptionAddress, outputEvent.toJson())
+                }
+                else -> {
+                    logger.error("Error in receiverRead for ${type.simpleName}", it.cause())
 
-                val errorEvent = CommandEventBuilder()
-                        .withFailure()
-                        .withAction("RECEIVE_UPDATE")
-                        .withMetadata(JsonObject().put("statusCode", 500))
-                        .withBody(JsonObject().put("error", "Unparseable"))
-                        .build()
+                    val errorEvent = CommandEventBuilder()
+                            .withFailure()
+                            .withAction("RECEIVE_UPDATE")
+                            .withMetadata(JsonObject().put("statusCode", 500))
+                            .withBody(JsonObject().put("error", "Unparseable"))
+                            .build()
 
-                resultHandler.handle(ServiceException.fail(500, COMMAND_FAILURE.name, errorEvent.toJson()))
+                    resultHandler.handle(ServiceException.fail(500, COMMAND_FAILURE.name, errorEvent.toJson()))
+                }
             }
-        }
+        })
 
         return this
     }
 
     override fun receiverRead(receiveInputEvent: CommandEventImpl,
                               resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
-        read(receiveInputEvent.body) {
-            if (it.succeeded()) {
-                val outputEvent = DataEventBuilder()
-                        .withSuccess()
-                        .withAction("RECEIVE_READ")
-                        .withMetadata(JsonObject().put("statusCode", 200))
-                        .withBody(it.result().item.toJsonFormat())
-                        .build()
+        read(receiveInputEvent.body, Handler {
+            when {
+                it.succeeded() -> {
+                    val outputEvent = DataEventBuilder()
+                            .withSuccess()
+                            .withAction("RECEIVE_READ")
+                            .withMetadata(JsonObject().put("statusCode", 200))
+                            .withBody(it.result().item.toJsonFormat())
+                            .build()
 
-                resultHandler.handle(Future.succeededFuture(outputEvent))
-            } else {
-                logger.error("Error in receiverRead for ${type.simpleName}", it.cause())
+                    resultHandler.handle(Future.succeededFuture(outputEvent))
+                }
+                else -> {
+                    logger.error("Error in receiverRead for ${type.simpleName}", it.cause())
 
-                val errorEvent = CommandEventBuilder()
-                        .withFailure()
-                        .withAction("RECEIVE_READ")
-                        .withMetadata(JsonObject().put("statusCode", 500))
-                        .withBody(JsonObject().put("error", "Unparseable"))
-                        .build()
+                    val errorEvent = CommandEventBuilder()
+                            .withFailure()
+                            .withAction("RECEIVE_READ")
+                            .withMetadata(JsonObject().put("statusCode", 500))
+                            .withBody(JsonObject().put("error", "Unparseable"))
+                            .build()
 
-                resultHandler.handle(ServiceException.fail(500, COMMAND_FAILURE.name, errorEvent.toJson()))
+                    resultHandler.handle(ServiceException.fail(500, COMMAND_FAILURE.name, errorEvent.toJson()))
+                }
             }
-        }
+        })
 
         return this
     }
@@ -175,29 +185,32 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
 
     fun readAllResult(resultHandler: Handler<AsyncResult<DataEventImpl>>) : Handler<AsyncResult<ItemListResult<T>>> {
         return Handler {
-            if (it.succeeded()) {
-                val items: ItemList<T> = it.result().itemList
-                val generic = GenericItemList(items.pageToken, items.count, items.items.map { it.toJsonFormat() })
+            when {
+                it.succeeded() -> {
+                    val items: ItemList<T> = it.result().itemList!!
+                    val generic = GenericItemList(items.pageToken!!, items.count, items.items?.map { it.toJsonFormat() })
 
-                val outputEvent = DataEventBuilder()
-                        .withSuccess()
-                        .withAction("RECEIVE_INDEX")
-                        .withMetadata(JsonObject().put("statusCode", 200))
-                        .withBody(generic.toJson())
-                        .build()
+                    val outputEvent = DataEventBuilder()
+                            .withSuccess()
+                            .withAction("RECEIVE_INDEX")
+                            .withMetadata(JsonObject().put("statusCode", 200))
+                            .withBody(generic.toJson())
+                            .build()
 
-                resultHandler.handle(Future.succeededFuture(outputEvent))
-            } else {
-                logger.error("Error in receiverIndexWithQuery for ${type.simpleName}", it.cause())
+                    resultHandler.handle(Future.succeededFuture(outputEvent))
+                }
+                else -> {
+                    logger.error("Error in receiverIndexWithQuery for ${type.simpleName}", it.cause())
 
-                val errorEvent = CommandEventBuilder()
-                        .withFailure()
-                        .withAction("RECEIVE_INDEX")
-                        .withMetadata(JsonObject().put("statusCode", 500))
-                        .withBody(JsonObject().put("error", "Unparseable"))
-                        .build()
+                    val errorEvent = CommandEventBuilder()
+                            .withFailure()
+                            .withAction("RECEIVE_INDEX")
+                            .withMetadata(JsonObject().put("statusCode", 500))
+                            .withBody(JsonObject().put("error", "Unparseable"))
+                            .build()
 
-                resultHandler.handle(ServiceException.fail(500, COMMAND_FAILURE.name, errorEvent.toJson()))
+                    resultHandler.handle(ServiceException.fail(500, COMMAND_FAILURE.name, errorEvent.toJson()))
+                }
             }
         }
     }
@@ -215,31 +228,34 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
                 .put("hash", record.hash)
                 .put("range", record.range)
 
-        delete(id, {
+        delete(id, Handler {
             val result = it.result()
 
-            if (it.succeeded()) {
-                val outputEvent = DataEventBuilder()
-                        .withSuccess()
-                        .withAction("RECEIVE_DELETE")
-                        .withMetadata(JsonObject().put("statusCode", 204))
-                        .withBody(result.item.toJsonFormat())
-                        .build()
+            when {
+                it.succeeded() -> {
+                    val outputEvent = DataEventBuilder()
+                            .withSuccess()
+                            .withAction("RECEIVE_DELETE")
+                            .withMetadata(JsonObject().put("statusCode", 204))
+                            .withBody(result.item.toJsonFormat())
+                            .build()
 
-                resultHandler.handle(Future.succeededFuture(outputEvent))
+                    resultHandler.handle(Future.succeededFuture(outputEvent))
 
-                vertx.eventBus().publish(subscriptionAddress, outputEvent.toJson())
-            } else {
-                logger.error("Error in receiverDeleteWithReceipt for ${type.simpleName}", it.cause())
+                    vertx.eventBus().publish(subscriptionAddress, outputEvent.toJson())
+                }
+                else -> {
+                    logger.error("Error in receiverDeleteWithReceipt for ${type.simpleName}", it.cause())
 
-                val errorEvent = CommandEventBuilder()
-                        .withFailure()
-                        .withAction("RECEIVE_DELETE")
-                        .withMetadata(JsonObject().put("statusCode", 500))
-                        .withBody(JsonObject().put("error", "Unparseable"))
-                        .build()
+                    val errorEvent = CommandEventBuilder()
+                            .withFailure()
+                            .withAction("RECEIVE_DELETE")
+                            .withMetadata(JsonObject().put("statusCode", 500))
+                            .withBody(JsonObject().put("error", "Unparseable"))
+                            .build()
 
-                resultHandler.handle(ServiceException.fail(500, COMMAND_FAILURE.name, errorEvent.toJson()))
+                    resultHandler.handle(ServiceException.fail(500, COMMAND_FAILURE.name, errorEvent.toJson()))
+                }
             }
         })
 

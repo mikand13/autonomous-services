@@ -219,7 +219,7 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
 
                 context.assertNotNull(list)
                 context.assertEquals(20, list.count)
-                context.assertEquals(20, list.items.size)
+                context.assertEquals(20, list.items?.size)
                 context.assertNotNull(list.pageToken)
 
                 async.complete()
@@ -264,7 +264,7 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
 
                 context.assertNotNull(list)
                 context.assertEquals(20, list.count)
-                context.assertEquals(20, list.items.size)
+                context.assertEquals(20, list.items?.size)
                 context.assertNotNull(list.pageToken)
 
                 async.complete()
@@ -297,7 +297,7 @@ class DynamoDBReceiverTest : DynamoDBTestClass() {
 
                 context.assertNotNull(list)
                 context.assertEquals(0, list.count)
-                context.assertEquals(0, list.items.size)
+                context.assertEquals(0, list.items?.size)
                 context.assertNotNull(list.pageToken)
 
                 asyncTwo.complete()

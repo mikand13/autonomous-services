@@ -27,6 +27,7 @@ package org.mikand.autonomous.services.gateway
 import com.nannoq.tools.cluster.services.HeartbeatService
 import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.DeploymentOptions
+import io.vertx.core.Handler
 import io.vertx.core.Vertx
 import io.vertx.core.VertxOptions
 import io.vertx.core.logging.Logger
@@ -79,14 +80,14 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
 
             ServiceManager.getInstance(vertx).publishService(HeartbeatService::class.java,
                     GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS,
-                    GatewayHeartbeatServiceImpl(vertx, config), {
+                    GatewayHeartbeatServiceImpl(vertx, config), Handler {
                 context.assertTrue(it.succeeded())
 
                 ServiceManager.getInstance().consumeService(HeartbeatService::class.java,
-                        GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS, {
+                        GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS, Handler {
                     context.assertTrue(it.succeeded())
 
-                    it.result().ping({
+                    it.result().ping(Handler {
                         context.assertTrue(it.succeeded())
                         context.assertTrue(it.result())
 
@@ -130,14 +131,14 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
 
         ServiceManager.getInstance(vertx).publishService(HeartbeatService::class.java,
                 GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS,
-                GatewayHeartbeatServiceImpl(vertx, config), {
+                GatewayHeartbeatServiceImpl(vertx, config), Handler {
             context.assertTrue(it.succeeded())
 
             ServiceManager.getInstance().consumeService(HeartbeatService::class.java,
-                    GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS, {
+                    GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS, Handler {
                 context.assertTrue(it.succeeded())
 
-                it.result().ping({
+                it.result().ping(Handler {
                     context.assertTrue(it.failed())
                     context.assertNull(it.result())
 
@@ -171,7 +172,7 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
 
             ServiceManager.getInstance(vertx).publishService(HeartbeatService::class.java,
                     GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS,
-                    GatewayHeartbeatServiceImpl(vertx, config), {
+                    GatewayHeartbeatServiceImpl(vertx, config), Handler {
                 context.assertTrue(it.succeeded())
 
                 vertx.deployVerticle(langVerticle, {

@@ -49,32 +49,30 @@ abstract class JsonCombinerImpl(config: JsonObject = JsonObject()) : AbstractVer
     private lateinit var service: Record
 
     override fun start(startFuture: Future<Void>?) {
-        if (deployService) {
-            ServiceManager.getInstance().publishService(JsonCombiner::class.java, publishAddress, this) {
-                if (it.succeeded()) {
-                    service = it.result()
+        when {
+            deployService -> ServiceManager.getInstance().publishService(JsonCombiner::class.java, publishAddress, this, Handler {
+                when {
+                    it.succeeded() -> {
+                        service = it.result()
 
-                    startFuture?.complete()
-                } else {
-                    startFuture?.fail(it.cause())
+                        startFuture?.complete()
+                    }
+                    else -> startFuture?.fail(it.cause())
                 }
-            }
-        } else {
-            startFuture?.complete()
+            })
+            else -> startFuture?.complete()
         }
     }
 
     override fun stop(stopFuture: Future<Void>?) {
-        if (deployService) {
-            ServiceManager.getInstance().unPublishService(JsonCombiner::class.java, service) {
-                if (it.succeeded()) {
-                    stopFuture?.complete()
-                } else {
-                    stopFuture?.fail(it.cause())
+        when {
+            deployService -> ServiceManager.getInstance().unPublishService(JsonCombiner::class.java, service, Handler {
+                when {
+                    it.succeeded() -> stopFuture?.complete()
+                    else -> stopFuture?.fail(it.cause())
                 }
-            }
-        } else {
-            stopFuture?.complete()
+            })
+            else -> stopFuture?.complete()
         }
     }
 

@@ -88,10 +88,10 @@ abstract class DynamoDBTestClass : ConfigSupport {
 
         context.put<String>("${name.methodName}-repo", TestModelReceiverImpl(rule.vertx(), config))
 
-        DynamoDBRepository.initializeDynamoDb(getTestConfig().mergeIn(config), classCollection) {
+        DynamoDBRepository.initializeDynamoDb(getTestConfig().mergeIn(config), classCollection, Handler {
             if (it.failed()) context.fail(it.cause())
             async.complete()
-        }
+        })
     }
 
     @After
@@ -116,7 +116,8 @@ abstract class DynamoDBTestClass : ConfigSupport {
         val futures = CopyOnWriteArrayList<Future<*>>()
 
         IntStream.range(0, count).forEach { i ->
-            val testModel = nonNullTestModel().setRange(UUID.randomUUID().toString())
+            val testModel = nonNullTestModel()
+            testModel.range = (UUID.randomUUID().toString())
 
             val startDate = LocalDate.of(1990, 1, 1)
             val endDate = LocalDate.now()
