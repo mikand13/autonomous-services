@@ -61,7 +61,7 @@ class JsonSplitterImplIT : ConfigSupport {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(splitter, context.asyncAssertSuccess({ id ->
-            ServiceManager.getInstance(vertx).consumeService(JsonSplitter::class.java) {
+            ServiceManager.getInstance(vertx).consumeService(JsonSplitter::class.java, Handler {
                 context.assertTrue(it.succeeded())
                 val service = it.result()
 
@@ -81,7 +81,7 @@ class JsonSplitterImplIT : ConfigSupport {
                             .withAction("SPLIT")
                             .build())
                 })
-            }
+            })
         }))
     }
 
@@ -92,7 +92,7 @@ class JsonSplitterImplIT : ConfigSupport {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(splitter, context.asyncAssertSuccess({ id ->
-            ServiceManager.getInstance(vertx).consumeService(JsonSplitter::class.java) {
+            ServiceManager.getInstance(vertx).consumeService(JsonSplitter::class.java, Handler {
                 context.assertTrue(it.succeeded())
                 val service = it.result()
 
@@ -107,7 +107,7 @@ class JsonSplitterImplIT : ConfigSupport {
                         async.complete()
                     }))
                 })
-            }
+            })
         }))
     }
 }

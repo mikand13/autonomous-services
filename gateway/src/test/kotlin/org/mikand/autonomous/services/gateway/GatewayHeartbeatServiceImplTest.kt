@@ -24,6 +24,7 @@
 
 package org.mikand.autonomous.services.gateway
 
+import io.vertx.core.Handler
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.ext.unit.TestContext
@@ -57,7 +58,7 @@ class GatewayHeartbeatServiceImplTest : ConfigSupport {
         val async = context.async()
         val heartbeat = GatewayHeartbeatServiceImpl(rule.vertx(), getTestConfig())
 
-        heartbeat.ping({
+        heartbeat.ping(Handler {
             context.assertTrue(it.failed())
 
             async.complete()

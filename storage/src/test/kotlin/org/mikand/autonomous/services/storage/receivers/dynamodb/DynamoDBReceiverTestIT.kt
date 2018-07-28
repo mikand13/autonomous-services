@@ -32,8 +32,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(verticle, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(Receiver::class.java, verticle) {
-                ServiceManager.getInstance().consumeService(Receiver::class.java) {
+            ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
@@ -58,8 +58,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                 .withBody(TestModel().toJson())
                                 .build())
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -70,8 +70,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(verticle, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(Receiver::class.java, verticle) {
-                ServiceManager.getInstance().consumeService(Receiver::class.java) {
+            ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
@@ -87,8 +87,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                         context.assertNotNull(it.result().body)
                         async.complete()
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -99,8 +99,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(verticle, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(Receiver::class.java, verticle) {
-                ServiceManager.getInstance().consumeService(Receiver::class.java) {
+            ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
@@ -150,8 +150,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                     .build())
                         })
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -162,8 +162,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(verticle, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(Receiver::class.java, verticle) {
-                ServiceManager.getInstance().consumeService(Receiver::class.java) {
+            ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
@@ -202,8 +202,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                             })
                         })
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -214,8 +214,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(verticle, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(Receiver::class.java, verticle) {
-                ServiceManager.getInstance().consumeService(Receiver::class.java) {
+            ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
@@ -243,8 +243,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                             async.complete()
                         })
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -255,8 +255,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(verticle, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(Receiver::class.java, verticle) {
-                ServiceManager.getInstance().consumeService(Receiver::class.java) {
+            ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
@@ -281,14 +281,14 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
 
                             context.assertNotNull(list)
                             context.assertEquals(20, list.count)
-                            context.assertEquals(20, list.items.size)
+                            context.assertEquals(20, list.items?.size)
                             context.assertNotNull(list.pageToken)
 
                             async.complete()
                         })
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -300,8 +300,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(verticle, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(Receiver::class.java, verticle) {
-                ServiceManager.getInstance().consumeService(Receiver::class.java) {
+            ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
@@ -337,7 +337,7 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
 
                             context.assertNotNull(list)
                             context.assertEquals(20, list.count)
-                            context.assertEquals(20, list.items.size)
+                            context.assertEquals(20, list.items?.size)
                             context.assertNotNull(list.pageToken)
 
                             async.complete()
@@ -370,14 +370,14 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
 
                             context.assertNotNull(list)
                             context.assertEquals(0, list.count)
-                            context.assertEquals(0, list.items.size)
+                            context.assertEquals(0, list.items?.size)
                             context.assertNotNull(list.pageToken)
 
                             asyncTwo.complete()
                         })
                     })
-                }
-            }
+                })
+            })
         }))
 
     }
@@ -389,8 +389,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(verticle, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(Receiver::class.java, verticle) {
-                ServiceManager.getInstance().consumeService(Receiver::class.java) {
+            ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
@@ -438,8 +438,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                             service.receiverDelete(deleteEvent)
                         })
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -450,8 +450,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(verticle, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(Receiver::class.java, verticle) {
-                ServiceManager.getInstance().consumeService(Receiver::class.java) {
+            ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
@@ -487,8 +487,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                             })
                         })
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -499,8 +499,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(verticle, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(Receiver::class.java, verticle) {
-                ServiceManager.getInstance().consumeService(Receiver::class.java) {
+            ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
@@ -511,8 +511,8 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                         context.assertEquals(address, it.result().body.getString("address"))
                         async.complete()
                     })
-                }
-            }
+                })
+            })
         }))
     }
 }

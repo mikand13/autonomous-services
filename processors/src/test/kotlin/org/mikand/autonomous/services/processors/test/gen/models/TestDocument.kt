@@ -3,18 +3,17 @@ package org.mikand.autonomous.services.processors.test.gen.models
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBDocument
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute
 import com.fasterxml.jackson.annotation.JsonInclude
+import org.mikand.autonomous.services.processors.test.gen.models.TestDocumentConverter.fromJson
 import com.nannoq.tools.repository.models.ETagable
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonObject
-import org.mikand.autonomous.services.processors.test.gen.models.TestDocumentConverter.fromJson
 import java.util.*
-
 
 @DynamoDBDocument
 @DataObject(generateConverter = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 class TestDocument : ETagable {
-    private var etag: String? = null
+    override var etag: String? = null
     var someStringOne: String? = null
     var someStringTwo: String? = null
     var someStringThree: String? = null
@@ -30,16 +29,6 @@ class TestDocument : ETagable {
 
     fun toJson(): JsonObject {
         return JsonObject.mapFrom(this)
-    }
-
-    override fun getEtag(): String? {
-        return etag
-    }
-
-    override fun setEtag(etag: String): TestDocument {
-        this.etag = etag
-
-        return this
     }
 
     override fun generateEtagKeyIdentifier(): String {

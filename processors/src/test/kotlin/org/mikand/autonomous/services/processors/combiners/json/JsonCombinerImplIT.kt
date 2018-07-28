@@ -61,7 +61,7 @@ class JsonCombinerImplIT : ConfigSupport {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(combiner, context.asyncAssertSuccess({
-            ServiceManager.getInstance(vertx).consumeService(JsonCombiner::class.java) {
+            ServiceManager.getInstance(vertx).consumeService(JsonCombiner::class.java, Handler {
                 context.assertTrue(it.succeeded())
                 val service = it.result()
 
@@ -72,7 +72,7 @@ class JsonCombinerImplIT : ConfigSupport {
                     context.assertTrue(it.succeeded())
                     async.complete()
                 })
-            }
+            })
         }))
     }
 }

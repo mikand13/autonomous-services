@@ -63,7 +63,7 @@ internal class GatewayHeartbeatServiceImpl : HeartbeatService {
     }
 
     @Fluent
-    override fun ping(resultHandler: Handler<AsyncResult<Boolean>>?): GatewayHeartbeatServiceImpl {
+    override fun ping(resultHandler: Handler<AsyncResult<Boolean>>): GatewayHeartbeatServiceImpl {
         logger.debug("Ping!")
 
         client.getAbs(path)

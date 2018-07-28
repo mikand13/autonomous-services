@@ -58,7 +58,7 @@ class ComputeIT : ConfigSupport {
         val async = context.async()
         val compute = JsonCompute()
 
-        ServiceManager.getInstance().publishService(Compute::class.java, compute, {
+        ServiceManager.getInstance().publishService(Compute::class.java, compute, Handler {
             logger.error(it.cause())
             context.assertTrue(it.succeeded())
 
@@ -84,7 +84,7 @@ class ComputeIT : ConfigSupport {
         val async = context.async()
         val compute = JsonCompute()
 
-        ServiceManager.getInstance().publishService(Compute::class.java, compute, {
+        ServiceManager.getInstance().publishService(Compute::class.java, compute, Handler {
             context.assertTrue(it.succeeded())
 
             ServiceManager.getInstance().consumeService(Compute::class.java, Handler {

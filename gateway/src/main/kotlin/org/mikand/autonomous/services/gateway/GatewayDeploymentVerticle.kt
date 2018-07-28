@@ -101,7 +101,7 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
         heartbeatServiceImpl = GatewayHeartbeatServiceImpl(vertx, config())
 
         ServiceManager.getInstance().publishService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS,
-                heartbeatServiceImpl, {
+                heartbeatServiceImpl, Handler {
             if (it.succeeded()) {
                 logger.info("GatewayHeartbeat is live!")
 
@@ -118,7 +118,7 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
 
     private fun deployPeriodicCheck(): Long {
         return vertx.setPeriodic(10000L, {
-            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, {
+            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, Handler {
                 if (it.failed()) {
                     heartbeatDown()
                 } else {

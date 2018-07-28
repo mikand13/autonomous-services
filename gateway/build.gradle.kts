@@ -22,6 +22,8 @@
  * SOFTWARE.
  */
 
+@file:Suppress("UNNECESSARY_NOT_NULL_ASSERTION")
+
 import com.craigburke.gradle.KarmaPlugin
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.palantir.gradle.docker.DockerComponent
@@ -53,8 +55,8 @@ val mainVerticleName = "org.mikand.autonomous.services.gateway.GatewayDeployment
 val watchForChange = "src/**/*"
 val confFile = "src/main/resources/app-conf.json"
 var doOnChange : String
-val projectName = project.name
-val projectVersion = project.version
+val projectName = project.name!!
+val projectVersion = project.version!!
 val nameOfArchive = "$projectName-$projectVersion-fat.jar"
 val dockerImageName = "autonomous_services/$projectName"
 val dockerFileLocation = "src/main/docker/Dockerfile"
@@ -134,12 +136,11 @@ apply {
 
 dependencies {
     // Kotlin
-    compile(kotlin("stdlib", kotlin_version.toString()))
-    compile(kotlin("stdlib-jdk8", kotlin_version.toString()))
+    compile(kotlin("stdlib", kotlin_version))
+    compile(kotlin("stdlib-jdk8", kotlin_version))
     compile("org.jetbrains.kotlin:kotlin-reflect")
 
     // Nannoq
-    compile("com.nannoq:tools:$nannoq_tools_version")
     compile("com.nannoq:cluster:$nannoq_tools_version")
 
     // Vert.x
@@ -154,9 +155,9 @@ dependencies {
     kapt("io.vertx:vertx-service-proxy:$vertx_version:processor")
 
     // Log4j2
-    compile(group = "org.apache.logging.log4j", name = "log4j-api", version = log4j_version.toString())
-    compile(group = "org.apache.logging.log4j", name = "log4j-core", version = log4j_version.toString())
-    compile(group = "com.lmax", name = "disruptor", version = com_lmax_version.toString())
+    compile(group = "org.apache.logging.log4j", name = "log4j-api", version = log4j_version)
+    compile(group = "org.apache.logging.log4j", name = "log4j-core", version = log4j_version)
+    compile(group = "com.lmax", name = "disruptor", version = com_lmax_version)
 
     // Test
     testCompile("junit:junit:$junit_version")
@@ -311,7 +312,7 @@ tasks {
 
     "test"(Test::class) {
         maxParallelForks = 4
-        systemProperties = mapOf(Pair("vertx.logger-delegate-factory-class-name", logger_factory_version.toString()))
+        systemProperties = mapOf(Pair("vertx.logger-delegate-factory-class-name", logger_factory_version))
     }
 
     "karmaRun" {

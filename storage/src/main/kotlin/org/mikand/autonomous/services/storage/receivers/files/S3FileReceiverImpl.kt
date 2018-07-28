@@ -9,7 +9,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model.AmazonS3Exception
 import com.amazonaws.services.s3.model.ObjectMetadata
 import com.nannoq.tools.web.RoutingHelper
-import com.nannoq.tools.web.responsehandlers.ResponseLogHandler.BODY_CONTENT_TAG
+import com.nannoq.tools.web.responsehandlers.ResponseLogHandler.Companion.BODY_CONTENT_TAG
 import io.vertx.core.*
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerOptions
@@ -33,6 +33,8 @@ import java.io.IOException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
+import java.util.function.Consumer
+import java.util.function.Supplier
 import kotlin.collections.HashMap
 
 open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
@@ -138,15 +140,15 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
     private fun createRouter(): Router {
         val router = Router.router(vertx)
 
-        RoutingHelper.routeWithBodyAndLogger({
+        RoutingHelper.routeWithBodyAndLogger(Supplier {
             router.post("$rootPath/:token")
-        }, {
+        }, Consumer {
             it.get().handler(this::uploadHandler)
         })
 
-        RoutingHelper.routeWithLogger({
+        RoutingHelper.routeWithLogger(Supplier {
             router.get("$rootPath/:token")
-        }, {
+        }, Consumer {
             it.get().handler(this::downloadHandler)
         })
 

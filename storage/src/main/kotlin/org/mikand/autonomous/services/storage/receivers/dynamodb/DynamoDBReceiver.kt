@@ -24,6 +24,7 @@ import org.mikand.autonomous.services.core.events.CommandEventType.COMMAND_FAILU
 import org.mikand.autonomous.services.core.events.DataEventBuilder
 import org.mikand.autonomous.services.core.events.DataEventImpl
 import org.mikand.autonomous.services.storage.receivers.Receiver
+import java.util.function.Function
 
 class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         where T : Model, T : DynamoDBModel, T : Cacheable, T : ETagable {
@@ -54,7 +55,7 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
                                            resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
         val record: T = toT(receiveInputEvent.body)
 
-        create(record, {
+        create(record, Handler {
             val result = it.result()
 
             if (it.succeeded()) {
@@ -96,7 +97,7 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
                                            resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
         val record: T = toT(receiveInputEvent.body)
 
-        update(record, { r -> r.setModifiables(record) as T }) {
+        update(record, Function { r -> r.setModifiables(record) as T }, Handler {
             if (it.succeeded()) {
                 val outputEvent = DataEventBuilder()
                         .withSuccess()
@@ -120,14 +121,14 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
 
                 resultHandler.handle(ServiceException.fail(500, COMMAND_FAILURE.name, errorEvent.toJson()))
             }
-        }
+        })
 
         return this
     }
 
     override fun receiverRead(receiveInputEvent: CommandEventImpl,
                               resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
-        read(receiveInputEvent.body) {
+        read(receiveInputEvent.body, Handler {
             if (it.succeeded()) {
                 val outputEvent = DataEventBuilder()
                         .withSuccess()
@@ -149,7 +150,7 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
 
                 resultHandler.handle(ServiceException.fail(500, COMMAND_FAILURE.name, errorEvent.toJson()))
             }
-        }
+        })
 
         return this
     }
@@ -176,8 +177,8 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
     fun readAllResult(resultHandler: Handler<AsyncResult<DataEventImpl>>) : Handler<AsyncResult<ItemListResult<T>>> {
         return Handler {
             if (it.succeeded()) {
-                val items: ItemList<T> = it.result().itemList
-                val generic = GenericItemList(items.pageToken, items.count, items.items.map { it.toJsonFormat() })
+                val items: ItemList<T> = it.result().itemList!!
+                val generic = GenericItemList(items.pageToken!!, items.count, items.items?.map { it.toJsonFormat() })
 
                 val outputEvent = DataEventBuilder()
                         .withSuccess()
@@ -215,7 +216,7 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
                 .put("hash", record.hash)
                 .put("range", record.range)
 
-        delete(id, {
+        delete(id, Handler {
             val result = it.result()
 
             if (it.succeeded()) {

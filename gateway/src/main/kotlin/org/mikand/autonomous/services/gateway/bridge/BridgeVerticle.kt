@@ -28,6 +28,7 @@ import com.nannoq.tools.cluster.services.HeartbeatService
 import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.Future
+import io.vertx.core.Handler
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.json.Json
@@ -107,9 +108,9 @@ internal class BridgeVerticle() : AbstractVerticle() {
         val healthCheckHandler = HealthCheckHandler.create(vertx)
 
         healthCheckHandler.register("bridge-is-live", { future ->
-            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, {
+            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, Handler {
                 if (it.succeeded()) {
-                    it.result().ping({
+                    it.result().ping(Handler {
                         if (it.succeeded() && it.result()) {
                             if (!future.isComplete) future.complete(Status.OK(JsonObject().put("bridge", "UP")))
                         } else {

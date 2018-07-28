@@ -32,8 +32,8 @@ class S3FileReceiverImplTestIT : S3TestClass() {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(fileReceiver, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(FileReceiver::class.java, fileReceiver) {
-                ServiceManager.getInstance().consumeService(FileReceiver::class.java) {
+            ServiceManager.getInstance().publishService(FileReceiver::class.java, fileReceiver, Handler {
+                ServiceManager.getInstance().consumeService(FileReceiver::class.java, Handler {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
@@ -51,8 +51,8 @@ class S3FileReceiverImplTestIT : S3TestClass() {
                             }
                         })
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -62,8 +62,8 @@ class S3FileReceiverImplTestIT : S3TestClass() {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(fileReceiver, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(FileReceiver::class.java, fileReceiver) {
-                ServiceManager.getInstance().consumeService(FileReceiver::class.java) {
+            ServiceManager.getInstance().publishService(FileReceiver::class.java, fileReceiver, Handler {
+                ServiceManager.getInstance().consumeService(FileReceiver::class.java, Handler {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
@@ -84,8 +84,8 @@ class S3FileReceiverImplTestIT : S3TestClass() {
                             }
                         })
                     })
-                }
-            }
+                })
+            })
         }))
     }
 
@@ -110,8 +110,8 @@ class S3FileReceiverImplTestIT : S3TestClass() {
         val vertx = rule.vertx()
 
         vertx.deployVerticle(fileReceiver, context.asyncAssertSuccess({
-            ServiceManager.getInstance().publishService(FileReceiver::class.java, fileReceiver) {
-                ServiceManager.getInstance().consumeService(FileReceiver::class.java) {
+            ServiceManager.getInstance().publishService(FileReceiver::class.java, fileReceiver, Handler {
+                ServiceManager.getInstance().consumeService(FileReceiver::class.java, Handler {
                     context.assertTrue(it.succeeded())
 
                     val service = it.result()
@@ -122,8 +122,8 @@ class S3FileReceiverImplTestIT : S3TestClass() {
                         context.assertEquals(address, it.result().body.getString("address"))
                         async.complete()
                     })
-                }
-            }
+                })
+            })
         }))
     }
 }

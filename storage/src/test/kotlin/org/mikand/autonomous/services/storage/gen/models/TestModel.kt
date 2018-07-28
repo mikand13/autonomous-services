@@ -2,20 +2,36 @@ package org.mikand.autonomous.services.storage.gen.models
 
 import com.amazonaws.services.dynamodbv2.datamodeling.*
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.nannoq.tools.repository.dynamodb.DynamoDBRepository.PAGINATION_INDEX
+import com.nannoq.tools.repository.dynamodb.DynamoDBRepository.Companion.PAGINATION_INDEX
+import org.mikand.autonomous.services.storage.gen.models.TestModelConverter.fromJson
 import com.nannoq.tools.repository.models.*
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.codegen.annotations.Fluent
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
-import org.mikand.autonomous.services.storage.gen.models.TestModelConverter.fromJson
 import java.util.*
 
 @DynamoDBTable(tableName = "testModels")
 @DataObject(generateConverter = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
-    private var etag: String? = null
+    override var hash: String?
+        get() {
+            return someStringOne
+        }
+        set(value) {
+            this.someStringOne = value
+        }
+
+    override var range: String?
+        get() {
+            return someStringTwo
+        }
+        set(value) {
+            this.someStringTwo = value
+        }
+
+    override var etag: String? = null
     private var someStringOne: String? = "default"
     private var someStringTwo: String? = "defaultRange"
     private var someStringThree: String? = null
@@ -29,8 +45,10 @@ class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
     private var someBoolean: Boolean? = false
     private var someBooleanTwo: Boolean? = null
     private var documents: List<TestDocument>? = null
-    private var createdAt: Date? = null
-    private var updatedAt: Date? = null
+    override var createdAt: Date? = null
+        get() = if (field != null) field!! else Date()
+    override var updatedAt: Date? = null
+        get() = if (field != null) field!! else Date()
     private var version: Long? = null
 
     constructor()
@@ -215,39 +233,6 @@ class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
         return this
     }
 
-    override fun getHash(): String? {
-        return someStringOne
-    }
-
-    override fun getRange(): String? {
-        return someStringTwo
-    }
-
-    @Fluent
-    override fun setHash(hash: String?): TestModel {
-        someStringOne = hash
-
-        return this
-    }
-
-    @Fluent
-    override fun setRange(range: String?): TestModel {
-        someStringTwo = range
-
-        return this
-    }
-
-    override fun getEtag(): String? {
-        return etag
-    }
-
-    @Fluent
-    override fun setEtag(etag: String): TestModel {
-        this.etag = etag
-
-        return this
-    }
-
     override fun generateEtagKeyIdentifier(): String {
         return if (getSomeStringOne() != null && getSomeStringTwo() != null)
             "data_api_testModel_etag_" + getSomeStringOne() + "_" + getSomeStringTwo()
@@ -273,19 +258,11 @@ class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
         return Collections.emptyList()
     }
 
-    override fun getCreatedAt(): Date {
-        return if (createdAt != null) createdAt!! else Date()
-    }
-
     @Fluent
     override fun setCreatedAt(date: Date): TestModel {
         createdAt = date
 
         return this
-    }
-
-    override fun getUpdatedAt(): Date {
-        return if (updatedAt != null) updatedAt!! else Date()
     }
 
     @Fluent
@@ -322,8 +299,8 @@ class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
                 Objects.equals(getSomeBoolean(), testModel.getSomeBoolean()) &&
                 Objects.equals(getSomeBooleanTwo(), testModel.getSomeBooleanTwo()) &&
                 Objects.equals(getDocuments(), testModel.getDocuments()) &&
-                Objects.equals(getCreatedAt(), testModel.getCreatedAt()) &&
-                Objects.equals(getUpdatedAt(), testModel.getUpdatedAt()) &&
+                Objects.equals(createdAt, testModel.createdAt) &&
+                Objects.equals(updatedAt, testModel.updatedAt) &&
                 Objects.equals(getVersion(), testModel.getVersion())
     }
 

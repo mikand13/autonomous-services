@@ -28,7 +28,7 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
 
     override fun start(startFuture: Future<Void>?) {
         if (deployService) {
-            ServiceManager.getInstance().publishService(JsonSplitter::class.java, publishAddress, this) {
+            ServiceManager.getInstance().publishService(JsonSplitter::class.java, publishAddress, this, Handler {
                 if (it.succeeded()) {
                     service = it.result()
 
@@ -36,7 +36,7 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
                 } else {
                     startFuture?.fail(it.cause())
                 }
-            }
+            })
         } else {
             startFuture?.complete()
         }
@@ -45,9 +45,9 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     override fun stop(stopFuture: Future<Void>?) {
         if (deployService) {
             try {
-                ServiceManager.getInstance().unPublishService(JsonSplitter::class.java, service) {
+                ServiceManager.getInstance().unPublishService(JsonSplitter::class.java, service, Handler {
                     stopFuture?.complete()
-                }
+                })
             } catch (error: Exception) {
                 stopFuture?.complete()
             }

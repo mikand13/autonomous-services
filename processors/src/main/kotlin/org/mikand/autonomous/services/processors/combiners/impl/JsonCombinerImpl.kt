@@ -50,7 +50,7 @@ abstract class JsonCombinerImpl(config: JsonObject = JsonObject()) : AbstractVer
 
     override fun start(startFuture: Future<Void>?) {
         if (deployService) {
-            ServiceManager.getInstance().publishService(JsonCombiner::class.java, publishAddress, this) {
+            ServiceManager.getInstance().publishService(JsonCombiner::class.java, publishAddress, this, Handler {
                 if (it.succeeded()) {
                     service = it.result()
 
@@ -58,7 +58,7 @@ abstract class JsonCombinerImpl(config: JsonObject = JsonObject()) : AbstractVer
                 } else {
                     startFuture?.fail(it.cause())
                 }
-            }
+            })
         } else {
             startFuture?.complete()
         }
@@ -66,13 +66,13 @@ abstract class JsonCombinerImpl(config: JsonObject = JsonObject()) : AbstractVer
 
     override fun stop(stopFuture: Future<Void>?) {
         if (deployService) {
-            ServiceManager.getInstance().unPublishService(JsonCombiner::class.java, service) {
+            ServiceManager.getInstance().unPublishService(JsonCombiner::class.java, service, Handler {
                 if (it.succeeded()) {
                     stopFuture?.complete()
                 } else {
                     stopFuture?.fail(it.cause())
                 }
-            }
+            })
         } else {
             stopFuture?.complete()
         }
