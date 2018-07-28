@@ -65,16 +65,17 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
         CompositeFuture.all(bridgeFuture, heartBeatFuture).setHandler({
             logger.info("GatewayDeploymentVerticle has deployed: ${it.succeeded()}")
 
-            if (it.succeeded()) {
-                val port = config().getInteger("bridgePort") ?: DEFAULT_BRIDGE_PORT
+            when {
+                it.succeeded() -> {
+                    val port = config().getInteger("bridgePort") ?: DEFAULT_BRIDGE_PORT
 
-                logger.info("GatewayDeploymentVerticle is running on port: $port!")
+                    logger.info("GatewayDeploymentVerticle is running on port: $port!")
 
-                startFuture?.complete()
+                    startFuture?.complete()
 
-                periodicTimerId = deployPeriodicCheck()
-            } else {
-                startFuture?.fail(it.cause())
+                    periodicTimerId = deployPeriodicCheck()
+                }
+                else -> startFuture?.fail(it.cause())
             }
         })
     }
@@ -84,15 +85,16 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
                                            bridgeFuture: Future<String>,
                                            heartBeatFuture: Future<Record>) {
         vertx.deployVerticle(bridgeVerticle, deploymentOptions, { deploymentID ->
-            if (deploymentID.succeeded()) {
-                val result = deploymentID.result()
-                logger.info("Deployed bridge: $result")
+            when {
+                deploymentID.succeeded() -> {
+                    val result = deploymentID.result()
+                    logger.info("Deployed bridge: $result")
 
-                deployHeartbeat(heartBeatFuture)
+                    deployHeartbeat(heartBeatFuture)
 
-                bridgeFuture.complete(result)
-            } else {
-                bridgeFuture.fail(deploymentID.cause())
+                    bridgeFuture.complete(result)
+                }
+                else -> bridgeFuture.fail(deploymentID.cause())
             }
         })
     }
@@ -102,16 +104,19 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
 
         ServiceManager.getInstance().publishService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS,
                 heartbeatServiceImpl, Handler {
-            if (it.succeeded()) {
-                logger.info("GatewayHeartbeat is live!")
+            when {
+                it.succeeded() -> {
+                    logger.info("GatewayHeartbeat is live!")
 
-                heartBeatRecord = it.result()
+                    heartBeatRecord = it.result()
 
-                heartBeatFuture.complete(heartBeatRecord)
-            } else {
-                logger.error("GatewayHeartbeat deployment failed...", it.cause())
+                    heartBeatFuture.complete(heartBeatRecord)
+                }
+                else -> {
+                    logger.error("GatewayHeartbeat deployment failed...", it.cause())
 
-                heartBeatFuture.fail(it.cause())
+                    heartBeatFuture.fail(it.cause())
+                }
             }
         })
     }
@@ -119,10 +124,9 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
     private fun deployPeriodicCheck(): Long {
         return vertx.setPeriodic(10000L, {
             ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, Handler {
-                if (it.failed()) {
-                    heartbeatDown()
-                } else {
-                    heartbeatAvailable(it)
+                when {
+                    it.failed() -> heartbeatDown()
+                    else -> heartbeatAvailable(it)
                 }
             })
         })
@@ -135,10 +139,9 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
 
         val heartbeatFuture = Future.future<Record>()
         heartbeatFuture.setHandler({
-            if (it.succeeded()) {
-                logger.info("GatewayHeartbeat backup is live!")
-            } else {
-                logger.error("GatewayHeartbeat backup failed...", it.cause())
+            when {
+                it.succeeded() -> logger.info("GatewayHeartbeat backup is live!")
+                else -> logger.error("GatewayHeartbeat backup failed...", it.cause())
             }
         })
 
@@ -146,29 +149,30 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
     }
 
     private fun heartbeatAvailable(it: AsyncResult<HeartbeatService>) {
-        if (it.succeeded() && it.failed()) {
-            logger.error("GatewayHeartbeat reports bridge down, redeploying!", it.cause())
+        when {
+            it.succeeded() && it.failed() -> {
+                logger.error("GatewayHeartbeat reports bridge down, redeploying!", it.cause())
 
-            killHeartBeat()
+                killHeartBeat()
 
-            val bridgeFuture = Future.future<String>()
-            val heartBeatFuture = Future.future<Record>()
+                val bridgeFuture = Future.future<String>()
+                val heartBeatFuture = Future.future<Record>()
 
-            deployBridgeAndHealthCheck(BRIDGE_VERTICLE, deploymentOptions, bridgeFuture, heartBeatFuture)
+                deployBridgeAndHealthCheck(BRIDGE_VERTICLE, deploymentOptions, bridgeFuture, heartBeatFuture)
 
-            CompositeFuture.all(bridgeFuture, heartBeatFuture).setHandler({
-                logger.info("GatewayDeploymentVerticle has deployed: ${it.succeeded()}")
+                CompositeFuture.all(bridgeFuture, heartBeatFuture).setHandler({
+                    logger.info("GatewayDeploymentVerticle has deployed: ${it.succeeded()}")
 
-                if (it.succeeded()) {
-                    logger.info("Bridge redeployed!")
-                } else {
-                    logger.error("Unable to deploy bridge, killing application!")
+                    if (it.succeeded()) {
+                        logger.info("Bridge redeployed!")
+                    } else {
+                        logger.error("Unable to deploy bridge, killing application!")
 
-                    vertx.close()
-                }
-            })
-        } else {
-            logger.trace("Health Check OK")
+                        vertx.close()
+                    }
+                })
+            }
+            else -> logger.trace("Health Check OK")
         }
     }
 

@@ -27,32 +27,31 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     private lateinit var service: Record
 
     override fun start(startFuture: Future<Void>?) {
-        if (deployService) {
-            ServiceManager.getInstance().publishService(JsonSplitter::class.java, publishAddress, this, Handler {
-                if (it.succeeded()) {
-                    service = it.result()
+        when {
+            deployService -> ServiceManager.getInstance().publishService(JsonSplitter::class.java, publishAddress, this, Handler {
+                when {
+                    it.succeeded() -> {
+                        service = it.result()
 
-                    startFuture?.complete()
-                } else {
-                    startFuture?.fail(it.cause())
+                        startFuture?.complete()
+                    }
+                    else -> startFuture?.fail(it.cause())
                 }
             })
-        } else {
-            startFuture?.complete()
+            else -> startFuture?.complete()
         }
     }
 
     override fun stop(stopFuture: Future<Void>?) {
-        if (deployService) {
-            try {
+        when {
+            deployService -> try {
                 ServiceManager.getInstance().unPublishService(JsonSplitter::class.java, service, Handler {
                     stopFuture?.complete()
                 })
             } catch (error: Exception) {
                 stopFuture?.complete()
             }
-        } else {
-            stopFuture?.complete()
+            else -> stopFuture?.complete()
         }
     }
 
@@ -72,10 +71,9 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
             val output = JsonObject()
 
             extractables.forEach {
-                if (it.contains('.')) {
-                    recurseIntoKey(splitInputEvent.body, output, extractables, it)
-                } else {
-                    output.put(it, splitInputEvent.body.getValue(it))
+                when {
+                    it.contains('.') -> recurseIntoKey(splitInputEvent.body, output, extractables, it)
+                    else -> output.put(it, splitInputEvent.body.getValue(it))
                 }
             }
 
@@ -114,8 +112,8 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
 
         if (keyMap.isEmpty()) throw IllegalStateException("$keyMap should not be empty!")
 
-        if (keyMap.size == 2) {
-            if (extractables.contains(it)) {
+        when {
+            keyMap.size == 2 -> if (extractables.contains(it)) {
                 if (!output.containsKey(keyMap[0])) {
                     output.put(keyMap[0], JsonObject())
                 }
@@ -128,16 +126,17 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
                     output.getJsonObject(keyMap[0]).put(keyMap[1], value)
                 }
             }
-        } else {
-            if (!output.containsKey(keyMap[0])) {
-                output.put(keyMap[0], JsonObject())
+            else -> {
+                if (!output.containsKey(keyMap[0])) {
+                    output.put(keyMap[0], JsonObject())
+                }
+
+                val subObject = data.getJsonObject(keyMap[0])
+                val modifiedIt = keyMap.drop(1).joinToString(".")
+                val newExtractables = arrayListOf(modifiedIt)
+
+                recurseIntoKey(subObject, output.getJsonObject(keyMap[0]), newExtractables, modifiedIt)
             }
-
-            val subObject = data.getJsonObject(keyMap[0])
-            val modifiedIt = keyMap.drop(1).joinToString(".")
-            val newExtractables = arrayListOf(modifiedIt)
-
-            recurseIntoKey(subObject, output.getJsonObject(keyMap[0]), newExtractables, modifiedIt)
         }
     }
 

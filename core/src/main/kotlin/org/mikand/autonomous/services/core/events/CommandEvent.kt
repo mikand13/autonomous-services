@@ -1,4 +1,3 @@
 package org.mikand.autonomous.services.core.events
 
-interface CommandEvent {
-}
+interface CommandEvent
