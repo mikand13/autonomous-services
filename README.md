@@ -6,11 +6,13 @@ This repo is a collection of the most current version of all autonomous-services
 
 ### Prerequisites
 
-Vert.x >= 3.5.0
+Vert.x >= 3.5.3
 
 Java >= 1.8
 
-Maven
+Kotlin
+
+Gradle
 
 ## Installing
 
