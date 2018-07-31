@@ -2,6 +2,10 @@
 
 [![Build Status](https://www.tomrom.net/buildStatus/icon?job=autonomous-services)](https://www.tomrom.net/job/autonomous-services)
 
+This is the implementation part of a Master Thesis. It is located [here](https://drive.google.com/file/d/16Nwfh8wMR5eMf7PJ9150F9zSvDUvR4Mz/view?usp=sharing) and this is a brief explanation. A comprehensive description of Autonomous Services is found in the thesis. 
+
+Autonomous Services are Design Principles for Asynchronous and Agnostic Microservice Architectures. It leverages [vert.x](https://github.com/vert-x3) and [nannoq-tools](https://github.com/NoriginMedia/nannoq-tools) to provide an event-based reactive architecure without centralized components, netiher for communication or data, providing a theoretically linear scalability across the architecture.
+
 This repo is a collection of the most current version of all autonomous-services modules.
 
 ### Prerequisites
