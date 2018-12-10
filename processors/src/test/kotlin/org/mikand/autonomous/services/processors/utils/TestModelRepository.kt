@@ -26,6 +26,7 @@
 package org.mikand.autonomous.services.processors.utils
 
 import com.nannoq.tools.repository.utils.GenericItemList
+import com.nannoq.tools.repository.utils.PageTokens
 import io.vertx.core.AbstractVerticle
 import io.vertx.core.AsyncResult
 import io.vertx.core.Future
@@ -99,7 +100,7 @@ class TestModelRepository : AbstractVerticle(), TestModelSplitter, TestModelComb
     }
 
     override fun combineReadAll(query: JsonObject, readAllHandler: Handler<AsyncResult<GenericItemList>>): TestModelRepository {
-        readAllHandler.handle(Future.succeededFuture(GenericItemList("page", 1, Collections.singletonList(TestModel().toJsonFormat()))))
+        readAllHandler.handle(Future.succeededFuture(GenericItemList(PageTokens(), 1, Collections.singletonList(TestModel().toJsonFormat()))))
 
         return this
     }
