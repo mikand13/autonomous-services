@@ -188,7 +188,7 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
             when {
                 it.succeeded() -> {
                     val items: ItemList<T> = it.result().itemList!!
-                    val generic = GenericItemList(items.pageToken!!, items.count, items.items?.map { it.toJsonFormat() })
+                    val generic = GenericItemList(items.paging!!, items.meta?.count!!, items.items?.map { it.toJsonFormat() })
 
                     val outputEvent = DataEventBuilder()
                             .withSuccess()

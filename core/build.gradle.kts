@@ -194,11 +194,11 @@ karma {
     colors = true
 
     dependencies(listOf(
-            "sockjs-client@^1.1.4",
-            "vertx3-eventbus-client@^3.4.2",
-            "vertx3-min@^3.4.2",
-            "karma-browserify@^5.2.0",
-            "browserify@^16.0.0"
+            "sockjs-client@^1.3.0",
+            "vertx3-eventbus-client@^3.6.0",
+            "vertx3-min@^3.6.0",
+            "karma-browserify@^6.0.0",
+            "browserify@^16.2.3"
     ))
 
     files = listOf("test/resources/js/karma/**/*_test.js")

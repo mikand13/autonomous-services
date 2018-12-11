@@ -82,7 +82,7 @@ val nannoq_tools_version: String by project
 buildscript {
     var kotlin_version: String by extra
     var dokka_version: String by extra
-    kotlin_version = "1.2.41"
+    kotlin_version = "1.3.11"
     dokka_version = "0.9.16"
 
     repositories {
@@ -92,8 +92,8 @@ buildscript {
     }
 
     dependencies {
-        classpath("gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.13.0")
-        classpath("com.github.jengelman.gradle.plugins:shadow:2.0.3")
+        classpath("gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.20.1")
+        classpath("com.github.jengelman.gradle.plugins:shadow:4.0.3")
         classpath("com.wiredforcode:gradle-spawn-plugin:0.8.0")
         classpath(kotlin("gradle-plugin", kotlin_version))
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:$dokka_version")
@@ -199,11 +199,11 @@ karma {
     colors = true
 
     dependencies(listOf(
-            "sockjs-client@^1.1.4",
-            "vertx3-eventbus-client@^3.4.2",
-            "vertx3-min@^3.4.2",
-            "karma-browserify@^5.2.0",
-            "browserify@^16.0.0"
+            "sockjs-client@^1.3.0",
+            "vertx3-eventbus-client@^3.6.0",
+            "vertx3-min@^3.6.0",
+            "karma-browserify@^6.0.0",
+            "browserify@^16.2.3"
     ))
 
     files = listOf("test/resources/js/karma/**/*_test.js")

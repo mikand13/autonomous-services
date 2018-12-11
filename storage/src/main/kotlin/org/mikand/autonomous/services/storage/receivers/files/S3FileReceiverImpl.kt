@@ -125,7 +125,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
 
         vertx.createHttpServer(options)
                 .requestHandler(router::accept)
-                .listen(port!!, {
+                .listen(port!!) {
                     when {
                         it.succeeded() -> {
                             server = it.result()
@@ -134,7 +134,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
                         }
                         else -> startFuture?.fail(it.cause())
                     }
-                })
+                }
     }
 
     private fun createRouter(): Router {
@@ -407,11 +407,11 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
 
                     vertx.eventBus().publish(subscriptionAddress, JsonObject(encode))
 
-                    vertx.fileSystem().delete("file-uploads/$key", {
+                    vertx.fileSystem().delete("file-uploads/$key") {
                         if (it.failed()) {
                             logger.error("Failed deletion of temporary file upload!", it.cause())
                         }
-                    })
+                    }
                 } catch (e: Throwable) {
                     tokenMap.add(token)
                 }
@@ -498,7 +498,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
 
         when {
             token -> resultHandler.handle(Future.succeededFuture(key))
-            else -> resultHandler.handle(ServiceException.fail(404, "Not fonund..."))
+            else -> resultHandler.handle(ServiceException.fail(404, "Not found..."))
         }
     }
 
