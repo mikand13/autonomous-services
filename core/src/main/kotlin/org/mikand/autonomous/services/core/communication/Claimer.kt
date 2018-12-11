@@ -22,11 +22,11 @@ interface Claimer<T> {
         get() = 1000
 
     fun inititializeClaimer() : Claimer<T> {
-        getVertx().eventBus().consumer<JsonObject>(claimerAddress, {
+        getVertx().eventBus().consumer<JsonObject>(claimerAddress) {
             val inputEvent = CommandEventImpl(it.body())
 
             claimerMap[inputEvent.body.getInteger("hash")]?.add(inputEvent.body.getLong("time"))
-        })
+        }
 
         return this
     }
@@ -59,7 +59,7 @@ interface Claimer<T> {
 
     private fun checkIfIveClaimedIt(initialTime: Long, vertx: Vertx, gotItObject: T, objectHash: Int, timeStamp: Long,
                                     resultHandler: Handler<AsyncResult<T>>) : Claimer<T> {
-        vertx.setTimer(200L, {
+        vertx.setTimer(200L) {
             if (claimerMap[objectHash]!!.any { it < timeStamp }) {
                 claimerMap.remove(objectHash)
 
@@ -73,7 +73,7 @@ interface Claimer<T> {
                     checkIfIveClaimedIt(initialTime, vertx, gotItObject, objectHash, timeStamp, resultHandler)
                 }
             }
-        })
+        }
 
         return this
     }

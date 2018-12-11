@@ -20,7 +20,7 @@ interface Collector<T> {
         get() = 1000
 
     fun initializeCollector() : Collector<T> {
-        getVertx().eventBus().consumer<JsonObject>(collectorAddress, {
+        getVertx().eventBus().consumer<JsonObject>(collectorAddress) {
             val inputEvent = CommandEventImpl(it.body())
             val key = inputEvent.body.getString("key")
 
@@ -31,7 +31,7 @@ interface Collector<T> {
                     handler?.handle(Future.succeededFuture(it.result()))
                 }
             })
-        })
+        }
 
         return this
     }
@@ -47,7 +47,7 @@ interface Collector<T> {
 
         vertx.eventBus().publish(collectorAddress, haveIt.toJson())
 
-        vertx.setTimer(getCollectorTimeout(), {
+        vertx.setTimer(getCollectorTimeout()) {
             val handler = collectorMap.remove(key)
 
             handler?.handle(ServiceException.fail(404, "", DataEventBuilder()
@@ -55,7 +55,7 @@ interface Collector<T> {
                     .withAction("NOONE_HAS_IT")
                     .build()
                     .toJson()))
-        })
+        }
 
         return this
     }
