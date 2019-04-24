@@ -27,7 +27,11 @@ package org.mikand.autonomous.services.processors.combiners.impl
 
 import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.codegen.annotations.Fluent
-import io.vertx.core.*
+import io.vertx.core.AbstractVerticle
+import io.vertx.core.AsyncResult
+import io.vertx.core.Future
+import io.vertx.core.Handler
+import io.vertx.core.Vertx
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory

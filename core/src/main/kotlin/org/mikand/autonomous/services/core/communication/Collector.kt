@@ -9,7 +9,6 @@ import io.vertx.serviceproxy.ServiceException
 import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.core.events.CommandEventImpl
 import org.mikand.autonomous.services.core.events.DataEventBuilder
-import java.util.*
 
 interface Collector<T> {
     val collectorMap: HashMap<String, Handler<AsyncResult<T>>>
@@ -19,9 +18,9 @@ interface Collector<T> {
     val DEFAULT_COLLECTOR_TIMEOUT: Long
         get() = 1000
 
-    fun initializeCollector() : Collector<T> {
-        getVertx().eventBus().consumer<JsonObject>(collectorAddress) {
-            val inputEvent = CommandEventImpl(it.body())
+    fun initializeCollector(): Collector<T> {
+        getVertx().eventBus().consumer<JsonObject>(collectorAddress) { result ->
+            val inputEvent = CommandEventImpl(result.body())
             val key = inputEvent.body.getString("key")
 
             iHaveIt(key, Handler {
@@ -36,7 +35,7 @@ interface Collector<T> {
         return this
     }
 
-    fun hasAnyoneCollectedIt(key: String, resultHandler: Handler<AsyncResult<T>>) : Collector<T> {
+    fun hasAnyoneCollectedIt(key: String, resultHandler: Handler<AsyncResult<T>>): Collector<T> {
         val vertx = getVertx()
         val haveIt = CommandEventBuilder()
                 .withSuccess()
@@ -62,11 +61,11 @@ interface Collector<T> {
 
     fun iHaveIt(key: String, resultHandler: Handler<AsyncResult<T>>)
 
-    fun getCollectorTimeout() : Long {
+    fun getCollectorTimeout(): Long {
         return DEFAULT_COLLECTOR_TIMEOUT
     }
 
-    fun getVertx() : Vertx {
+    fun getVertx(): Vertx {
         return Vertx.currentContext().owner()
     }
 }

@@ -34,7 +34,7 @@ import org.mikand.autonomous.services.core.events.DataEventBuilder
 import org.mikand.autonomous.services.core.events.DataEventImpl
 import org.mikand.autonomous.services.processors.combiners.impl.JsonCombinerImpl
 
-class JsonWeatherCombiner(config: JsonObject = JsonObject()): JsonCombinerImpl(config) {
+class JsonWeatherCombiner(config: JsonObject = JsonObject()) : JsonCombinerImpl(config) {
     override fun combine(combineInputEvent: CommandEventImpl, responseHandler: Handler<AsyncResult<DataEventImpl>>): JsonWeatherCombiner {
         responseHandler.handle(Future.succeededFuture(DataEventBuilder()
                 .withSuccess()

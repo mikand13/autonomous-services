@@ -31,69 +31,78 @@ import io.vertx.core.Vertx
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.RunTestOnContext
-import io.vertx.ext.unit.junit.Timeout
-import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
+import io.vertx.junit5.VertxExtension
+import io.vertx.junit5.VertxTestContext
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mikand.autonomous.services.processors.test.gen.TestModelCombiner
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 import org.mikand.autonomous.services.processors.utils.TestModelRepository
 
-@RunWith(VertxUnitRunner::class)
+@Execution(ExecutionMode.CONCURRENT)
+@ExtendWith(VertxExtension::class)
 class TypedCombinerIT : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    @JvmField
-    @Rule
-    val rule = RunTestOnContext({ Vertx.vertx() })
-
-    @JvmField
-    @Rule
-    val timeout = Timeout.seconds(5)
-
     @Test
-    fun testCombineRead(context: TestContext) {
+    fun testCombineRead(vertx: Vertx, context: VertxTestContext) {
         val combiner = TestModelRepository()
-        val async = context.async()
-        val vertx = rule.vertx()
 
-        vertx.deployVerticle(combiner, context.asyncAssertSuccess({
+        vertx.deployVerticle(combiner) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
+
             ServiceManager.getInstance(vertx).publishService(TestModelCombiner::class.java, combiner, Handler {
                 ServiceManager.getInstance().consumeService(TestModelCombiner::class.java, Handler {
-                    context.assertTrue(it.succeeded())
+                    context.verify {
+                        assertThat(it.succeeded()).isTrue()
+                    }
+
                     val service = it.result()
 
                     service.combineRead(JsonObject(), Handler {
-                        context.assertTrue(it.succeeded())
-                        async.complete()
+                        context.verify {
+                            assertThat(it.succeeded()).isTrue()
+
+                            context.completeNow()
+                        }
                     })
                 })
             })
-        }))
+        }
     }
 
     @Test
-    fun testCombineReadAll(context: TestContext) {
+    fun testCombineReadAll(vertx: Vertx, context: VertxTestContext) {
         val combiner = TestModelRepository()
-        val async = context.async()
-        val vertx = rule.vertx()
 
-        vertx.deployVerticle(combiner, context.asyncAssertSuccess({
+        vertx.deployVerticle(combiner) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
+
             ServiceManager.getInstance(vertx).publishService(TestModelCombiner::class.java, combiner, Handler {
                 ServiceManager.getInstance().consumeService(TestModelCombiner::class.java, Handler {
-                    context.assertTrue(it.succeeded())
+                    context.verify {
+                        assertThat(it.succeeded()).isTrue()
+                    }
+
                     val service = it.result()
 
                     service.combineReadAll(JsonObject(), Handler {
-                        context.assertTrue(it.succeeded())
-                        async.complete()
+                        context.verify {
+                            assertThat(it.succeeded()).isTrue()
+
+                            context.completeNow()
+                        }
                     })
                 })
             })
-        }))
+        }
     }
 }

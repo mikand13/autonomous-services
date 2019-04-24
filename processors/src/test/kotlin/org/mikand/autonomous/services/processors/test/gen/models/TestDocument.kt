@@ -3,11 +3,11 @@ package org.mikand.autonomous.services.processors.test.gen.models
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBDocument
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute
 import com.fasterxml.jackson.annotation.JsonInclude
-import org.mikand.autonomous.services.processors.test.gen.models.TestDocumentConverter.fromJson
 import com.nannoq.tools.repository.models.ETagable
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonObject
-import java.util.*
+import org.mikand.autonomous.services.processors.test.gen.models.TestDocumentConverter.fromJson
+import java.util.Objects
 
 @DynamoDBDocument
 @DataObject(generateConverter = true)
@@ -21,6 +21,7 @@ class TestDocument : ETagable {
     @get:DynamoDBVersionAttribute
     var version: Long? = null
 
+    @Suppress("unused")
     constructor()
 
     constructor(jsonObject: JsonObject) {

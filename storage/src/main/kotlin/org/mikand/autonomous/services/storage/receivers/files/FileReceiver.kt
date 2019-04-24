@@ -12,19 +12,25 @@ import org.mikand.autonomous.services.core.events.DataEventImpl
 @ProxyGen
 interface FileReceiver {
     @Fluent
-    fun fileReceiverInitializeRead(receiveInputEvent: CommandEventImpl,
-                                   resultHandler: Handler<AsyncResult<DataEventImpl>>): FileReceiver
+    fun fileReceiverInitializeRead(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): FileReceiver
 
     @Fluent
-    fun fileReceiverInitializeCreate(receiveInputEvent: CommandEventImpl,
-                                     resultHandler: Handler<AsyncResult<DataEventImpl>>): FileReceiver
+    fun fileReceiverInitializeCreate(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): FileReceiver
 
     @Fluent
     fun fileReceiverDelete(receiveInputEvent: CommandEventImpl): FileReceiver
 
     @Fluent
-    fun fileReceiverDeleteWithReceipt(receiveInputEvent: CommandEventImpl,
-                                      resultHandler: Handler<AsyncResult<DataEventImpl>>): FileReceiver
+    fun fileReceiverDeleteWithReceipt(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): FileReceiver
 
     @Fluent
     fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<DataEventImpl>>): FileReceiver

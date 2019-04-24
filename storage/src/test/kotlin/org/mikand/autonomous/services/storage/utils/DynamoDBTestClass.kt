@@ -6,98 +6,98 @@ import io.vertx.core.AsyncResult
 import io.vertx.core.CompositeFuture
 import io.vertx.core.Future
 import io.vertx.core.Handler
+import io.vertx.core.Vertx
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.RunTestOnContext
-import io.vertx.ext.unit.junit.Timeout
-import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.*
-import org.junit.rules.TestName
-import org.junit.runner.RunWith
+import io.vertx.junit5.VertxExtension
+import io.vertx.junit5.VertxTestContext
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.core.events.DataEventImpl
 import org.mikand.autonomous.services.storage.gen.TestModelReceiverImpl
 import org.mikand.autonomous.services.storage.gen.models.TestModel
+import java.net.ServerSocket
 import java.time.LocalDate
-import java.util.*
+import java.util.ArrayList
+import java.util.Date
+import java.util.HashMap
+import java.util.Random
+import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ThreadLocalRandom
 import java.util.stream.IntStream
 
-
-@RunWith(VertxUnitRunner::class)
+@ExtendWith(VertxExtension::class)
 abstract class DynamoDBTestClass : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    private val testDate = Date()
-    private val nonNullTestModel = {
-        TestModel()
-                .setSomeStringOne("testString")
-                .setSomeStringTwo("testStringRange")
-                .setSomeStringThree("testStringThree")
-                .setSomeLong(1L)
-                .setSomeDate(testDate)
-                .setSomeDateTwo(Date())
+    protected val testDate = Date()
+    protected val nonNullTestModel = {
+        TestModel(
+                someStringOne = "testString",
+                someStringTwo = "testStringRange",
+                someStringThree = "testStringThree",
+                someStringFour = null,
+                someLong = 1L,
+                someLongTwo = 0L,
+                someInteger = 0,
+                someIntegerTwo = 1,
+                someBoolean = false,
+                someBooleanTwo = false,
+                someDate = testDate,
+                someDateTwo = Date(),
+                documents = emptyList())
     }
 
-    @JvmField
-    @Rule
-    val rule = RunTestOnContext()
-
-    @JvmField
-    @Rule
-    val timeout = Timeout.seconds(30)
-
-    @JvmField
-    @Rule
-    var name = TestName()
+    protected val contextObjects: MutableMap<String, Any> = HashMap()
 
     companion object {
-        private lateinit var dynamoDBUtils: DynamoDBUtils
+        private var localPort: Int = 0
+        private val dynamoDBUtils = DynamoDBUtils()
 
-        @BeforeClass
+        @BeforeAll
         @JvmStatic
-        fun setupClass() {
-            dynamoDBUtils = DynamoDBUtils()
+        fun beforeAll() {
+            localPort = ServerSocket(0).use { it.localPort }
+            dynamoDBUtils.startDynamoDB(localPort)
         }
 
-        @AfterClass
+        @AfterAll
         @JvmStatic
-        fun teardownClass() {
-            dynamoDBUtils.stopAll()
+        fun afterAll() {
+            dynamoDBUtils.stopDynamoDB(localPort)
         }
     }
 
-    @Before
-    fun setup(context: TestContext) {
-        val freePort = findFreePort()
-        dynamoDBUtils.startDynamoDB(freePort)
-        context.put<String>("${name.methodName}-port", freePort)
-        context.put<String>("${name.methodName}-endpoint", "http://localhost:$freePort")
+    @BeforeEach
+    fun setup(testInfo: TestInfo, vertx: Vertx, context: VertxTestContext) {
+        contextObjects["${testInfo.testMethod.get().name}-port"] = localPort
+        contextObjects["${testInfo.testMethod.get().name}-endpoint"] = "http://localhost:$localPort"
 
         Json.mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
-        val async = context.async()
-        val endpoint = context.get<String>("${name.methodName}-endpoint")
-        val config = JsonObject().put("dynamo_endpoint", endpoint)
+        val endpoint = contextObjects["${testInfo.testMethod.get().name}-endpoint"]
+        val config = JsonObject()
+                .put("dynamo_endpoint", endpoint)
+                .put("dynamo_db_iam_id", UUID.randomUUID().toString())
+                .put("dynamo_db_iam_key", UUID.randomUUID().toString())
         val classCollection = mapOf(Pair("testModels", TestModel::class.java))
+        val finalConfig = getTestConfig().mergeIn(config)
 
-        context.put<String>("${name.methodName}-repo", TestModelReceiverImpl(rule.vertx(), config))
+        contextObjects["${testInfo.testMethod.get().name}-repo"] = TestModelReceiverImpl(vertx, finalConfig)
+        contextObjects["${testInfo.testMethod.get().name}-config"] = finalConfig
 
-        DynamoDBRepository.initializeDynamoDb(getTestConfig().mergeIn(config), classCollection, Handler {
-            if (it.failed()) context.fail(it.cause())
-            async.complete()
+        DynamoDBRepository.initializeDynamoDb(finalConfig, classCollection, Handler {
+            if (it.failed()) context.failNow(it.cause())
+            context.completeNow()
         })
-    }
-
-    @After
-    fun teardown(context: TestContext) {
-        val freePort = context.get<Int>("${name.methodName}-port")
-        dynamoDBUtils.stopDynamoDB(freePort)
     }
 
     fun createItem(repo: TestModelReceiverImpl, createHandler: Handler<AsyncResult<DataEventImpl>>) {
@@ -110,8 +110,11 @@ abstract class DynamoDBTestClass : ConfigSupport {
         repo.receiverCreateWithReceipt(receiveEvent, createHandler)
     }
 
-    fun createXItems(repo: TestModelReceiverImpl, count: Int,
-                     resultHandler: Handler<AsyncResult<List<TestModel>>>) {
+    fun createXItems(
+        repo: TestModelReceiverImpl,
+        count: Int,
+        resultHandler: Handler<AsyncResult<List<TestModel>>>
+    ) {
         val items = ArrayList<TestModel>()
         val futures = CopyOnWriteArrayList<Future<*>>()
 
@@ -141,7 +144,7 @@ abstract class DynamoDBTestClass : ConfigSupport {
                     .withBody(item.toJson())
                     .build()
 
-            repo.receiverCreateWithReceipt(receiveEvent, future.completer())
+            repo.receiverCreateWithReceipt(receiveEvent, future)
 
             futures.add(future)
 

@@ -67,22 +67,22 @@ internal class GatewayHeartbeatServiceImpl : HeartbeatService {
         logger.debug("Ping!")
 
         client.getAbs(path)
-            .handler({
-                when {
-                    it.statusCode() == 200 -> resultHandler.handle(Future.succeededFuture(true))
-                    else -> {
-                        logger.error("Error in ping communication after connection: ${it.statusMessage()}")
+                .handler {
+                    when {
+                        it.statusCode() == 200 -> resultHandler.handle(Future.succeededFuture(true))
+                        else -> {
+                            logger.error("Error in ping communication after connection: ${it.statusMessage()}")
 
-                        resultHandler.handle(ServiceException.fail(it.statusCode(), it.statusMessage()))
+                            resultHandler.handle(ServiceException.fail(it.statusCode(), it.statusMessage()))
+                        }
                     }
                 }
-            })
-            .exceptionHandler({
-                logger.error("Error in ping communication!", it.cause)
+                .exceptionHandler {
+                    logger.error("Error in ping communication!", it.cause)
 
-                resultHandler.handle(ServiceException.fail(503, "Unavailable"))
-            })
-            .end()
+                    resultHandler.handle(ServiceException.fail(503, "Unavailable"))
+                }
+                .end()
 
         return this
     }

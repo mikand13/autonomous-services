@@ -24,76 +24,51 @@
 
 package org.mikand.autonomous.services.gateway
 
-import io.vertx.core.CompositeFuture
 import io.vertx.core.DeploymentOptions
-import io.vertx.core.Future
-import io.vertx.core.json.Json
+import io.vertx.core.Vertx
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.RunTestOnContext
-import io.vertx.ext.unit.junit.Timeout
-import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Rule
+import io.vertx.junit5.VertxExtension
+import io.vertx.junit5.VertxTestContext
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mikand.autonomous.services.gateway.utils.ConfigSupport
 
 /**
  * @author Anders Mikkelsen
  * @version 20.12.17 11:41
  */
-@RunWith(VertxUnitRunner::class)
+@Execution(ExecutionMode.CONCURRENT)
+@ExtendWith(VertxExtension::class)
 class GatewayDeploymentVerticleIT : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    @JvmField
-    @Rule
-    val rule = RunTestOnContext()
-
-    @JvmField
-    @Rule
-    val timeout = Timeout.seconds(5)
-
     @Test
-    fun shouldDeployDeploymentVerticleWithSuccess(context : TestContext) {
+    fun shouldDeployDeploymentVerticleWithSuccess(vertx: Vertx, context: VertxTestContext) {
+        val checkpoint = context.checkpoint(2)
         val config = getTestConfig().put("bridgePort", findFreePort())
         val depOptions = DeploymentOptions().setConfig(config)
-        val async = context.async()
-        val vertx = rule.vertx()
 
-        vertx.deployVerticle(GatewayDeploymentVerticle(), depOptions, {
-            context.assertTrue(it.succeeded())
-
-            val busFuture = Future.future<Void>()
-            val healthFuture = Future.future<Void>()
+        vertx.deployVerticle(GatewayDeploymentVerticle(), depOptions) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
 
             vertx.createHttpClient()
                     .getAbs("http://localhost:${config.getInteger("bridgePort")}/eventbus")
-                    .handler({
-                        context.assertTrue(it.statusCode() == 200)
-                        busFuture.complete()
-                    })
-                    .exceptionHandler({ context.fail(it) })
+                    .handler { checkpoint.flag() }
+                    .exceptionHandler { context.failNow(it) }
                     .end()
 
             vertx.createHttpClient()
                     .getAbs("http://localhost:${config.getInteger("bridgePort")}/eventbus-health")
-                    .handler({
-                        context.assertTrue(it.statusCode() == 200)
-                        healthFuture.complete()
-                    })
-                    .exceptionHandler({ context.fail(it) })
+                    .handler { checkpoint.flag() }
+                    .exceptionHandler { context.failNow(it) }
                     .end()
-
-            CompositeFuture.all(busFuture, healthFuture).setHandler({
-                if (it.succeeded()) {
-                    async.complete()
-                } else {
-                    context.fail(it.cause())
-                }
-            })
-        })
+        }
     }
 }

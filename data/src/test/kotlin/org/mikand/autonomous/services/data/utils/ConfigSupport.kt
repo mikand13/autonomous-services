@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package org.mikand.autonomous.services.gateway.utils
+package org.mikand.autonomous.services.data.utils
 
 import io.vertx.core.json.JsonObject
 import java.io.File
@@ -33,7 +33,7 @@ import java.net.ServerSocket
  * @version 20.12.17 11:41
  */
 interface ConfigSupport {
-    fun getTestConfig() : JsonObject {
+    fun getTestConfig(): JsonObject {
         val configFile = File(this::class.java.classLoader.getResource("app-conf.json").toURI())
 
         return JsonObject(configFile.readText())

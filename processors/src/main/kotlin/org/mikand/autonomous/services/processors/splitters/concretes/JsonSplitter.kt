@@ -11,7 +11,7 @@ import org.mikand.autonomous.services.processors.splitters.splitter.Splitter
 
 @VertxGen
 @ProxyGen
-interface JsonSplitter: Splitter<CommandEventImpl, DataEventImpl> {
+interface JsonSplitter : Splitter<CommandEventImpl, DataEventImpl> {
     @Fluent
     override fun split(splitInputEvent: CommandEventImpl): JsonSplitter
 

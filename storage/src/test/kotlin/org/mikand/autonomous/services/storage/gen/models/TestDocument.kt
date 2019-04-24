@@ -3,11 +3,11 @@ package org.mikand.autonomous.services.storage.gen.models
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBDocument
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute
 import com.fasterxml.jackson.annotation.JsonInclude
-import org.mikand.autonomous.services.storage.gen.models.TestDocumentConverter.fromJson
 import com.nannoq.tools.repository.models.ETagable
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonObject
-import java.util.*
+import org.mikand.autonomous.services.storage.gen.models.TestDocumentConverter.fromJson
+import java.util.Objects
 
 @DynamoDBDocument
 @DataObject(generateConverter = true)

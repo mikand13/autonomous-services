@@ -27,7 +27,7 @@ package org.mikand.autonomous.services.core.events
 
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonObject
-import java.util.*
+import java.util.UUID
 
 @DataObject(generateConverter = true)
 class DataEventImpl : DataEvent {
@@ -37,8 +37,13 @@ class DataEventImpl : DataEvent {
     var metadata: JsonObject = JsonObject()
     var body: JsonObject = JsonObject()
 
-    internal constructor(id: String = UUID.randomUUID().toString(), type: DataEventType, action: String,
-                         metadata: JsonObject = JsonObject(), body: JsonObject) {
+    internal constructor(
+        id: String = UUID.randomUUID().toString(),
+        type: DataEventType,
+        action: String,
+        metadata: JsonObject = JsonObject(),
+        body: JsonObject
+    ) {
         this.id = id
         this.type = type.name
         this.action = action
@@ -64,7 +69,6 @@ class DataEventImpl : DataEvent {
             id != other.id -> false
             else -> true
         }
-
     }
 
     override fun hashCode(): Int {

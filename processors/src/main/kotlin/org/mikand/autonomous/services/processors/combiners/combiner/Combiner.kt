@@ -26,7 +26,6 @@
 package org.mikand.autonomous.services.processors.combiners.combiner
 
 import io.vertx.codegen.annotations.Fluent
-import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
 import org.mikand.autonomous.services.core.events.CommandEventImpl

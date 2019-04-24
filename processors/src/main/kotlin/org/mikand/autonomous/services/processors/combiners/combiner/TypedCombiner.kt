@@ -34,10 +34,10 @@ import io.vertx.core.json.JsonObject
 
 interface TypedCombiner<T : Model> {
     @Fluent
-    fun combineRead(query: JsonObject, readHandler: Handler<AsyncResult<T>>) : TypedCombiner<T>
+    fun combineRead(query: JsonObject, readHandler: Handler<AsyncResult<T>>): TypedCombiner<T>
 
     @Fluent
-    fun combineReadAll(query: JsonObject, readAllHandler: Handler<AsyncResult<GenericItemList>>) : TypedCombiner<T>
+    fun combineReadAll(query: JsonObject, readAllHandler: Handler<AsyncResult<GenericItemList>>): TypedCombiner<T>
 
     @Fluent
     fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): TypedCombiner<T>

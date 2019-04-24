@@ -32,22 +32,22 @@ import io.vertx.core.Handler
 
 interface TypedSplitter<T : Model> {
     @Fluent
-    fun splitCreate(record: T) : TypedSplitter<T>
+    fun splitCreate(record: T): TypedSplitter<T>
 
     @Fluent
-    fun splitCreateWithReceipt(record: T, createHandler: Handler<AsyncResult<T>>) : TypedSplitter<T>
+    fun splitCreateWithReceipt(record: T, createHandler: Handler<AsyncResult<T>>): TypedSplitter<T>
 
     @Fluent
-    fun splitUpdate(record: T) : TypedSplitter<T>
+    fun splitUpdate(record: T): TypedSplitter<T>
 
     @Fluent
-    fun splitUpdateWithReceipt(record: T, updateHandler: Handler<AsyncResult<T>>) : TypedSplitter<T>
+    fun splitUpdateWithReceipt(record: T, updateHandler: Handler<AsyncResult<T>>): TypedSplitter<T>
 
     @Fluent
-    fun splitDelete(record: T) : TypedSplitter<T>
+    fun splitDelete(record: T): TypedSplitter<T>
 
     @Fluent
-    fun splitDeleteWithReceipt(record: T, deleteHandler: Handler<AsyncResult<T>>) : TypedSplitter<T>
+    fun splitDeleteWithReceipt(record: T, deleteHandler: Handler<AsyncResult<T>>): TypedSplitter<T>
 
     @Fluent
     fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): TypedSplitter<T>

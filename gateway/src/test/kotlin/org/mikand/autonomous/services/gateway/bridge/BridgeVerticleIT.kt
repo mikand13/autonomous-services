@@ -25,51 +25,46 @@
 package org.mikand.autonomous.services.gateway.bridge
 
 import io.vertx.core.DeploymentOptions
-import io.vertx.core.json.Json
+import io.vertx.core.Vertx
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.RunTestOnContext
-import io.vertx.ext.unit.junit.Timeout
-import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Rule
+import io.vertx.junit5.VertxExtension
+import io.vertx.junit5.VertxTestContext
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mikand.autonomous.services.gateway.utils.ConfigSupport
 
-
-@RunWith(VertxUnitRunner::class)
+@Execution(ExecutionMode.CONCURRENT)
+@ExtendWith(VertxExtension::class)
 class BridgeVerticleIT : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    @JvmField
-    @Rule
-    val rule = RunTestOnContext()
-
-    @JvmField
-    @Rule
-    val timeout = Timeout.seconds(5)
-
     @Test
-    fun testBridgeDeploymentToStandardParameters(context: TestContext) {
-        val async = context.async()
+    fun testBridgeDeploymentToStandardParameters(vertx: Vertx, context: VertxTestContext) {
         val config = getTestConfig().put("bridgePort", findFreePort())
         val depOptions = DeploymentOptions().setConfig(config)
         val verticle = BridgeVerticle()
-        val vertx = rule.vertx()
 
-        vertx.deployVerticle(verticle, depOptions, {
-            context.assertTrue(it.succeeded())
+        vertx.deployVerticle(verticle, depOptions) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
 
             vertx.createHttpClient()
                     .getAbs("http://localhost:${config.getInteger("bridgePort")}/eventbus")
-                    .handler({
-                        context.assertTrue(it.statusCode() == 200)
-                        async.complete()
-                    })
-                    .exceptionHandler({ context.fail(it) })
+                    .handler {
+                        context.verify {
+                            assertThat(it.statusCode() == 200).isTrue()
+
+                            context.completeNow()
+                        }
+                    }
+                    .exceptionHandler { context.failNow(it) }
                     .end()
-        })
+        }
     }
 }

@@ -26,86 +26,84 @@
 package org.mikand.autonomous.services.processors.splitters.typed
 
 import io.vertx.core.Handler
+import io.vertx.core.Vertx
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.RunTestOnContext
-import io.vertx.ext.unit.junit.Timeout
-import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
+import io.vertx.junit5.VertxExtension
+import io.vertx.junit5.VertxTestContext
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 import org.mikand.autonomous.services.processors.utils.TestModelRepository
 
-@RunWith(VertxUnitRunner::class)
+@Execution(ExecutionMode.CONCURRENT)
+@ExtendWith(VertxExtension::class)
 class TypedSplitterTest : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    @JvmField
-    @Rule
-    val rule = RunTestOnContext()
-
-    @JvmField
-    @Rule
-    val timeout = Timeout.seconds(5)
-
     @Test
-    fun testSplitCreate(context: TestContext) {
-        val async = context.async()
+    fun testSplitCreate(vertx: Vertx, context: VertxTestContext) {
         val splitter = TestModelRepository()
         val model = TestModel()
-        val vertx = rule.vertx()
 
-        vertx.deployVerticle(splitter, context.asyncAssertSuccess({
+        vertx.deployVerticle(splitter) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
+
             splitter.splitCreateWithReceipt(model, Handler {
-                context.assertTrue(it.succeeded())
-                context.assertEquals(model, it.result(), "Object is not equal!")
+                context.verify {
+                    assertThat(it.succeeded()).isTrue()
+                    assertThat(it.result()).isEqualTo(model)
 
-                splitter.splitCreate(model)
+                    splitter.splitCreate(model)
 
-                async.complete()
+                    context.completeNow()
+                }
             })
-        }))
+        }
     }
 
     @Test
-    fun testSplitUpdate(context: TestContext) {
-        val async = context.async()
+    fun testSplitUpdate(vertx: Vertx, context: VertxTestContext) {
         val splitter = TestModelRepository()
         val model = TestModel()
-        val vertx = rule.vertx()
 
-        vertx.deployVerticle(splitter, context.asyncAssertSuccess({
+        vertx.deployVerticle(splitter) {
             splitter.splitUpdateWithReceipt(model, Handler {
-                context.assertTrue(it.succeeded())
-                context.assertEquals(model, it.result(), "Object is not equal!")
+                context.verify {
+                    assertThat(it.succeeded()).isTrue()
+                    assertThat(it.result()).isEqualTo(model)
 
-                splitter.splitUpdate(model)
+                    splitter.splitUpdate(model)
 
-                async.complete()
+                    context.completeNow()
+                }
             })
-        }))
+        }
     }
 
     @Test
-    fun testSplitDelete(context: TestContext) {
-        val async = context.async()
+    fun testSplitDelete(vertx: Vertx, context: VertxTestContext) {
         val splitter = TestModelRepository()
         val model = TestModel()
-        val vertx = rule.vertx()
 
-        vertx.deployVerticle(splitter, context.asyncAssertSuccess({
+        vertx.deployVerticle(splitter) {
             splitter.splitDeleteWithReceipt(model, Handler {
-                context.assertTrue(it.succeeded())
-                context.assertEquals(model, it.result(), "Object is not equal!")
+                context.verify {
+                    assertThat(it.succeeded()).isTrue()
+                    assertThat(it.result()).isEqualTo(model)
 
-                splitter.splitDelete(model)
+                    splitter.splitDelete(model)
 
-                async.complete()
+                    context.completeNow()
+                }
             })
-        }))
+        }
     }
 }
