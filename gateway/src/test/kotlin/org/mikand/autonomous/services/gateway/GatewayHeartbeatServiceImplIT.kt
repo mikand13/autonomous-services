@@ -53,7 +53,7 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
     @Test
-    @RepeatedTest(50)
+    @RepeatedTest(5)
     fun testPing(vertx: Vertx, context: VertxTestContext) {
         val verticle = BridgeVerticle()
         val config = getTestConfig().put("bridgePort", findFreePort())
@@ -71,7 +71,7 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
                     assertThat(it.succeeded()).isTrue()
                 }
 
-                ServiceManager.getInstance().consumeService(HeartbeatService::class.java,
+                ServiceManager.getInstance(vertx).consumeService(HeartbeatService::class.java,
                         GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS, Handler {
                     context.verify {
                         assertThat(it.succeeded()).isTrue()
@@ -91,7 +91,7 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     }
 
     @Test
-    @RepeatedTest(50)
+    @RepeatedTest(5)
     fun testPingHttp(vertx: Vertx, context: VertxTestContext) {
         val verticle = GatewayDeploymentVerticle()
         val port = findFreePort()
@@ -117,7 +117,7 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     }
 
     @Test
-    @RepeatedTest(50)
+    @RepeatedTest(5)
     fun testFailedPing(vertx: Vertx, context: VertxTestContext) {
         val config = getTestConfig().put("bridgePort", findFreePort())
 
@@ -128,7 +128,7 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
                 assertThat(it.succeeded()).isTrue()
             }
 
-            ServiceManager.getInstance().consumeService(HeartbeatService::class.java,
+            ServiceManager.getInstance(vertx).consumeService(HeartbeatService::class.java,
                     GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS, Handler {
                 context.verify {
                     assertThat(it.succeeded()).isTrue()
@@ -137,7 +137,6 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
                 it.result().ping(Handler {
                     context.verify {
                         assertThat(it.failed()).isTrue()
-                        assertThat(it.result()).isNull()
 
                         context.completeNow()
                     }
@@ -147,15 +146,9 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     }
 
     @Test
-    @RepeatedTest(50)
+    @RepeatedTest(5)
     fun testPingRuby(vertx: Vertx, context: VertxTestContext) {
         testLang(vertx, context, "rb/gateway_heartbeat_service_impl_test.rb")
-    }
-
-    @Test
-    @RepeatedTest(50)
-    fun testPingJs(vertx: Vertx, context: VertxTestContext) {
-        testLang(vertx, context, "js/gatewayHeartbeatServiceImplTest.js")
     }
 
     private fun testLang(vertx: Vertx, context: VertxTestContext, langVerticle: String) {

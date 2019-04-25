@@ -102,6 +102,10 @@ tasks {
         distributionType = Wrapper.DistributionType.ALL
     }
 
+    "docker" {
+        enabled = false
+    }
+    
     "karmaRun" {
         enabled = false
     }
@@ -115,8 +119,11 @@ allprojects {
 subprojects {
     val projectName = project.name
     val projectVersion = project.version
+    @Suppress("UNUSED_VARIABLE")
     val watchForChange by extra { "src/**/*" }
+    @Suppress("UNUSED_VARIABLE")
     val confFile by extra { "src/main/resources/app-conf.json" }
+    @Suppress("UNUSED_VARIABLE")
     val doOnChange: String by extra {
         if (System.getProperty("os.name").toLowerCase().contains("windows")) {
             "..\\gradlew :${project.name}:classes"
@@ -247,7 +254,7 @@ subprojects {
     }
 
     configure<DockerExtension> {
-        name = dockerImageName
+        setName(dockerImageName)
         val now = System.currentTimeMillis()
         tags("latest", "" + now)
 

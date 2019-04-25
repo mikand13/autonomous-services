@@ -110,7 +110,7 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
 
     private fun deployHeartbeat(heartBeatFuture: Future<Record>) {
         val gatewayConfig = config().getJsonObject("gateway") ?: config()
-        
+
         heartbeatServiceImpl = GatewayHeartbeatServiceImpl(vertx, gatewayConfig)
 
         ServiceManager.getInstance().publishService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS,
