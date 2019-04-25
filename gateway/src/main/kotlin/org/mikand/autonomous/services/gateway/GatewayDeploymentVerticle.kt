@@ -64,7 +64,7 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
         val gatewayConfig = config().getJsonObject("gateway") ?: config()
         val depOptions = deploymentOptions.setConfig(gatewayConfig)
 
-        logger.info("Launching gateway with config: " + config().encodePrettily())
+        logger.info("Launching gateway with config: " + gatewayConfig.encodePrettily())
 
         deployBridgeAndHealthCheck(BRIDGE_VERTICLE, depOptions, bridgeFuture, heartBeatFuture)
 
@@ -109,7 +109,9 @@ class GatewayDeploymentVerticle : AbstractVerticle() {
     }
 
     private fun deployHeartbeat(heartBeatFuture: Future<Record>) {
-        heartbeatServiceImpl = GatewayHeartbeatServiceImpl(vertx, config())
+        val gatewayConfig = config().getJsonObject("gateway") ?: config()
+        
+        heartbeatServiceImpl = GatewayHeartbeatServiceImpl(vertx, gatewayConfig)
 
         ServiceManager.getInstance().publishService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS,
                 heartbeatServiceImpl, Handler {
