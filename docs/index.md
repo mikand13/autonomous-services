@@ -1,6 +1,6 @@
 ## Welcome to Autonomous Services
 
-[![Build Status](https://www.tomrom.net/buildStatus/icon?job=autonomous-services)](https://www.tomrom.net/job/autonomous-services)
+![CodeBuild badge](https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiNXV5Tm4rc0MwRGhIczd5eHArK3JiUU1OYzNVcjhGWVNzUHlBSjRzTzJuU2FXcmNvQU51TXlIb2hZRkI5TUdCdThoczFqOElEZTV0dXBhdVNoYmFlM3p3PSIsIml2UGFyYW1ldGVyU3BlYyI6IjBFRDhzUFNjQ2xxc1RuUEYiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master)
 
 This is the implementation part of a Master Thesis. It is located [here](https://drive.google.com/file/d/16Nwfh8wMR5eMf7PJ9150F9zSvDUvR4Mz/view?usp=sharing) and this is a brief explanation. A comprehensive description of Autonomous Services is found in the thesis. 
 
