@@ -105,7 +105,7 @@ tasks {
     "docker" {
         enabled = false
     }
-    
+
     "karmaRun" {
         enabled = false
     }
