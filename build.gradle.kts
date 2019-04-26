@@ -274,6 +274,7 @@ subprojects {
     node {
         version = JsVersions.node_version
         npmVersion = JsVersions.npm_version
+        distBaseUrl = "http://nodejs.org/dist"
     }
 
     karma {
