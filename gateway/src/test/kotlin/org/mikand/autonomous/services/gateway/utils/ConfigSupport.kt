@@ -26,7 +26,6 @@ package org.mikand.autonomous.services.gateway.utils
 
 import io.vertx.core.json.JsonObject
 import java.io.File
-import java.net.ServerSocket
 
 /**
  * @author Anders Mikkelsen

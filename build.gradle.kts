@@ -485,13 +485,24 @@ configure(subprojects.filter { it.name == "storage" }) {
         dynamodb(fileTree("lib") { include(listOf("*.dylib", "*.so", "*.dll")) })
         dynamodb(Libs.dynamodb_local)
 
-        serviceProxies(fileTree("lib") { include(listOf("*-proxy.js")) })
         serviceProxies(Libs.nannoq_repository)
     }
 
     tasks {
         val jsServiceProxies by registering(Copy::class) {
             dependsOn(serviceProxies)
+
+            includeEmptyDirs = false
+
+            from(serviceProxies.map {
+                zipTree(it).matching {
+                    include(listOf("nannoq*/**/*-proxy.js", "nannoq*/**/*.d.ts"))
+                }
+            })
+
+            eachFile {
+                path = name
+            }
 
             from(serviceProxies)
             into("$projectDir/src/test/resources/js/karma/extractedProxies")
@@ -521,7 +532,6 @@ configure(subprojects.filter { it.name == "gateway" }) {
     val serviceProxies by configurations.creating
 
     dependencies {
-        serviceProxies(fileTree("lib") { include(listOf("*-proxy.js")) })
         serviceProxies(Libs.nannoq_cluster)
     }
 
@@ -529,7 +539,18 @@ configure(subprojects.filter { it.name == "gateway" }) {
         val jsServiceProxies by registering(Copy::class) {
             dependsOn(serviceProxies)
 
-            from(serviceProxies)
+            includeEmptyDirs = false
+
+            from(serviceProxies.map {
+                zipTree(it).matching {
+                    include(listOf("nannoq*/**/*-proxy.js", "nannoq*/**/*.d.ts"))
+                }
+            })
+
+            eachFile {
+                path = name
+            }
+
             into("$projectDir/src/test/resources/js/karma/extractedProxies")
         }
 

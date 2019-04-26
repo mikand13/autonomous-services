@@ -52,7 +52,7 @@ import java.net.ServerSocket
 class GatewayHeartbeatServiceImplIT : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
-    
+
     companion object {
         private val mapSet = mutableSetOf<Int>()
 
@@ -70,7 +70,7 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
             }
         }
     }
-    
+
     @Test
     @RepeatedTest(5)
     fun testPing(vertx: Vertx, context: VertxTestContext) {
