@@ -72,7 +72,6 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     }
 
     @Test
-    @RepeatedTest(5)
     fun testPing(vertx: Vertx, context: VertxTestContext) {
         val verticle = BridgeVerticle()
         val config = getTestConfig().put("bridgePort", getPort())
@@ -110,7 +109,6 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     }
 
     @Test
-    @RepeatedTest(5)
     fun testPingHttp(vertx: Vertx, context: VertxTestContext) {
         val verticle = GatewayDeploymentVerticle()
         val port = getPort()
@@ -136,7 +134,6 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     }
 
     @Test
-    @RepeatedTest(5)
     fun testFailedPing(vertx: Vertx, context: VertxTestContext) {
         val config = getTestConfig().put("bridgePort", getPort())
 
@@ -165,7 +162,6 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     }
 
     @Test
-    @RepeatedTest(5)
     fun testPingRuby(vertx: Vertx, context: VertxTestContext) {
         testLang(vertx, context, "rb/gateway_heartbeat_service_impl_test.rb")
     }
