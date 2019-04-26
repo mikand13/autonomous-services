@@ -494,7 +494,7 @@ configure(subprojects.filter { it.name == "storage" }) {
         val jsServiceProxies by registering(Copy::class) {
             dependsOn(serviceProxies)
 
-            from(dynamodb)
+            from(serviceProxies)
             into("$projectDir/src/test/resources/js/karma/extractedProxies")
         }
 
