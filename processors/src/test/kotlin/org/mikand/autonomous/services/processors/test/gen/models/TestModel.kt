@@ -90,10 +90,6 @@ class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
         updatedAt = if (jsonObject.getLong("updatedAt") == null) null else Date(jsonObject.getLong("updatedAt"))
     }
 
-    fun toJson(): JsonObject {
-        return JsonObject.mapFrom(this)
-    }
-
     override fun setIdentifiers(identifiers: JsonObject): TestModel {
         hash = identifiers.getString("hash")
         range = identifiers.getString("range")
@@ -284,20 +280,6 @@ class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
 
     override fun validateUpdate(): List<ValidationError> {
         return Collections.emptyList()
-    }
-
-    @Fluent
-    override fun setCreatedAt(date: Date): TestModel {
-        createdAt = date
-
-        return this
-    }
-
-    @Fluent
-    override fun setUpdatedAt(date: Date): TestModel {
-        updatedAt = date
-
-        return this
     }
 
     @Fluent
