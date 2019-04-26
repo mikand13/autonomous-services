@@ -41,6 +41,7 @@ import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mikand.autonomous.services.gateway.bridge.BridgeVerticle
 import org.mikand.autonomous.services.gateway.utils.ConfigSupport
+import java.net.ServerSocket
 
 /**
  * @author Anders Mikkelsen
@@ -51,12 +52,30 @@ import org.mikand.autonomous.services.gateway.utils.ConfigSupport
 class GatewayHeartbeatServiceImplIT : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
+    
+    companion object {
+        private val mapSet = mutableSetOf<Int>()
 
+        @JvmStatic
+        @Synchronized
+        private fun getPort(): Int {
+            val use = ServerSocket(0).use { it.localPort }
+
+            if (mapSet.contains(use)) {
+                return getPort()
+            } else {
+                mapSet.add(use)
+
+                return use
+            }
+        }
+    }
+    
     @Test
     @RepeatedTest(5)
     fun testPing(vertx: Vertx, context: VertxTestContext) {
         val verticle = BridgeVerticle()
-        val config = getTestConfig().put("bridgePort", findFreePort())
+        val config = getTestConfig().put("bridgePort", getPort())
         val depOptions = DeploymentOptions().setConfig(config)
 
         vertx.deployVerticle(verticle, depOptions) {
@@ -94,7 +113,7 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     @RepeatedTest(5)
     fun testPingHttp(vertx: Vertx, context: VertxTestContext) {
         val verticle = GatewayDeploymentVerticle()
-        val port = findFreePort()
+        val port = getPort()
         val config = getTestConfig().put("bridgePort", port)
         val depOptions = DeploymentOptions().setConfig(config)
 
@@ -119,7 +138,7 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
     @Test
     @RepeatedTest(5)
     fun testFailedPing(vertx: Vertx, context: VertxTestContext) {
-        val config = getTestConfig().put("bridgePort", findFreePort())
+        val config = getTestConfig().put("bridgePort", getPort())
 
         ServiceManager.getInstance(vertx).publishService(HeartbeatService::class.java,
                 GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS,
@@ -153,7 +172,7 @@ class GatewayHeartbeatServiceImplIT : ConfigSupport {
 
     private fun testLang(vertx: Vertx, context: VertxTestContext, langVerticle: String) {
         val verticle = BridgeVerticle()
-        val config = getTestConfig().put("bridgePort", findFreePort())
+        val config = getTestConfig().put("bridgePort", getPort())
         val depOptions = DeploymentOptions().setConfig(config)
 
         vertx.deployVerticle(verticle, depOptions) {

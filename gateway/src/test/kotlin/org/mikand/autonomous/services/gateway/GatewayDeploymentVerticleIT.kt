@@ -32,10 +32,13 @@ import io.vertx.junit5.VertxExtension
 import io.vertx.junit5.VertxTestContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mikand.autonomous.services.gateway.utils.ConfigSupport
+import java.net.ServerSocket
 
 /**
  * @author Anders Mikkelsen
@@ -47,10 +50,28 @@ class GatewayDeploymentVerticleIT : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
+    companion object {
+        private val mapSet = mutableSetOf<Int>()
+
+        @JvmStatic
+        @Synchronized
+        private fun getPort(): Int {
+            val use = ServerSocket(0).use { it.localPort }
+
+            if (mapSet.contains(use)) {
+                return getPort()
+            } else {
+                mapSet.add(use)
+
+                return use
+            }
+        }
+    }
+
     @Test
     fun shouldDeployDeploymentVerticleWithSuccess(vertx: Vertx, context: VertxTestContext) {
         val checkpoint = context.checkpoint(2)
-        val config = getTestConfig().put("bridgePort", findFreePort())
+        val config = getTestConfig().put("bridgePort", getPort())
         val depOptions = DeploymentOptions().setConfig(config)
 
         vertx.deployVerticle(GatewayDeploymentVerticle(), depOptions) {

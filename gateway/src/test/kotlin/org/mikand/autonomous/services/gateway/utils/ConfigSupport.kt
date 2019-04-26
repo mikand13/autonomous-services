@@ -38,8 +38,4 @@ interface ConfigSupport {
 
         return JsonObject(configFile.readText())
     }
-
-    fun findFreePort() = ServerSocket(0).use {
-        it.localPort
-    }
 }

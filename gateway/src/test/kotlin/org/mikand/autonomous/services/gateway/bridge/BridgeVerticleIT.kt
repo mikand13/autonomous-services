@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mikand.autonomous.services.gateway.utils.ConfigSupport
+import java.net.ServerSocket
 
 @Execution(ExecutionMode.CONCURRENT)
 @ExtendWith(VertxExtension::class)
@@ -43,9 +44,27 @@ class BridgeVerticleIT : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
+    companion object {
+        private val mapSet = mutableSetOf<Int>()
+
+        @JvmStatic
+        @Synchronized
+        private fun getPort(): Int {
+            val use = ServerSocket(0).use { it.localPort }
+
+            if (mapSet.contains(use)) {
+                return getPort()
+            } else {
+                mapSet.add(use)
+
+                return use
+            }
+        }
+    }
+
     @Test
     fun testBridgeDeploymentToStandardParameters(vertx: Vertx, context: VertxTestContext) {
-        val config = getTestConfig().put("bridgePort", findFreePort())
+        val config = getTestConfig().put("bridgePort", getPort())
         val depOptions = DeploymentOptions().setConfig(config)
         val verticle = BridgeVerticle()
 
