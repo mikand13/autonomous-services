@@ -10,8 +10,10 @@ import org.mikand.autonomous.services.core.events.DataEventImpl
 import org.mikand.autonomous.services.data.compute.Compute
 
 class JsonCompute : Compute {
-    override fun compute(computeInputEvent: CommandEventImpl,
-                         responseHandler: Handler<AsyncResult<DataEventImpl>>): Compute {
+    override fun compute(
+        computeInputEvent: CommandEventImpl,
+        responseHandler: Handler<AsyncResult<DataEventImpl>>
+    ): Compute {
         val outputEvent = DataEventBuilder()
                 .withSuccess()
                 .withAction("JSON_COMPUTE")

@@ -1,1 +1,3 @@
+![CodeBuild badge](https://codebuild.eu-west-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiNXV5Tm4rc0MwRGhIczd5eHArK3JiUU1OYzNVcjhGWVNzUHlBSjRzTzJuU2FXcmNvQU51TXlIb2hZRkI5TUdCdThoczFqOElEZTV0dXBhdVNoYmFlM3p3PSIsIml2UGFyYW1ldGVyU3BlYyI6IjBFRDhzUFNjQ2xxc1RuUEYiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master)
+
 # Please consult the [GitHub Pages](https://mikand13.github.io/autonomous-services/) on implementations and use.

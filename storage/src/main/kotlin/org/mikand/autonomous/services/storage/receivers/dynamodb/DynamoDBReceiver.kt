@@ -41,8 +41,8 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         this.type = type
         this.config = config
         this.vertx = vertx
-        this.subscriptionAddress = config.getString("subscriptionAddress") ?:
-                "${Receiver::class.java.name}.${type.simpleName}"
+        this.subscriptionAddress = config.getString("subscriptionAddress")
+                ?: "${Receiver::class.java.name}.${type.simpleName}"
     }
 
     override fun receiverCreate(receiveInputEvent: CommandEventImpl): Receiver {
@@ -51,8 +51,10 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         return this
     }
 
-    override fun receiverCreateWithReceipt(receiveInputEvent: CommandEventImpl,
-                                           resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
+    override fun receiverCreateWithReceipt(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): Receiver {
         val record: T = toT(receiveInputEvent.body)
 
         create(record, Handler {
@@ -96,8 +98,10 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun receiverUpdateWithReceipt(receiveInputEvent: CommandEventImpl,
-                                           resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
+    override fun receiverUpdateWithReceipt(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): Receiver {
         val record: T = toT(receiveInputEvent.body)
 
         update(record, Function { r -> r.setModifiables(record) as T }, Handler {
@@ -132,8 +136,10 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         return this
     }
 
-    override fun receiverRead(receiveInputEvent: CommandEventImpl,
-                              resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
+    override fun receiverRead(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): Receiver {
         read(receiveInputEvent.body, Handler {
             when {
                 it.succeeded() -> {
@@ -164,16 +170,18 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         return this
     }
 
-    override fun receiverIndex(receiveInputEvent: CommandEventImpl,
-                               resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
+    override fun receiverIndex(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): Receiver {
         val queryJson: JsonObject? = receiveInputEvent.metadata.getJsonObject("query")
         val queryPack = if (queryJson == null) null else Json.decodeValue(
                 queryJson.encode(),
                 QueryPack::class.java
         )
 
-        val query: QueryPack = queryPack ?:
-            QueryPack.builder()
+        val query: QueryPack = queryPack
+            ?: QueryPack.builder()
                 .withCustomRoute("receiverIndex-${receiveInputEvent.body.encode().hashCode()}")
                 .withProjections(arrayOf())
                 .build()
@@ -183,11 +191,11 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         return this
     }
 
-    fun readAllResult(resultHandler: Handler<AsyncResult<DataEventImpl>>) : Handler<AsyncResult<ItemListResult<T>>> {
-        return Handler {
+    private fun readAllResult(resultHandler: Handler<AsyncResult<DataEventImpl>>): Handler<AsyncResult<ItemListResult<T>>> {
+        return Handler { result ->
             when {
-                it.succeeded() -> {
-                    val items: ItemList<T> = it.result().itemList!!
+                result.succeeded() -> {
+                    val items: ItemList<T> = result.result().itemList!!
                     val generic = GenericItemList(items.paging!!, items.meta?.count!!, items.items?.map { it.toJsonFormat() })
 
                     val outputEvent = DataEventBuilder()
@@ -200,7 +208,7 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
                     resultHandler.handle(Future.succeededFuture(outputEvent))
                 }
                 else -> {
-                    logger.error("Error in receiverIndexWithQuery for ${type.simpleName}", it.cause())
+                    logger.error("Error in receiverIndexWithQuery for ${type.simpleName}", result.cause())
 
                     val errorEvent = CommandEventBuilder()
                             .withFailure()
@@ -221,8 +229,10 @@ class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         return this
     }
 
-    override fun receiverDeleteWithReceipt(receiveInputEvent: CommandEventImpl,
-                                           resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
+    override fun receiverDeleteWithReceipt(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): Receiver {
         val record: T = toT(receiveInputEvent.body)
         val id = JsonObject()
                 .put("hash", record.hash)

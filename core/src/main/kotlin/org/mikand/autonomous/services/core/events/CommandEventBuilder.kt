@@ -1,7 +1,7 @@
 package org.mikand.autonomous.services.core.events
 
 import io.vertx.core.json.JsonObject
-import java.util.*
+import java.util.UUID
 
 class CommandEventBuilder {
     private val id: String = UUID.randomUUID().toString()

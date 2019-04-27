@@ -24,7 +24,7 @@
 
 const EventBus = require("vertx3-eventbus-client");
 const HeartBeatService = require("./extractedProxies/heartbeat_service-proxy.js");
-const appConf = require('../../../../../build/tmp/app-conf-test.json');
+const appConf = require('../../../../../build/tmp/app-conf-test.json').gateway;
 
 localStorage.debug = null;
 
@@ -61,29 +61,27 @@ describe('NotNull', function() {
     });
 });
 
-for(var i = 0; i < 50; ++i) {
-    describe('HeartBeatService should return true', function () {
-        const url = "http://localhost:" + appConf.bridgePort + "/eventbus";
+describe('HeartBeatService should return true', function () {
+    const url = "http://localhost:" + appConf.bridgePort + "/eventbus";
 
-        var eb;
-        var HeartbeatService;
+    var eb;
+    var HeartbeatService;
 
-        beforeEach(function () {
-            eb = new EventBus(url);
-            HeartbeatService = new HeartBeatService(eb, "GatewayHeartbeat");
-        });
-
-        it('HeartBeatService should return true!', function (done) {
-            eb.onopen = function () {
-                HeartbeatService.ping(function (error, result) {
-                    expect(error).toBeNull();
-                    expect(result).toBe(true);
-
-                    eb.close();
-
-                    done();
-                });
-            }
-        });
+    beforeEach(function () {
+        eb = new EventBus(url);
+        HeartbeatService = new HeartBeatService(eb, "GatewayHeartbeat");
     });
-}
+
+    it('HeartBeatService should return true!', function (done) {
+        eb.onopen = function () {
+            HeartbeatService.ping(function (error, result) {
+                expect(error).toBeNull();
+                expect(result).toBe(true);
+
+                eb.close();
+
+                done();
+            });
+        }
+    });
+});

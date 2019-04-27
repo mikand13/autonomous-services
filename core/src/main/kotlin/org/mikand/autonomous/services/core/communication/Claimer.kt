@@ -10,8 +10,7 @@ import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.core.events.CommandEventImpl
 import java.time.Instant.now
 import java.time.temporal.ChronoUnit
-import java.util.*
-import kotlin.collections.HashSet
+import java.util.Random
 
 interface Claimer<T> {
     val claimerMap: HashMap<Int, HashSet<Long>>
@@ -21,7 +20,7 @@ interface Claimer<T> {
     val DEFAULT_CLAIMER_TIMEOUT: Long
         get() = 1000
 
-    fun inititializeClaimer() : Claimer<T> {
+    fun inititializeClaimer(): Claimer<T> {
         getVertx().eventBus().consumer<JsonObject>(claimerAddress) {
             val inputEvent = CommandEventImpl(it.body())
 
@@ -31,7 +30,7 @@ interface Claimer<T> {
         return this
     }
 
-    fun claim(claimObject: T, resultHandler: Handler<AsyncResult<T>>) : Claimer<T> {
+    fun claim(claimObject: T, resultHandler: Handler<AsyncResult<T>>): Claimer<T> {
         if (claimObject == null) throw IllegalArgumentException("The claimObject cannot be null!")
 
         val vertx = getVertx()
@@ -57,8 +56,14 @@ interface Claimer<T> {
         return checkIfIveClaimedIt(initialTime, vertx, claimObject, objectHash, timeStamp, resultHandler)
     }
 
-    private fun checkIfIveClaimedIt(initialTime: Long, vertx: Vertx, gotItObject: T, objectHash: Int, timeStamp: Long,
-                                    resultHandler: Handler<AsyncResult<T>>) : Claimer<T> {
+    private fun checkIfIveClaimedIt(
+        initialTime: Long,
+        vertx: Vertx,
+        gotItObject: T,
+        objectHash: Int,
+        timeStamp: Long,
+        resultHandler: Handler<AsyncResult<T>>
+    ): Claimer<T> {
         vertx.setTimer(200L) {
             if (claimerMap[objectHash]!!.any { it < timeStamp }) {
                 claimerMap.remove(objectHash)
@@ -78,11 +83,11 @@ interface Claimer<T> {
         return this
     }
 
-    fun getClaimerTimeout() : Long {
+    fun getClaimerTimeout(): Long {
         return DEFAULT_CLAIMER_TIMEOUT
     }
 
-    fun getVertx() : Vertx {
+    fun getVertx(): Vertx {
         return Vertx.currentContext().owner()
     }
 }

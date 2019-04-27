@@ -43,8 +43,10 @@ open class DynamoDBReceiverVerticle<T> : AbstractVerticle, Receiver
         return dynamoDbReceiver
     }
 
-    override fun receiverCreateWithReceipt(receiveInputEvent: CommandEventImpl,
-                                           resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
+    override fun receiverCreateWithReceipt(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): Receiver {
         dynamoDbReceiver.receiverCreateWithReceipt(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
@@ -56,22 +58,28 @@ open class DynamoDBReceiverVerticle<T> : AbstractVerticle, Receiver
         return dynamoDbReceiver
     }
 
-    override fun receiverUpdateWithReceipt(receiveInputEvent: CommandEventImpl,
-                                           resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
+    override fun receiverUpdateWithReceipt(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): Receiver {
         dynamoDbReceiver.receiverUpdateWithReceipt(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverRead(receiveInputEvent: CommandEventImpl,
-                              resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
+    override fun receiverRead(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): Receiver {
         dynamoDbReceiver.receiverRead(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
     }
 
-    override fun receiverIndex(receiveInputEvent: CommandEventImpl,
-                               resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
+    override fun receiverIndex(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): Receiver {
         dynamoDbReceiver.receiverIndex(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver
@@ -83,8 +91,10 @@ open class DynamoDBReceiverVerticle<T> : AbstractVerticle, Receiver
         return dynamoDbReceiver
     }
 
-    override fun receiverDeleteWithReceipt(receiveInputEvent: CommandEventImpl,
-                                           resultHandler: Handler<AsyncResult<DataEventImpl>>): Receiver {
+    override fun receiverDeleteWithReceipt(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): Receiver {
         dynamoDbReceiver.receiverDeleteWithReceipt(receiveInputEvent, resultHandler)
 
         return dynamoDbReceiver

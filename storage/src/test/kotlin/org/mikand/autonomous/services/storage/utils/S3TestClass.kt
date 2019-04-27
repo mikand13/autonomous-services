@@ -9,47 +9,35 @@ import io.restassured.RestAssured.given
 import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
+import io.vertx.core.Vertx
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.RunTestOnContext
-import io.vertx.ext.unit.junit.Timeout
-import io.vertx.ext.unit.junit.VertxUnitRunner
+import io.vertx.junit5.VertxExtension
+import io.vertx.junit5.VertxTestContext
 import org.apache.tika.Tika
-import org.junit.After
-import org.junit.Before
-import org.junit.Rule
-import org.junit.rules.TestName
-import org.junit.runner.RunWith
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mikand.autonomous.services.core.events.DataEventImpl
 import java.io.File
+import java.net.ServerSocket
+import java.util.HashMap
 
-@RunWith(VertxUnitRunner::class)
-abstract class S3TestClass : ConfigSupport, RestAssuredFix {
+@ExtendWith(VertxExtension::class)
+abstract class S3TestClass : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
     val imageFile = File(S3TestClass::class.java.classLoader.getResource("binary/image.png").toURI())
+    protected val contextObjects: MutableMap<String, Any> = HashMap()
 
-    @JvmField
-    @Rule
-    val rule = RunTestOnContext()
-
-    @JvmField
-    @Rule
-    val timeout = Timeout.seconds(30)
-
-    @JvmField
-    @Rule
-    var name = TestName()
-
-    @Before
-    fun setup(context: TestContext) {
-        val async = context.async()
-        val vertx = rule.vertx()
-        val s3Port = findFreePort()
-        val port = findFreePort()
+    @BeforeEach
+    fun setup(vertx: Vertx, testInfo: TestInfo, context: VertxTestContext) {
+        val s3Port = ServerSocket(0).use { it.localPort }
+        val port = ServerSocket(0).use { it.localPort }
         val api = S3Mock.Builder()
                 .withPort(s3Port)
                 .withInMemoryBackend()
@@ -57,13 +45,13 @@ abstract class S3TestClass : ConfigSupport, RestAssuredFix {
         val s3Endpoint = "http://localhost:$s3Port"
         val bucketName = "test-autonomous-services-bucket$port"
 
-        context.put<String>("${name.methodName}-s3", api)
-        context.put<String>("${name.methodName}-s3-port", s3Port)
-        context.put<String>("${name.methodName}-config", getTestConfig()
+        contextObjects["${testInfo.testMethod.get().name}-s3"] = api
+        contextObjects["${testInfo.testMethod.get().name}-s3-port"] = s3Port
+        contextObjects["${testInfo.testMethod.get().name}-config"] = getTestConfig()
                 .put("aws_s3_file_receiver_port", port)
                 .put("aws_s3_endPoint", s3Endpoint)
                 .put("aws_s3_region", "us-east-1")
-                .put("aws_s3_file_receiver_bucketName", bucketName))
+                .put("aws_s3_file_receiver_bucketName", bucketName)
 
         vertx.executeBlocking<Boolean>({
             api.start()
@@ -78,39 +66,36 @@ abstract class S3TestClass : ConfigSupport, RestAssuredFix {
 
             client.createBucket(bucketName)
 
-            context.assertTrue(client.doesBucketExistV2(bucketName))
+            context.verify {
+                assertThat(client.doesBucketExistV2(bucketName)).isTrue()
+            }
 
             it.complete()
         }, false, {
-            if (it.succeeded()) {
-                async.complete()
-            } else {
-                context.fail(it.cause())
-            }
+            if (it.failed()) context.failNow(it.cause())
+
+            context.completeNow()
         })
     }
 
-    @After
-    fun teardown(context: TestContext) {
-        val async = context.async()
-        val api = context.get<S3Mock>("${name.methodName}-s3")
+    @AfterEach
+    fun teardown(vertx: Vertx, testInfo: TestInfo, context: VertxTestContext) {
+        val api: S3Mock = contextObjects["${testInfo.testMethod.get().name}-s3"] as S3Mock
 
         api.stop()
 
-        async.complete()
+        context.completeNow()
     }
 
-    fun uploadFile(url: String, path: String, resultHandler: Handler<AsyncResult<String>>) {
-        val vertx = rule.vertx()
-
+    fun uploadFile(vertx: Vertx, url: String, path: String, resultHandler: Handler<AsyncResult<String>>) {
         vertx.executeBlocking<String>({
             val file = File(path)
 
-            val key = DataEventImpl(JsonObject(given().
-                    multiPart("upload", file, Tika().detect(file)).
-                When().
-                    post(url).
-                then()
+            val key = DataEventImpl(JsonObject(given()
+                    .multiPart("upload", file, Tika().detect(file))
+                .`when`()
+                    .post(url)
+                .then()
                     .statusCode(202)
                         .extract()
                             .response()

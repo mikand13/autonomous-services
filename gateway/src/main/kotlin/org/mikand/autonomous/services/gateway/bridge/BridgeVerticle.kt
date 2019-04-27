@@ -35,7 +35,15 @@ import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.bridge.BridgeEventType.*
+import io.vertx.ext.bridge.BridgeEventType.PUBLISH
+import io.vertx.ext.bridge.BridgeEventType.RECEIVE
+import io.vertx.ext.bridge.BridgeEventType.REGISTER
+import io.vertx.ext.bridge.BridgeEventType.SEND
+import io.vertx.ext.bridge.BridgeEventType.SOCKET_CLOSED
+import io.vertx.ext.bridge.BridgeEventType.SOCKET_CREATED
+import io.vertx.ext.bridge.BridgeEventType.SOCKET_IDLE
+import io.vertx.ext.bridge.BridgeEventType.SOCKET_PING
+import io.vertx.ext.bridge.BridgeEventType.UNREGISTER
 import io.vertx.ext.bridge.PermittedOptions
 import io.vertx.ext.healthchecks.HealthCheckHandler
 import io.vertx.ext.healthchecks.Status
@@ -46,7 +54,7 @@ import io.vertx.ext.web.handler.sockjs.BridgeOptions
 import io.vertx.ext.web.handler.sockjs.SockJSHandler
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions
 import org.mikand.autonomous.services.gateway.GatewayDeploymentVerticle.Companion.GATEWAY_HEARTBEAT_ADDRESS
-import java.util.*
+import java.util.ArrayList
 
 internal class BridgeVerticle() : AbstractVerticle() {
     @Suppress("unused")
@@ -74,9 +82,11 @@ internal class BridgeVerticle() : AbstractVerticle() {
     @Suppress("unused")
     constructor(httpServerOptions: HttpServerOptions) : this(null, null, httpServerOptions)
 
-    constructor(router: Router?,
-                bridgeHandlerOptions: SockJSHandlerOptions?,
-                httpServerOptions: HttpServerOptions?) : this() {
+    constructor(
+        router: Router?,
+        bridgeHandlerOptions: SockJSHandlerOptions?,
+        httpServerOptions: HttpServerOptions?
+    ) : this() {
         this.router = router
         this.bridgeHandlerOptions = bridgeHandlerOptions
         this.httpServerOptions = httpServerOptions
@@ -107,10 +117,10 @@ internal class BridgeVerticle() : AbstractVerticle() {
     private fun addHealthCheck(router: Router, bridgePath: String) {
         val healthCheckHandler = HealthCheckHandler.create(vertx)
 
-        healthCheckHandler.register("bridge-is-live", { future ->
-            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, Handler {
+        healthCheckHandler.register("bridge-is-live") { future ->
+            ServiceManager.getInstance().consumeService(HeartbeatService::class.java, GATEWAY_HEARTBEAT_ADDRESS, Handler { result ->
                 when {
-                    it.succeeded() -> it.result().ping(Handler {
+                    result.succeeded() -> result.result().ping(Handler {
                         when {
                             it.succeeded() && it.result() ->
                                 if (!future.isComplete) future.complete(Status.OK(JsonObject().put("bridge", "UP")))
@@ -122,20 +132,24 @@ internal class BridgeVerticle() : AbstractVerticle() {
                         }
                     })
                     else -> {
-                        logger.error("Failed fetching HeartBeatService!", it.cause())
+                        logger.error("Failed fetching HeartBeatService!", result.cause())
 
                         if (!future.isComplete) future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
                     }
                 }
             })
-        })
+        }
 
         router.get(bridgePath.removeSuffix("/*") + "-health").handler(healthCheckHandler)
     }
 
-    private fun addEventBusBridge(ebHandler: SockJSHandler, router: Router,
-                                  bridgeBase: String, bridgePath: String) {
-        ebHandler.bridge(createBridgeOptions(bridgeBase), { bridgeEvent ->
+    private fun addEventBusBridge(
+        ebHandler: SockJSHandler,
+        router: Router,
+        bridgeBase: String,
+        bridgePath: String
+    ) {
+        ebHandler.bridge(createBridgeOptions(bridgeBase)) { bridgeEvent ->
             logger.debug("Event received from external client!")
 
             when {
@@ -193,7 +207,7 @@ internal class BridgeVerticle() : AbstractVerticle() {
                 }
                 else -> logger.error("Type is null!, Message is: " + Json.encodePrettily(bridgeEvent))
             }
-        })
+        }
 
         logger.info("Adding bridge to: $bridgePath")
 
@@ -245,8 +259,8 @@ internal class BridgeVerticle() : AbstractVerticle() {
                 .setTcpKeepAlive(true)
 
         vertx.createHttpServer(options)
-                .requestHandler(router::accept)
-                .listen(bridgePort, { server ->
+                .requestHandler(router)
+                .listen(bridgePort) { server ->
                     when {
                         server.succeeded() -> {
                             this.server = server.result()
@@ -257,6 +271,6 @@ internal class BridgeVerticle() : AbstractVerticle() {
                         }
                         else -> startFuture?.fail(server.cause())
                     }
-                })
+                }
     }
 }

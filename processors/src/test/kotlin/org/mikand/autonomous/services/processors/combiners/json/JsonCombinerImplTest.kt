@@ -23,46 +23,44 @@
  *
  */
 
-package org.mikand.autonomous.services.processors.splitters.json
+package org.mikand.autonomous.services.processors.combiners.json
 
 import io.vertx.core.Handler
+import io.vertx.core.Vertx
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.RunTestOnContext
-import io.vertx.ext.unit.junit.Timeout
-import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
+import io.vertx.junit5.VertxExtension
+import io.vertx.junit5.VertxTestContext
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.processors.utils.ConfigSupport
 import org.mikand.autonomous.services.processors.utils.JsonWeatherCombiner
 
-@RunWith(VertxUnitRunner::class)
+@Execution(ExecutionMode.CONCURRENT)
+@ExtendWith(VertxExtension::class)
 class JsonCombinerImplTest : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    @JvmField
-    @Rule
-    val rule = RunTestOnContext()
-
-    @JvmField
-    @Rule
-    val timeout = Timeout.seconds(5)
-
     @Test
-    fun testCombine(context: TestContext) {
-        val async = context.async()
-        val combiner = JsonWeatherCombiner()
+    fun testCombine(vertx: Vertx, context: VertxTestContext) {
+        vertx.runOnContext {
+            val combiner = JsonWeatherCombiner()
 
-        combiner.combine(CommandEventBuilder()
-                .withSuccess()
-                .withAction("COMBINE")
-                .build(), Handler {
-            context.assertTrue(it.succeeded())
-            async.complete()
-        })
+            combiner.combine(CommandEventBuilder()
+                    .withSuccess()
+                    .withAction("COMBINE")
+                    .build(), Handler {
+                context.verify {
+                    assertThat(it.succeeded()).isTrue()
+
+                    context.completeNow()
+                }
+            })
+        }
     }
 }

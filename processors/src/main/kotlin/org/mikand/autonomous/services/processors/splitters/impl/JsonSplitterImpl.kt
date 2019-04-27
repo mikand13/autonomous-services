@@ -2,7 +2,11 @@ package org.mikand.autonomous.services.processors.splitters.impl
 
 import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.codegen.annotations.Fluent
-import io.vertx.core.*
+import io.vertx.core.AbstractVerticle
+import io.vertx.core.AsyncResult
+import io.vertx.core.Future
+import io.vertx.core.Handler
+import io.vertx.core.Vertx
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
@@ -65,9 +69,11 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
     }
 
     @Fluent
-    override fun splitWithReceipt(splitInputEvent: CommandEventImpl,
-                                  responseHandler: Handler<AsyncResult<DataEventImpl>>): JsonSplitter {
-        thisVertx.executeBlocking<JsonObject>({
+    override fun splitWithReceipt(
+        splitInputEvent: CommandEventImpl,
+        responseHandler: Handler<AsyncResult<DataEventImpl>>
+    ): JsonSplitter {
+        thisVertx.executeBlocking<JsonObject>({ result ->
             val output = JsonObject()
 
             extractables.forEach {
@@ -77,7 +83,7 @@ open class JsonSplitterImpl(config: JsonObject = JsonObject()) : AbstractVerticl
                 }
             }
 
-            it.complete(output)
+            result.complete(output)
         }, false, {
             if (it.succeeded()) {
                 val outputEvent = DataEventBuilder()

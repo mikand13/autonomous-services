@@ -28,53 +28,51 @@ package org.mikand.autonomous.services.data.compute
 import io.vertx.core.Handler
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.RunTestOnContext
-import io.vertx.ext.unit.junit.Timeout
-import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
+import io.vertx.junit5.VertxExtension
+import io.vertx.junit5.VertxTestContext
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.data.model.JsonCompute
-import org.mikand.autonomous.services.gateway.utils.ConfigSupport
+import org.mikand.autonomous.services.data.utils.ConfigSupport
 
-@RunWith(VertxUnitRunner::class)
+@Execution(ExecutionMode.CONCURRENT)
+@ExtendWith(VertxExtension::class)
 class ComputeTest : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    @JvmField
-    @Rule
-    val rule = RunTestOnContext()
-
-    @JvmField
-    @Rule
-    val timeout = Timeout.seconds(5)
-
     @Test
-    fun testCompute(context: TestContext) {
-        val async = context.async()
+    fun testCompute(context: VertxTestContext) {
         val compute = JsonCompute()
 
         compute.compute(CommandEventBuilder()
                 .withSuccess()
                 .withAction("JSON_COMPUTE")
                 .build(), Handler {
-            context.assertTrue(it.succeeded())
-            async.complete()
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+
+                context.completeNow()
+            }
         })
     }
 
     @Test
-    fun testFetchSubscriptionAddress(context: TestContext) {
-        val async = context.async()
+    fun testFetchSubscriptionAddress(context: VertxTestContext) {
         val compute = JsonCompute()
 
         compute.fetchSubscriptionAddress(Handler {
-            context.assertTrue(it.succeeded())
-            context.assertEquals(JsonCompute::class.java.simpleName, it.result().body.getString("address"))
-            async.complete()
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+                assertThat(JsonCompute::class.java.simpleName)
+                        .isEqualTo(it.result().body.getString("address"))
+
+                context.completeNow()
+            }
         })
     }
 }

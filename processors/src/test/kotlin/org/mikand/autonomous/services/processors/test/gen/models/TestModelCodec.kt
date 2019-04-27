@@ -15,10 +15,9 @@ class TestModelCodec : MessageCodec<TestModel, TestModel> {
     }
 
     override fun decodeFromWire(pos: Int, buffer: Buffer?): TestModel {
-        val position = pos
-        val length = buffer?.getInt(position) ?: 0
+        val length = buffer?.getInt(pos) ?: 0
 
-        val first = position + 4
+        val first = pos + 4
         val second = first + length
         val jsonString = buffer?.getString(first, second) // getInt() == 4 bytes
 

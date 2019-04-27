@@ -29,161 +29,168 @@ import com.nannoq.tools.cluster.services.ServiceManager
 import io.vertx.core.DeploymentOptions
 import io.vertx.core.Handler
 import io.vertx.core.Vertx
-import io.vertx.core.VertxOptions
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.Repeat
-import io.vertx.ext.unit.junit.RunTestOnContext
-import io.vertx.ext.unit.junit.Timeout
-import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
+import io.vertx.junit5.VertxExtension
+import io.vertx.junit5.VertxTestContext
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.RepeatedTest
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mikand.autonomous.services.gateway.bridge.BridgeVerticle
 import org.mikand.autonomous.services.gateway.utils.ConfigSupport
+import java.net.ServerSocket
 
 /**
  * @author Anders Mikkelsen
  * @version 20.12.17 11:41
  */
-@RunWith(VertxUnitRunner::class)
+@Execution(ExecutionMode.CONCURRENT)
+@ExtendWith(VertxExtension::class)
 class GatewayHeartbeatServiceImplIT : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    @JvmField
-    @Rule
-    val rule = RunTestOnContext({
-        val options = VertxOptions()
-                .setMaxWorkerExecuteTime(Long.MAX_VALUE)
-                .setMaxEventLoopExecuteTime(Long.MAX_VALUE)
-        
-        Vertx.vertx(options)
-    })
+    companion object {
+        private val mapSet = mutableSetOf<Int>()
 
-    @JvmField
-    @Rule
-    val timeout = Timeout.seconds(15)
+        @JvmStatic
+        @Synchronized
+        private fun getPort(): Int {
+            val use = ServerSocket(0).use { it.localPort }
+
+            if (mapSet.contains(use)) {
+                return getPort()
+            } else {
+                mapSet.add(use)
+
+                return use
+            }
+        }
+    }
 
     @Test
-    @Repeat(50)
-    fun testPing(context: TestContext) {
-        val async = context.async()
+    fun testPing(vertx: Vertx, context: VertxTestContext) {
         val verticle = BridgeVerticle()
-        val config = getTestConfig().put("bridgePort", findFreePort())
+        val config = getTestConfig().put("bridgePort", getPort())
         val depOptions = DeploymentOptions().setConfig(config)
-        val vertx = rule.vertx()
 
-        vertx.deployVerticle(verticle, depOptions, {
-            context.assertTrue(it.succeeded())
+        vertx.deployVerticle(verticle, depOptions) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
 
             ServiceManager.getInstance(vertx).publishService(HeartbeatService::class.java,
                     GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS,
                     GatewayHeartbeatServiceImpl(vertx, config), Handler {
-                context.assertTrue(it.succeeded())
+                context.verify {
+                    assertThat(it.succeeded()).isTrue()
+                }
 
-                ServiceManager.getInstance().consumeService(HeartbeatService::class.java,
+                ServiceManager.getInstance(vertx).consumeService(HeartbeatService::class.java,
                         GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS, Handler {
-                    context.assertTrue(it.succeeded())
+                    context.verify {
+                        assertThat(it.succeeded()).isTrue()
+                    }
 
                     it.result().ping(Handler {
-                        context.assertTrue(it.succeeded())
-                        context.assertTrue(it.result())
+                        context.verify {
+                            assertThat(it.succeeded()).isTrue()
+                            assertThat(it.result()).isTrue()
 
-                        async.complete()
+                            context.completeNow()
+                        }
                     })
                 })
             })
-        })
+        }
     }
 
     @Test
-    @Repeat(50)
-    fun testPingHttp(context: TestContext) {
-        val async = context.async()
+    fun testPingHttp(vertx: Vertx, context: VertxTestContext) {
         val verticle = GatewayDeploymentVerticle()
-        val port = findFreePort()
+        val port = getPort()
         val config = getTestConfig().put("bridgePort", port)
         val depOptions = DeploymentOptions().setConfig(config)
-        val vertx = rule.vertx()
 
-        vertx.deployVerticle(verticle, depOptions, {
-            context.assertTrue(it.succeeded())
+        vertx.deployVerticle(verticle, depOptions) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
 
             vertx.createHttpClient().getAbs("http://localhost:$port/eventbus-health")
-                    .handler({
-                        context.assertTrue(it.statusCode() == 200)
+                    .handler {
+                        context.verify {
+                            assertThat(it.statusCode() == 200).isTrue()
 
-                        async.complete()
-                    })
-                    .exceptionHandler({ context.fail(it) })
+                            context.completeNow()
+                        }
+                    }
+                    .exceptionHandler { context.failNow(it) }
                     .end()
-        })
+        }
     }
 
     @Test
-    @Repeat(50)
-    fun testFailedPing(context: TestContext) {
-        val async = context.async()
-        val config = getTestConfig().put("bridgePort", findFreePort())
-        val vertx = rule.vertx()
+    fun testFailedPing(vertx: Vertx, context: VertxTestContext) {
+        val config = getTestConfig().put("bridgePort", getPort())
 
         ServiceManager.getInstance(vertx).publishService(HeartbeatService::class.java,
                 GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS,
                 GatewayHeartbeatServiceImpl(vertx, config), Handler {
-            context.assertTrue(it.succeeded())
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
 
-            ServiceManager.getInstance().consumeService(HeartbeatService::class.java,
+            ServiceManager.getInstance(vertx).consumeService(HeartbeatService::class.java,
                     GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS, Handler {
-                context.assertTrue(it.succeeded())
+                context.verify {
+                    assertThat(it.succeeded()).isTrue()
+                }
 
                 it.result().ping(Handler {
-                    context.assertTrue(it.failed())
-                    context.assertNull(it.result())
+                    context.verify {
+                        assertThat(it.failed()).isTrue()
 
-                    async.complete()
-                })
-            })
-        })
-    }
-
-    @Test
-    @Repeat(50)
-    fun testPingRuby(context: TestContext) {
-        testLang(context, "rb/gateway_heartbeat_service_impl_test.rb")
-    }
-
-    @Test
-    @Repeat(50)
-    fun testPingJs(context: TestContext) {
-        testLang(context, "js/gatewayHeartbeatServiceImplTest.js")
-    }
-
-    fun testLang(context: TestContext, langVerticle: String) {
-        val async = context.async()
-        val verticle = BridgeVerticle()
-        val config = getTestConfig().put("bridgePort", findFreePort())
-        val depOptions = DeploymentOptions().setConfig(config)
-        val vertx = rule.vertx()
-
-        vertx.deployVerticle(verticle, depOptions, {
-            context.assertTrue(it.succeeded())
-
-            ServiceManager.getInstance(vertx).publishService(HeartbeatService::class.java,
-                    GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS,
-                    GatewayHeartbeatServiceImpl(vertx, config), Handler {
-                context.assertTrue(it.succeeded())
-
-                vertx.deployVerticle(langVerticle, {
-                    if (it.succeeded()) {
-                        async.complete()
-                    } else {
-                        context.fail(it.cause())
+                        context.completeNow()
                     }
                 })
             })
         })
     }
-}
 
+    @Test
+    fun testPingRuby(vertx: Vertx, context: VertxTestContext) {
+        testLang(vertx, context, "rb/gateway_heartbeat_service_impl_test.rb")
+    }
+
+    private fun testLang(vertx: Vertx, context: VertxTestContext, langVerticle: String) {
+        val verticle = BridgeVerticle()
+        val config = getTestConfig().put("bridgePort", getPort())
+        val depOptions = DeploymentOptions().setConfig(config)
+
+        vertx.deployVerticle(verticle, depOptions) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
+
+            ServiceManager.getInstance(vertx).publishService(HeartbeatService::class.java,
+                    GatewayDeploymentVerticle.GATEWAY_HEARTBEAT_ADDRESS,
+                    GatewayHeartbeatServiceImpl(vertx, config), Handler {
+                context.verify {
+                    assertThat(it.succeeded()).isTrue()
+                }
+
+                vertx.deployVerticle(langVerticle) {
+                    context.verify {
+                        assertThat(it.succeeded()).isTrue()
+
+                        context.completeNow()
+                    }
+                }
+            })
+        }
+    }
+}

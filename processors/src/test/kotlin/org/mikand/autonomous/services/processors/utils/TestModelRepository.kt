@@ -36,7 +36,7 @@ import org.mikand.autonomous.services.processors.test.gen.TestModelCombiner
 import org.mikand.autonomous.services.processors.test.gen.TestModelSplitter
 import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 import org.mikand.autonomous.services.processors.test.gen.models.TestModelCodec
-import java.util.*
+import java.util.Collections
 
 class TestModelRepository : AbstractVerticle(), TestModelSplitter, TestModelCombiner {
     private val subscriptionAddress: String = javaClass.name
@@ -57,8 +57,10 @@ class TestModelRepository : AbstractVerticle(), TestModelSplitter, TestModelComb
         return this
     }
 
-    override fun splitCreateWithReceipt(record: TestModel,
-                                        createHandler: Handler<AsyncResult<TestModel>>): TestModelRepository {
+    override fun splitCreateWithReceipt(
+        record: TestModel,
+        createHandler: Handler<AsyncResult<TestModel>>
+    ): TestModelRepository {
         createHandler.handle(Future.succeededFuture(record))
         vertx.eventBus().publish(subscriptionAddress, record)
 
@@ -71,8 +73,10 @@ class TestModelRepository : AbstractVerticle(), TestModelSplitter, TestModelComb
         return this
     }
 
-    override fun splitUpdateWithReceipt(record: TestModel,
-                                        updateHandler: Handler<AsyncResult<TestModel>>): TestModelRepository {
+    override fun splitUpdateWithReceipt(
+        record: TestModel,
+        updateHandler: Handler<AsyncResult<TestModel>>
+    ): TestModelRepository {
         updateHandler.handle(Future.succeededFuture(record))
         vertx.eventBus().publish(subscriptionAddress, record)
 
@@ -85,8 +89,10 @@ class TestModelRepository : AbstractVerticle(), TestModelSplitter, TestModelComb
         return this
     }
 
-    override fun splitDeleteWithReceipt(record: TestModel,
-                                        deleteHandler: Handler<AsyncResult<TestModel>>): TestModelRepository {
+    override fun splitDeleteWithReceipt(
+        record: TestModel,
+        deleteHandler: Handler<AsyncResult<TestModel>>
+    ): TestModelRepository {
         deleteHandler.handle(Future.succeededFuture(record))
         vertx.eventBus().publish(subscriptionAddress, record)
 

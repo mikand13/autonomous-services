@@ -5,50 +5,65 @@ import com.nannoq.tools.repository.utils.FilterParameter
 import com.nannoq.tools.repository.utils.GenericItemList
 import com.nannoq.tools.repository.utils.QueryPack
 import io.vertx.core.Handler
+import io.vertx.core.Vertx
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Test
-import org.junit.runner.RunWith
+import io.vertx.junit5.VertxExtension
+import io.vertx.junit5.VertxTestContext
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.storage.gen.TestModelReceiverImpl
 import org.mikand.autonomous.services.storage.gen.models.TestModel
 import org.mikand.autonomous.services.storage.receivers.Receiver
 import org.mikand.autonomous.services.storage.utils.DynamoDBTestClass
-import java.util.*
+import java.util.Collections
 
-@RunWith(VertxUnitRunner::class)
+@Execution(ExecutionMode.SAME_THREAD)
+@ExtendWith(VertxExtension::class)
 class DynamoDBReceiverTestIT : DynamoDBTestClass() {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
     @Test
-    fun receiverCreate(context: TestContext) {
-        val async = context.async()
-        val verticle: TestModelReceiverImpl = context.get("${name.methodName}-repo")
-        val vertx = rule.vertx()
+    fun receiverCreate(vertx: Vertx, testInfo: TestInfo, context: VertxTestContext) {
+        val verticle: TestModelReceiverImpl = contextObjects["${testInfo.testMethod.get().name}-repo"] as TestModelReceiverImpl
 
-        vertx.deployVerticle(verticle, context.asyncAssertSuccess({
+        vertx.deployVerticle(verticle) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
+
             ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
-                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
-                    context.assertTrue(it.succeeded())
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler { asyncResult ->
+                    context.verify {
+                        assertThat(asyncResult.succeeded()).isTrue()
+                    }
 
-                    val service = it.result()
+                    val service = asyncResult.result()
 
-                    service.fetchSubscriptionAddress(Handler {
-                        context.assertTrue(it.succeeded())
+                    service.fetchSubscriptionAddress(Handler { result ->
+                        context.verify {
+                            assertThat(result.succeeded()).isTrue()
+                        }
 
-                        val address = it.result().body.getString("address")
+                        val address = result.result().body.getString("address")
 
-                        rule.vertx().eventBus().consumer<JsonObject>(address) {
+                        vertx.eventBus().consumer<JsonObject>(address) {
                             val statusCode = it.body().getJsonObject("metadata").getInteger("statusCode")
 
                             if (statusCode == 201) {
-                                context.assertNotNull(it.body().getJsonObject("body"))
-                                async.complete()
+                                context.verify {
+                                    assertThat(it.body().getJsonObject("body")).isNotNull
+
+                                    context.completeNow()
+                                }
                             }
                         }
 
@@ -60,21 +75,25 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                     })
                 })
             })
-        }))
+        }
     }
 
     @Test
-    fun receiverCreateWithReceipt(context: TestContext) {
-        val async = context.async()
-        val verticle: TestModelReceiverImpl = context.get("${name.methodName}-repo")
-        val vertx = rule.vertx()
+    fun receiverCreateWithReceipt(vertx: Vertx, testInfo: TestInfo, context: VertxTestContext) {
+        val verticle: TestModelReceiverImpl = contextObjects["${testInfo.testMethod.get().name}-repo"] as TestModelReceiverImpl
 
-        vertx.deployVerticle(verticle, context.asyncAssertSuccess({
+        vertx.deployVerticle(verticle) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
+
             ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
-                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
-                    context.assertTrue(it.succeeded())
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler { result ->
+                    context.verify {
+                        assertThat(result.succeeded()).isTrue()
+                    }
 
-                    val service = it.result()
+                    val service = result.result()
                     val receiveEvent = CommandEventBuilder()
                             .withSuccess()
                             .withAction("RECEIVE_CREATE")
@@ -82,50 +101,65 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                             .build()
 
                     service.receiverCreateWithReceipt(receiveEvent, Handler {
-                        context.assertTrue(it.succeeded())
-                        context.assertEquals(201, it.result().metadata.getInteger("statusCode"))
-                        context.assertNotNull(it.result().body)
-                        async.complete()
+                        context.verify {
+                            assertThat(it.succeeded()).isTrue()
+                            assertThat(it.result().metadata.getInteger("statusCode")).isEqualTo(201)
+                            assertThat(it.result().body).isNotNull
+
+                            context.completeNow()
+                        }
                     })
                 })
             })
-        }))
+        }
     }
 
     @Test
-    fun receiverUpdate(context: TestContext) {
-        val async = context.async()
-        val verticle: TestModelReceiverImpl = context.get("${name.methodName}-repo")
-        val vertx = rule.vertx()
+    fun receiverUpdate(vertx: Vertx, testInfo: TestInfo, context: VertxTestContext) {
+        val verticle: TestModelReceiverImpl = contextObjects["${testInfo.testMethod.get().name}-repo"] as TestModelReceiverImpl
 
-        vertx.deployVerticle(verticle, context.asyncAssertSuccess({
+        vertx.deployVerticle(verticle) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
+
             ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
-                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
-                    context.assertTrue(it.succeeded())
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler { asyncResult ->
+                    context.verify {
+                        assertThat(asyncResult.succeeded()).isTrue()
+                    }
 
-                    val service = it.result()
+                    val service = asyncResult.result()
 
-                    createItem(verticle, Handler {
-                        context.assertTrue(it.succeeded())
+                    createItem(verticle, Handler { result ->
+                        context.verify {
+                            assertThat(result.succeeded()).isTrue()
+                        }
 
-                        val testModel = TestModel(it.result().body)
+                        val testModel = TestModel(result.result().body)
                         testModel.setSomeBoolean(someBoolean = true)
 
-                        context.assertTrue(testModel.getSomeBoolean()!!)
+                        context.verify {
+                            assertThat(testModel.getSomeBoolean()!!).isTrue()
+                        }
 
-                        service.fetchSubscriptionAddress(Handler {
-                            context.assertTrue(it.succeeded())
+                        service.fetchSubscriptionAddress(Handler { it ->
+                            context.verify {
+                                assertThat(it.succeeded()).isTrue()
+                            }
 
                             val address = it.result().body.getString("address")
 
-                            rule.vertx().eventBus().consumer<JsonObject>(address) {
+                            vertx.eventBus().consumer<JsonObject>(address) {
                                 val statusCode = it.body().getJsonObject("metadata").getInteger("statusCode")
 
                                 if (statusCode == 202) {
                                     val updatedModel = TestModel(it.body().getJsonObject("body"))
 
-                                    context.assertNotNull(updatedModel)
-                                    context.assertTrue(updatedModel.getSomeBoolean()!!)
+                                    context.verify {
+                                        assertThat(updatedModel).isNotNull
+                                        assertThat(updatedModel.getSomeBoolean()!!).isTrue()
+                                    }
 
                                     val idObject = CommandEventBuilder()
                                             .withSuccess()
@@ -136,9 +170,12 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                             .build()
 
                                     service.receiverRead(idObject, Handler {
-                                        context.assertTrue(it.succeeded())
-                                        context.assertTrue(TestModel(it.result().body).getSomeBoolean()!!)
-                                        async.complete()
+                                        context.verify {
+                                            assertThat(it.succeeded()).isTrue()
+                                            assertThat(TestModel(it.result().body).getSomeBoolean()!!).isTrue()
+
+                                            context.completeNow()
+                                        }
                                     })
                                 }
                             }
@@ -152,27 +189,35 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                     })
                 })
             })
-        }))
+        }
     }
 
     @Test
-    fun receiverUpdateWithReceipt(context: TestContext) {
-        val async = context.async()
-        val verticle: TestModelReceiverImpl = context.get("${name.methodName}-repo")
-        val vertx = rule.vertx()
+    fun receiverUpdateWithReceipt(vertx: Vertx, testInfo: TestInfo, context: VertxTestContext) {
+        val verticle: TestModelReceiverImpl = contextObjects["${testInfo.testMethod.get().name}-repo"] as TestModelReceiverImpl
 
-        vertx.deployVerticle(verticle, context.asyncAssertSuccess({
+        vertx.deployVerticle(verticle) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
+
             ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
-                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
-                    context.assertTrue(it.succeeded())
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler { asyncResult ->
+                    context.verify {
+                        assertThat(asyncResult.succeeded()).isTrue()
+                    }
 
-                    val service = it.result()
+                    val service = asyncResult.result()
 
-                    createItem(verticle, Handler {
-                        context.assertTrue(it.succeeded())
+                    createItem(verticle, Handler { result ->
+                        context.verify {
+                            assertThat(result.succeeded()).isTrue()
+                        }
 
-                        val testModel = TestModel(it.result().body)
+                        val testModel = TestModel(result.result().body)
+
                         testModel.setSomeBoolean(someBoolean = true)
+
                         val updateEvent = CommandEventBuilder()
                                 .withSuccess()
                                 .withAction("RECEIVE_UPDATE")
@@ -180,12 +225,16 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                 .build()
 
                         service.receiverUpdateWithReceipt(updateEvent, Handler {
-                            context.assertEquals(202, it.result().metadata.getInteger("statusCode"))
+                            context.verify {
+                                assertThat(it.result().metadata.getInteger("statusCode")).isEqualTo(202)
+                            }
 
                             val updatedModel = TestModel(it.result().body)
 
-                            context.assertNotNull(updatedModel)
-                            context.assertTrue(updatedModel.getSomeBoolean()!!)
+                            context.verify {
+                                assertThat(updatedModel).isNotNull
+                                assertThat(updatedModel.getSomeBoolean()!!).isTrue()
+                            }
 
                             val idObject = CommandEventBuilder()
                                     .withSuccess()
@@ -196,32 +245,41 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                     .build()
 
                             service.receiverRead(idObject, Handler {
-                                context.assertTrue(it.succeeded())
-                                context.assertTrue(TestModel(it.result().body).getSomeBoolean()!!)
-                                async.complete()
+                                context.verify {
+                                    assertThat(it.succeeded()).isTrue()
+                                    assertThat(TestModel(it.result().body).getSomeBoolean()!!).isTrue()
+
+                                    context.completeNow()
+                                }
                             })
                         })
                     })
                 })
             })
-        }))
+        }
     }
 
     @Test
-    fun receiverRead(context: TestContext) {
-        val async = context.async()
-        val verticle: TestModelReceiverImpl = context.get("${name.methodName}-repo")
-        val vertx = rule.vertx()
+    fun receiverRead(vertx: Vertx, testInfo: TestInfo, context: VertxTestContext) {
+        val verticle: TestModelReceiverImpl = contextObjects["${testInfo.testMethod.get().name}-repo"] as TestModelReceiverImpl
 
-        vertx.deployVerticle(verticle, context.asyncAssertSuccess({
+        vertx.deployVerticle(verticle) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
+
             ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
-                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
-                    context.assertTrue(it.succeeded())
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler { result ->
+                    context.verify {
+                        assertThat(result.succeeded()).isTrue()
+                    }
 
-                    val service = it.result()
+                    val service = result.result()
 
                     createItem(verticle, Handler {
-                        context.assertTrue(it.succeeded())
+                        context.verify {
+                            assertThat(it.succeeded()).isTrue()
+                        }
 
                         val testModel = TestModel(it.result().body)
                         val idObject = CommandEventBuilder()
@@ -233,38 +291,46 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                 .build()
 
                         service.receiverRead(idObject, Handler {
-                            context.assertTrue(it.succeeded())
-                            context.assertNotNull(it.result())
+                            context.verify {
+                                assertThat(it.succeeded()).isTrue()
+                                assertThat(it.result()).isNotNull
 
-                            val record = TestModel(it.result().body)
+                                val record = TestModel(it.result().body)
 
-                            context.assertNotNull(record)
+                                assertThat(record).isNotNull
 
-                            async.complete()
+                                context.completeNow()
+                            }
                         })
                     })
                 })
             })
-        }))
+        }
     }
 
     @Test
-    fun receiverIndex(context: TestContext) {
-        val async = context.async()
-        val verticle: TestModelReceiverImpl = context.get("${name.methodName}-repo")
-        val vertx = rule.vertx()
+    fun receiverIndex(vertx: Vertx, testInfo: TestInfo, context: VertxTestContext) {
+        val verticle: TestModelReceiverImpl = contextObjects["${testInfo.testMethod.get().name}-repo"] as TestModelReceiverImpl
 
-        vertx.deployVerticle(verticle, context.asyncAssertSuccess({
+        vertx.deployVerticle(verticle) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
+
             ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
-                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
-                    context.assertTrue(it.succeeded())
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler { asyncResult ->
+                    context.verify {
+                        assertThat(asyncResult.succeeded()).isTrue()
+                    }
 
-                    val service = it.result()
+                    val service = asyncResult.result()
 
-                    createXItems(verticle, 20, Handler {
-                        context.assertTrue(it.succeeded())
+                    createXItems(verticle, 20, Handler { result ->
+                        context.verify {
+                            assertThat(result.succeeded()).isTrue()
+                        }
 
-                        val testModel = it.result()[0]
+                        val testModel = result.result()[0]
                         val idObject = CommandEventBuilder()
                                 .withSuccess()
                                 .withAction("RECEIVE_READ")
@@ -273,43 +339,53 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                 .build()
 
                         service.receiverIndex(idObject, Handler {
-                            context.assertTrue(it.succeeded())
-                            context.assertNotNull(it.result())
+                            context.verify {
+                                assertThat(it.succeeded()).isTrue()
+                                assertThat(it.result()).isNotNull
+                            }
 
                             val list = Json.decodeValue(
                                     it.result().body.encode(), GenericItemList::class.java)
 
-                            context.assertNotNull(list)
-                            context.assertEquals(20, list.count)
-                            context.assertEquals(20, list.items?.size)
-                            context.assertNotNull(list.pageToken)
+                            context.verify {
+                                assertThat(list).isNotNull
+                                assertThat(list.count).isEqualTo(20)
+                                assertThat(list.items?.size).isEqualTo(20)
+                                assertThat(list.pageToken).isNotNull
 
-                            async.complete()
+                                context.completeNow()
+                            }
                         })
                     })
                 })
             })
-        }))
+        }
     }
 
     @Test
-    fun receiverIndexWithQuery(context: TestContext) {
-        val async = context.async()
-        val asyncTwo = context.async()
-        val verticle: TestModelReceiverImpl = context.get("${name.methodName}-repo")
-        val vertx = rule.vertx()
+    fun receiverIndexWithQuery(vertx: Vertx, testInfo: TestInfo, context: VertxTestContext) {
+        val checkpoint = context.checkpoint(2)
+        val verticle: TestModelReceiverImpl = contextObjects["${testInfo.testMethod.get().name}-repo"] as TestModelReceiverImpl
 
-        vertx.deployVerticle(verticle, context.asyncAssertSuccess({
+        vertx.deployVerticle(verticle) { outerResult ->
+            context.verify {
+                assertThat(outerResult.succeeded()).isTrue()
+            }
+
             ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
-                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
-                    context.assertTrue(it.succeeded())
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler { asyncResult ->
+                    context.verify {
+                        assertThat(asyncResult.succeeded()).isTrue()
+                    }
 
-                    val service = it.result()
+                    val service = asyncResult.result()
 
-                    createXItems(verticle, 20, Handler {
-                        context.assertTrue(it.succeeded())
+                    createXItems(verticle, 20, Handler { result ->
+                        context.verify {
+                            assertThat(result.succeeded()).isTrue()
+                        }
 
-                        val testModel = it.result()[0]
+                        val testModel = result.result()[0]
                         val queryPack = QueryPack.builder()
                                 .withCustomRoute("testRoute")
                                 .withProjections(arrayOf())
@@ -329,18 +405,22 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                 .build()
 
                         service.receiverIndex(indexEvent, Handler {
-                            context.assertTrue(it.succeeded())
-                            context.assertNotNull(it.result())
+                            context.verify {
+                                assertThat(it.succeeded()).isTrue()
+                                assertThat(it.result()).isNotNull
+                            }
 
                             val list = Json.decodeValue(
                                     it.result().body.encode(), GenericItemList::class.java)
 
-                            context.assertNotNull(list)
-                            context.assertEquals(20, list.count)
-                            context.assertEquals(20, list.items?.size)
-                            context.assertNotNull(list.pageToken)
+                            context.verify {
+                                assertThat(list).isNotNull
+                                assertThat(list.count).isEqualTo(20)
+                                assertThat(list.items?.size).isEqualTo(20)
+                                assertThat(list.pageToken).isNotNull
 
-                            async.complete()
+                                checkpoint.flag()
+                            }
                         })
 
                         val queryPackTrue = QueryPack.builder()
@@ -362,57 +442,71 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                 .build()
 
                         service.receiverIndex(indexEventTrue, Handler {
-                            context.assertTrue(it.succeeded())
-                            context.assertNotNull(it.result())
+                            context.verify {
+                                assertThat(it.succeeded()).isTrue()
+                                assertThat(it.result()).isNotNull
+                            }
 
                             val list = Json.decodeValue(
                                     it.result().body.encode(), GenericItemList::class.java)
 
-                            context.assertNotNull(list)
-                            context.assertEquals(0, list.count)
-                            context.assertEquals(0, list.items?.size)
-                            context.assertNotNull(list.pageToken)
+                            context.verify {
+                                assertThat(list).isNotNull
+                                assertThat(list.count).isEqualTo(0)
+                                assertThat(list.items?.size).isEqualTo(0)
+                                assertThat(list.pageToken).isNotNull
 
-                            asyncTwo.complete()
+                                checkpoint.flag()
+                            }
                         })
                     })
                 })
             })
-        }))
-
+        }
     }
 
     @Test
-    fun receiverDelete(context: TestContext) {
-        val async = context.async()
-        val verticle: TestModelReceiverImpl = context.get("${name.methodName}-repo")
-        val vertx = rule.vertx()
+    fun receiverDelete(vertx: Vertx, testInfo: TestInfo, context: VertxTestContext) {
+        val verticle: TestModelReceiverImpl = contextObjects["${testInfo.testMethod.get().name}-repo"] as TestModelReceiverImpl
 
-        vertx.deployVerticle(verticle, context.asyncAssertSuccess({
+        vertx.deployVerticle(verticle) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
+
             ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
-                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
-                    context.assertTrue(it.succeeded())
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler { asyncResult ->
+                    context.verify {
+                        assertThat(asyncResult.succeeded()).isTrue()
+                    }
 
-                    val service = it.result()
+                    val service = asyncResult.result()
 
                     createItem(verticle, Handler {
-                        context.assertTrue(it.succeeded())
+                        context.verify {
+                            assertThat(it.succeeded()).isTrue()
+                        }
 
-                        service.fetchSubscriptionAddress(Handler {
-                            context.assertTrue(it.succeeded())
+                        service.fetchSubscriptionAddress(Handler { result ->
+                            context.verify {
+                                assertThat(result.succeeded()).isTrue()
+                            }
 
-                            val address = it.result().body.getString("address")
+                            val address = result.result().body.getString("address")
 
-                            rule.vertx().eventBus().consumer<JsonObject>(address) {
+                            vertx.eventBus().consumer<JsonObject>(address) {
                                 val statusCode = it.body().getJsonObject("metadata").getInteger("statusCode")
 
                                 if (statusCode == 204) {
-                                    context.assertEquals(204, it.body().getJsonObject("metadata")
-                                            .getInteger("statusCode"))
+                                    context.verify {
+                                        assertThat(it.body().getJsonObject("metadata").getInteger("statusCode")).isEqualTo(204)
+                                    }
 
                                     val updatedModel = TestModel(it.body().getJsonObject("body"))
 
-                                    context.assertNotNull(updatedModel)
+                                    context.verify {
+                                        assertThat(updatedModel).isNotNull
+                                    }
 
                                     val idObject = CommandEventBuilder()
                                             .withSuccess()
@@ -423,8 +517,11 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                             .build()
 
                                     service.receiverRead(idObject, Handler {
-                                        context.assertTrue(it.failed())
-                                        async.complete()
+                                        context.verify {
+                                            assertThat(it.failed()).isTrue()
+
+                                            context.completeNow()
+                                        }
                                     })
                                 }
                             }
@@ -440,26 +537,32 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                     })
                 })
             })
-        }))
+        }
     }
 
     @Test
-    fun receiverDeleteWithReceipt(context: TestContext) {
-        val async = context.async()
-        val verticle: TestModelReceiverImpl = context.get("${name.methodName}-repo")
-        val vertx = rule.vertx()
+    fun receiverDeleteWithReceipt(vertx: Vertx, testInfo: TestInfo, context: VertxTestContext) {
+        val verticle: TestModelReceiverImpl = contextObjects["${testInfo.testMethod.get().name}-repo"] as TestModelReceiverImpl
 
-        vertx.deployVerticle(verticle, context.asyncAssertSuccess({
+        vertx.deployVerticle(verticle) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
+
             ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
-                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
-                    context.assertTrue(it.succeeded())
+                ServiceManager.getInstance().consumeService(Receiver::class.java, Handler { asyncResult ->
+                    context.verify {
+                        assertThat(asyncResult.succeeded()).isTrue()
+                    }
 
-                    val service = it.result()
+                    val service = asyncResult.result()
 
-                    createItem(verticle, Handler {
-                        context.assertTrue(it.succeeded())
+                    createItem(verticle, Handler { result ->
+                        context.verify {
+                            assertThat(result.succeeded()).isTrue()
+                        }
 
-                        val testModel = TestModel(it.result().body)
+                        val testModel = TestModel(result.result().body)
                         val deleteEvent = CommandEventBuilder()
                                 .withSuccess()
                                 .withAction("RECEIVE_DELETE")
@@ -467,11 +570,15 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                 .build()
 
                         service.receiverDeleteWithReceipt(deleteEvent, Handler {
-                            context.assertEquals(204, it.result().metadata.getInteger("statusCode"))
+                            context.verify {
+                                assertThat(it.result().metadata.getInteger("statusCode")).isEqualTo(204)
+                            }
 
                             val updatedModel = TestModel(it.result().body)
 
-                            context.assertNotNull(updatedModel)
+                            context.verify {
+                                assertThat(updatedModel).isNotNull
+                            }
 
                             val idObject = CommandEventBuilder()
                                     .withSuccess()
@@ -482,37 +589,47 @@ class DynamoDBReceiverTestIT : DynamoDBTestClass() {
                                     .build()
 
                             service.receiverRead(idObject, Handler {
-                                context.assertTrue(it.failed())
-                                async.complete()
+                                context.verify {
+                                    assertThat(it.failed()).isTrue()
+
+                                    context.completeNow()
+                                }
                             })
                         })
                     })
                 })
             })
-        }))
+        }
     }
 
     @Test
-    fun fetchSubscriptionAddress(context: TestContext) {
-        val async = context.async()
-        val verticle: TestModelReceiverImpl = context.get("${name.methodName}-repo")
-        val vertx = rule.vertx()
+    fun fetchSubscriptionAddress(vertx: Vertx, testInfo: TestInfo, context: VertxTestContext) {
+        val verticle: TestModelReceiverImpl = contextObjects["${testInfo.testMethod.get().name}-repo"] as TestModelReceiverImpl
 
-        vertx.deployVerticle(verticle, context.asyncAssertSuccess({
+        vertx.deployVerticle(verticle) {
+            context.verify {
+                assertThat(it.succeeded()).isTrue()
+            }
+
             ServiceManager.getInstance().publishService(Receiver::class.java, verticle, Handler {
                 ServiceManager.getInstance().consumeService(Receiver::class.java, Handler {
-                    context.assertTrue(it.succeeded())
+                    context.verify {
+                        assertThat(it.succeeded()).isTrue()
+                    }
 
                     val service = it.result()
                     val address = "${Receiver::class.java.name}.${TestModel::class.java.simpleName}"
 
                     service.fetchSubscriptionAddress(Handler {
-                        context.assertTrue(it.succeeded())
-                        context.assertEquals(address, it.result().body.getString("address"))
-                        async.complete()
+                        context.verify {
+                            assertThat(it.succeeded()).isTrue()
+                            assertThat(it.result().body.getString("address")).isEqualTo(address)
+
+                            context.completeNow()
+                        }
                     })
                 })
             })
-        }))
+        }
     }
 }

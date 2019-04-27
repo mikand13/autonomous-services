@@ -1,15 +1,26 @@
 package org.mikand.autonomous.services.processors.test.gen.models
 
-import com.amazonaws.services.dynamodbv2.datamodeling.*
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.nannoq.tools.repository.dynamodb.DynamoDBRepository.Companion.PAGINATION_INDEX
-import org.mikand.autonomous.services.processors.test.gen.models.TestModelConverter.fromJson
-import com.nannoq.tools.repository.models.*
+import com.nannoq.tools.repository.models.Cacheable
+import com.nannoq.tools.repository.models.DynamoDBModel
+import com.nannoq.tools.repository.models.ETagable
+import com.nannoq.tools.repository.models.Model
+import com.nannoq.tools.repository.models.ValidationError
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.codegen.annotations.Fluent
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
-import java.util.*
+import org.mikand.autonomous.services.processors.test.gen.models.TestModelConverter.fromJson
+import java.util.Collections
+import java.util.Date
+import java.util.Objects
 
 @DynamoDBTable(tableName = "testModels")
 @DataObject(generateConverter = true)
@@ -51,7 +62,24 @@ class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
         get() = if (field != null) field!! else Date()
     private var version: Long? = null
 
+    @Suppress("unused")
     constructor()
+
+    constructor(someStringOne: String?, someStringTwo: String?, someStringThree: String?, someStringFour: String?, someDate: Date?, someDateTwo: Date?, someLong: Long?, someLongTwo: Long?, someInteger: Int?, someIntegerTwo: Int?, someBoolean: Boolean?, someBooleanTwo: Boolean?, documents: List<TestDocument>?) {
+        this.someStringOne = someStringOne
+        this.someStringTwo = someStringTwo
+        this.someStringThree = someStringThree
+        this.someStringFour = someStringFour
+        this.someDate = someDate
+        this.someDateTwo = someDateTwo
+        this.someLong = someLong
+        this.someLongTwo = someLongTwo
+        this.someInteger = someInteger
+        this.someIntegerTwo = someIntegerTwo
+        this.someBoolean = someBoolean
+        this.someBooleanTwo = someBooleanTwo
+        this.documents = documents
+    }
 
     constructor(jsonObject: JsonObject) {
         fromJson(jsonObject, this)
@@ -60,10 +88,6 @@ class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
         someDateTwo = if (jsonObject.getLong("someDateTwo") == null) null else Date(jsonObject.getLong("someDateTwo"))
         createdAt = if (jsonObject.getLong("createdAt") == null) null else Date(jsonObject.getLong("createdAt"))
         updatedAt = if (jsonObject.getLong("updatedAt") == null) null else Date(jsonObject.getLong("updatedAt"))
-    }
-
-    fun toJson(): JsonObject {
-        return JsonObject.mapFrom(this)
     }
 
     override fun setIdentifiers(identifiers: JsonObject): TestModel {
@@ -256,20 +280,6 @@ class TestModel : DynamoDBModel, Model, ETagable, Cacheable {
 
     override fun validateUpdate(): List<ValidationError> {
         return Collections.emptyList()
-    }
-
-    @Fluent
-    override fun setCreatedAt(date: Date): TestModel {
-        createdAt = date
-
-        return this
-    }
-
-    @Fluent
-    override fun setUpdatedAt(date: Date): TestModel {
-        updatedAt = date
-
-        return this
     }
 
     @Fluent

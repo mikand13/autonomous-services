@@ -25,43 +25,38 @@
 package org.mikand.autonomous.services.gateway
 
 import io.vertx.core.Handler
+import io.vertx.core.Vertx
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
-import io.vertx.ext.unit.TestContext
-import io.vertx.ext.unit.junit.RunTestOnContext
-import io.vertx.ext.unit.junit.Timeout
-import io.vertx.ext.unit.junit.VertxUnitRunner
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
+import io.vertx.junit5.VertxExtension
+import io.vertx.junit5.VertxTestContext
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mikand.autonomous.services.gateway.utils.ConfigSupport
 
 /**
  * @author Anders Mikkelsen
  * @version 20.12.17 11:41
  */
-@RunWith(VertxUnitRunner::class)
+@Execution(ExecutionMode.CONCURRENT)
+@ExtendWith(VertxExtension::class)
 class GatewayHeartbeatServiceImplTest : ConfigSupport {
     @Suppress("unused")
     private val logger: Logger = LoggerFactory.getLogger(javaClass.simpleName)
 
-    @JvmField
-    @Rule
-    val rule = RunTestOnContext()
-
-    @JvmField
-    @Rule
-    val timeout = Timeout.seconds(5)
-
     @Test
-    fun testPing(context: TestContext) {
-        val async = context.async()
-        val heartbeat = GatewayHeartbeatServiceImpl(rule.vertx(), getTestConfig())
+    fun testPing(vertx: Vertx, context: VertxTestContext) {
+        val heartbeat = GatewayHeartbeatServiceImpl(vertx, getTestConfig())
 
         heartbeat.ping(Handler {
-            context.assertTrue(it.failed())
+            context.verify {
+                assertThat(it.failed()).isTrue()
 
-            async.complete()
+                context.completeNow()
+            }
         })
     }
 }

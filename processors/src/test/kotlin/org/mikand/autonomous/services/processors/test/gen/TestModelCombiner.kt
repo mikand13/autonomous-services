@@ -42,8 +42,10 @@ interface TestModelCombiner : TypedCombiner<TestModel> {
     override fun combineRead(query: JsonObject, readHandler: Handler<AsyncResult<TestModel>>): TestModelCombiner
 
     @Fluent
-    override fun combineReadAll(query: JsonObject,
-                                readAllHandler: Handler<AsyncResult<GenericItemList>>): TestModelCombiner
+    override fun combineReadAll(
+        query: JsonObject,
+        readAllHandler: Handler<AsyncResult<GenericItemList>>
+    ): TestModelCombiner
 
     @Fluent
     override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): TestModelCombiner

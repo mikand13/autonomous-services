@@ -15,22 +15,28 @@ interface TestModelSplitter : TypedSplitter<TestModel> {
     override fun splitCreate(record: TestModel): TestModelSplitter
 
     @Fluent
-    override fun splitCreateWithReceipt(record: TestModel,
-                                        createHandler: Handler<AsyncResult<TestModel>>): TestModelSplitter
+    override fun splitCreateWithReceipt(
+        record: TestModel,
+        createHandler: Handler<AsyncResult<TestModel>>
+    ): TestModelSplitter
 
     @Fluent
     override fun splitUpdate(record: TestModel): TestModelSplitter
 
     @Fluent
-    override fun splitUpdateWithReceipt(record: TestModel,
-                                        updateHandler: Handler<AsyncResult<TestModel>>): TestModelSplitter
+    override fun splitUpdateWithReceipt(
+        record: TestModel,
+        updateHandler: Handler<AsyncResult<TestModel>>
+    ): TestModelSplitter
 
     @Fluent
     override fun splitDelete(record: TestModel): TestModelSplitter
 
     @Fluent
-    override fun splitDeleteWithReceipt(record: TestModel,
-                                        deleteHandler: Handler<AsyncResult<TestModel>>): TestModelSplitter
+    override fun splitDeleteWithReceipt(
+        record: TestModel,
+        deleteHandler: Handler<AsyncResult<TestModel>>
+    ): TestModelSplitter
 
     @Fluent
     override fun fetchSubscriptionAddress(addressHandler: Handler<AsyncResult<String>>): TestModelSplitter

@@ -3,14 +3,19 @@ package org.mikand.autonomous.services.storage.receivers.files
 import com.amazonaws.auth.AWSStaticCredentialsProvider
 import com.amazonaws.auth.AnonymousAWSCredentials
 import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
+import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.services.s3.model.AmazonS3Exception
 import com.amazonaws.services.s3.model.ObjectMetadata
 import com.nannoq.tools.web.RoutingHelper
 import com.nannoq.tools.web.responsehandlers.ResponseLogHandler.Companion.BODY_CONTENT_TAG
-import io.vertx.core.*
+import io.vertx.core.AbstractVerticle
+import io.vertx.core.AsyncResult
+import io.vertx.core.Future
+import io.vertx.core.Handler
+import io.vertx.core.Vertx
+import io.vertx.core.http.HttpHeaders
 import io.vertx.core.http.HttpServer
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.json.Json
@@ -22,7 +27,6 @@ import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.serviceproxy.ServiceException
 import org.apache.commons.io.FilenameUtils
-import org.apache.http.HttpHeaders
 import org.mikand.autonomous.services.core.communication.Collector
 import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.core.events.CommandEventImpl
@@ -32,10 +36,11 @@ import java.io.File
 import java.io.IOException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.*
+import java.util.Date
+import java.util.HashSet
+import java.util.UUID
 import java.util.function.Consumer
 import java.util.function.Supplier
-import kotlin.collections.HashMap
 
 open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
         FileReceiver, Collector<String>, AbstractVerticle() {
@@ -84,7 +89,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
             val creds = if (dynamoDBId == null || dynamoDBKey == null) AnonymousAWSCredentials() else
                 BasicAWSCredentials(dynamoDBId, dynamoDBKey)
             val statCreds = AWSStaticCredentialsProvider(creds)
-            val endpoint = EndpointConfiguration(s3Endpoint, region)
+            val endpoint = AwsClientBuilder.EndpointConfiguration(s3Endpoint, region)
 
             val dev = finalConfig.getBoolean("dev") ?: false
             val test = finalConfig.getBoolean("test") ?: false
@@ -97,7 +102,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
                     .build()
 
             try {
-                if (!client.doesBucketExist(bucketName)) {
+                if (!client.doesBucketExistV2(bucketName)) {
                     try {
                         client.createBucket(bucketName)
                     } catch (e: AmazonS3Exception) {
@@ -124,7 +129,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
         val router = createRouter()
 
         vertx.createHttpServer(options)
-                .requestHandler(router::accept)
+                .requestHandler(router)
                 .listen(port!!) {
                     when {
                         it.succeeded() -> {
@@ -156,9 +161,7 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
     }
 
     private fun uploadHandler(routingContext: RoutingContext) {
-        val token = routingContext.pathParam("token")
-
-        when (token) {
+        when (val token = routingContext.pathParam("token")) {
             null -> {
                 routingContext.response().statusCode = 401
                 routingContext.next()
@@ -195,18 +198,16 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
     }
 
     private fun downloadHandler(routingContext: RoutingContext) {
-        val token = routingContext.pathParam("token")
-
-        when (token) {
+        when (val token = routingContext.pathParam("token")) {
             null -> {
                 routingContext.response().statusCode = 404
                 routingContext.next()
             }
             else -> vertx.executeBlocking<Boolean>({
                 it.complete(client.doesObjectExist(bucketName, token))
-            }, false, {
+            }, false, { asyncResult ->
                 when {
-                    it.succeeded() -> {
+                    asyncResult.succeeded() -> {
                         val fiveMinutesFromNow = Date.from(Instant.now().plus(5, ChronoUnit.MINUTES))
 
                         vertx.executeBlocking<String>({
@@ -251,11 +252,13 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
     }
 
     override fun stop(stopFuture: Future<Void>?) {
-        server.close(stopFuture?.completer())
+        server.close(stopFuture)
     }
 
-    override fun fileReceiverInitializeRead(receiveInputEvent: CommandEventImpl,
-                                            resultHandler: Handler<AsyncResult<DataEventImpl>>): FileReceiver {
+    override fun fileReceiverInitializeRead(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): FileReceiver {
         val objectKey = receiveInputEvent.body.getString("key")
 
         vertx.executeBlocking<String>({
@@ -288,8 +291,10 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
         return this
     }
 
-    override fun fileReceiverInitializeCreate(receiveInputEvent: CommandEventImpl,
-                                              resultHandler: Handler<AsyncResult<DataEventImpl>>): S3FileReceiverImpl {
+    override fun fileReceiverInitializeCreate(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): S3FileReceiverImpl {
         val token = UUID.randomUUID().toString()
         val uploadJson = JsonObject().put("uploadUrl", "$protocol://$host:$port$rootPath/$token")
         val eventBuilder = DataEventBuilder()
@@ -313,8 +318,10 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
         return this
     }
 
-    override fun fileReceiverDeleteWithReceipt(receiveInputEvent: CommandEventImpl,
-                                               resultHandler: Handler<AsyncResult<DataEventImpl>>): S3FileReceiverImpl {
+    override fun fileReceiverDeleteWithReceipt(
+        receiveInputEvent: CommandEventImpl,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>
+    ): S3FileReceiverImpl {
         val objectKey = receiveInputEvent.body.getString("key")
 
         vertx.executeBlocking<Boolean>({
@@ -329,8 +336,11 @@ open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
         return this
     }
 
-    private fun fileDoesNotExistResponse(it: AsyncResult<Boolean>, resultHandler: Handler<AsyncResult<DataEventImpl>>,
-                                         failureRoot: String) {
+    private fun fileDoesNotExistResponse(
+        it: AsyncResult<Boolean>,
+        resultHandler: Handler<AsyncResult<DataEventImpl>>,
+        failureRoot: String
+    ) {
         when {
             it.cause() != null -> {
                 logger.error("Error creating URL!", it.cause())
