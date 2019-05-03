@@ -63,9 +63,9 @@ public class BackgroundGatewayLauncher extends VertxCommandLauncher implements V
 
     @Override
     public void afterConfigParsed(final JsonObject config) {
-        logger.info("Config parsed for BackgrounGatewayLauncher: " + config.encodePrettily());
+        this.config = config == null ? new JsonObject() : config;
 
-        this.config = config;
+        logger.info("Config parsed for BackgroundGatewayLauncher: " + this.config.encodePrettily());
     }
 
     @Override
@@ -77,10 +77,7 @@ public class BackgroundGatewayLauncher extends VertxCommandLauncher implements V
     public void afterStartingVertx(final Vertx vertx) {
         gatewayDeploymentVerticle = new GatewayDeploymentVerticle();
 
-        final JsonObject gatewayConfig = config.getJsonObject("gateway");
-
-        final DeploymentOptions opts = new DeploymentOptions()
-                .setConfig(gatewayConfig == null ? new JsonObject() : gatewayConfig);
+        final DeploymentOptions opts = new DeploymentOptions().setConfig(this.config);
 
         vertx.deployVerticle(gatewayDeploymentVerticle, opts, res -> {
             if (res.failed()) {
