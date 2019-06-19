@@ -344,8 +344,8 @@ subprojects {
         }
 
         withType<JavaCompile>().configureEach {
-            sourceCompatability = Versions.jvmTargetValue
-            targetCompatability = Versions.jvmTargetValue
+            sourceCompatibility = Versions.jvmTargetValue
+            targetCompatibility = Versions.jvmTargetValue
 
             options.compilerArgs = listOf("-Xdoclint:none", "-Xlint:none", "-nowarn")
         }
