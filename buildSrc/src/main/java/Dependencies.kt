@@ -1,6 +1,6 @@
 object Versions {
     const val jvmTargetValue = "1.8"
-    const val nannoq_tools_version = "1.1.2"
+    const val nannoq_tools_version = "1.1.4"
     const val vertx_version = "3.7.0"
     const val vertx_redis_version = "3.6.3"
     const val kotlin_version = "1.3.31"
