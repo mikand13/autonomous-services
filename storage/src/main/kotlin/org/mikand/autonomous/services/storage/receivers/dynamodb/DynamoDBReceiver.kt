@@ -18,13 +18,13 @@ import io.vertx.core.json.JsonObject
 import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.serviceproxy.ServiceException
+import java.util.function.Function
 import org.mikand.autonomous.services.core.events.CommandEventBuilder
 import org.mikand.autonomous.services.core.events.CommandEventImpl
 import org.mikand.autonomous.services.core.events.CommandEventType.COMMAND_FAILURE
 import org.mikand.autonomous.services.core.events.DataEventBuilder
 import org.mikand.autonomous.services.core.events.DataEventImpl
 import org.mikand.autonomous.services.storage.receivers.Receiver
-import java.util.function.Function
 
 class DynamoDBReceiver<T> : DynamoDBRepository<T>, Receiver
         where T : Model, T : DynamoDBModel, T : Cacheable, T : ETagable {

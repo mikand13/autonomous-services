@@ -6,11 +6,11 @@ import io.vertx.core.Handler
 import io.vertx.core.Vertx
 import io.vertx.core.json.JsonObject
 import io.vertx.serviceproxy.ServiceException
-import org.mikand.autonomous.services.core.events.CommandEventBuilder
-import org.mikand.autonomous.services.core.events.CommandEventImpl
 import java.time.Instant.now
 import java.time.temporal.ChronoUnit
 import java.util.Random
+import org.mikand.autonomous.services.core.events.CommandEventBuilder
+import org.mikand.autonomous.services.core.events.CommandEventImpl
 
 interface Claimer<T> {
     val claimerMap: HashMap<Int, HashSet<Long>>

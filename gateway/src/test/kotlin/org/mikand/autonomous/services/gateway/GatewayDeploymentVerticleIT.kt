@@ -30,13 +30,13 @@ import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.junit5.VertxExtension
 import io.vertx.junit5.VertxTestContext
+import java.net.ServerSocket
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
 import org.mikand.autonomous.services.gateway.utils.ConfigSupport
-import java.net.ServerSocket
 
 /**
  * @author Anders Mikkelsen

@@ -32,11 +32,11 @@ import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
 import io.vertx.core.json.JsonObject
+import java.util.Collections
 import org.mikand.autonomous.services.processors.test.gen.TestModelCombiner
 import org.mikand.autonomous.services.processors.test.gen.TestModelSplitter
 import org.mikand.autonomous.services.processors.test.gen.models.TestModel
 import org.mikand.autonomous.services.processors.test.gen.models.TestModelCodec
-import java.util.Collections
 
 class TestModelRepository : AbstractVerticle(), TestModelSplitter, TestModelCombiner {
     private val subscriptionAddress: String = javaClass.name

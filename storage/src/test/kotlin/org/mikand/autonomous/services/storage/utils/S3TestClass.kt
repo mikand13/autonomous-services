@@ -15,6 +15,9 @@ import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.junit5.VertxExtension
 import io.vertx.junit5.VertxTestContext
+import java.io.File
+import java.net.ServerSocket
+import java.util.HashMap
 import org.apache.tika.Tika
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -22,9 +25,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.TestInfo
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mikand.autonomous.services.core.events.DataEventImpl
-import java.io.File
-import java.net.ServerSocket
-import java.util.HashMap
 
 @ExtendWith(VertxExtension::class)
 abstract class S3TestClass : ConfigSupport {

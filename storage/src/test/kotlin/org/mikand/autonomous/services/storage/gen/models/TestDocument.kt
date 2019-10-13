@@ -6,8 +6,8 @@ import com.fasterxml.jackson.annotation.JsonInclude
 import com.nannoq.tools.repository.models.ETagable
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonObject
-import org.mikand.autonomous.services.storage.gen.models.TestDocumentConverter.fromJson
 import java.util.Objects
+import org.mikand.autonomous.services.storage.gen.models.TestDocumentConverter.fromJson
 
 @DynamoDBDocument
 @DataObject(generateConverter = true)

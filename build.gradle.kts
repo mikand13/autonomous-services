@@ -24,13 +24,13 @@
 
 import com.adarshr.gradle.testlogger.TestLoggerPlugin
 import com.adarshr.gradle.testlogger.theme.ThemeType
-import org.jetbrains.dokka.gradle.DokkaPlugin
-import org.jetbrains.dokka.gradle.DokkaTask
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.palantir.gradle.docker.DockerExtension
 import com.palantir.gradle.docker.DockerRunExtension
 import com.wiredforcode.gradle.spawn.KillProcessTask
 import com.wiredforcode.gradle.spawn.SpawnProcessTask
+import org.jetbrains.dokka.gradle.DokkaPlugin
+import org.jetbrains.dokka.gradle.DokkaTask
 import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.KtlintFormatTask
@@ -314,8 +314,6 @@ subprojects {
         logging.level = LogLevel.QUIET
         outputFormat = "html"
         outputDirectory = "$buildDir/docs"
-        jdkVersion = 8
-        reportUndocumented = false
     }
 
     val packageJavadoc by tasks.creating(Jar::class) {
@@ -492,6 +490,18 @@ configure(subprojects.filter { it.name == "storage" }) {
     }
 
     tasks {
+        val ktlintKotlinScriptFormat by existing(KtlintFormatTask::class)
+        val ktlintFormat by existing(Task::class)
+
+        withType<KotlinCompile> {
+            dependsOn(listOf(ktlintKotlinScriptFormat, ktlintFormat))
+
+            kotlinOptions {
+                jvmTarget = Versions.jvmTargetValue
+                suppressWarnings = true
+            }
+        }
+
         val jsServiceProxies by registering(Copy::class) {
             dependsOn(serviceProxies)
 

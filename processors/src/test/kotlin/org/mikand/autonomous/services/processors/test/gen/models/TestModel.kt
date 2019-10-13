@@ -17,10 +17,10 @@ import io.vertx.codegen.annotations.DataObject
 import io.vertx.codegen.annotations.Fluent
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
-import org.mikand.autonomous.services.processors.test.gen.models.TestModelConverter.fromJson
 import java.util.Collections
 import java.util.Date
 import java.util.Objects
+import org.mikand.autonomous.services.processors.test.gen.models.TestModelConverter.fromJson
 
 @DynamoDBTable(tableName = "testModels")
 @DataObject(generateConverter = true)

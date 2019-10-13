@@ -13,15 +13,6 @@ import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.junit5.VertxExtension
 import io.vertx.junit5.VertxTestContext
-import org.junit.jupiter.api.AfterAll
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.TestInfo
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mikand.autonomous.services.core.events.CommandEventBuilder
-import org.mikand.autonomous.services.core.events.DataEventImpl
-import org.mikand.autonomous.services.storage.gen.TestModelReceiverImpl
-import org.mikand.autonomous.services.storage.gen.models.TestModel
 import java.net.ServerSocket
 import java.time.LocalDate
 import java.util.ArrayList
@@ -32,6 +23,15 @@ import java.util.UUID
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ThreadLocalRandom
 import java.util.stream.IntStream
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mikand.autonomous.services.core.events.CommandEventBuilder
+import org.mikand.autonomous.services.core.events.DataEventImpl
+import org.mikand.autonomous.services.storage.gen.TestModelReceiverImpl
+import org.mikand.autonomous.services.storage.gen.models.TestModel
 
 @ExtendWith(VertxExtension::class)
 abstract class DynamoDBTestClass : ConfigSupport {
