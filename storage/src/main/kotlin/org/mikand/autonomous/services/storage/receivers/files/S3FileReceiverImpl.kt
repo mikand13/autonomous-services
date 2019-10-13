@@ -26,12 +26,6 @@ import io.vertx.ext.web.FileUpload
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.serviceproxy.ServiceException
-import org.apache.commons.io.FilenameUtils
-import org.mikand.autonomous.services.core.communication.Collector
-import org.mikand.autonomous.services.core.events.CommandEventBuilder
-import org.mikand.autonomous.services.core.events.CommandEventImpl
-import org.mikand.autonomous.services.core.events.DataEventBuilder
-import org.mikand.autonomous.services.core.events.DataEventImpl
 import java.io.File
 import java.io.IOException
 import java.time.Instant
@@ -41,6 +35,12 @@ import java.util.HashSet
 import java.util.UUID
 import java.util.function.Consumer
 import java.util.function.Supplier
+import org.apache.commons.io.FilenameUtils
+import org.mikand.autonomous.services.core.communication.Collector
+import org.mikand.autonomous.services.core.events.CommandEventBuilder
+import org.mikand.autonomous.services.core.events.CommandEventImpl
+import org.mikand.autonomous.services.core.events.DataEventBuilder
+import org.mikand.autonomous.services.core.events.DataEventImpl
 
 open class S3FileReceiverImpl(private val config: JsonObject = JsonObject()) :
         FileReceiver, Collector<String>, AbstractVerticle() {

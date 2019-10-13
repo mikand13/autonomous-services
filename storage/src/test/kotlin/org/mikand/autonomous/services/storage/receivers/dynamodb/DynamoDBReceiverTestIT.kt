@@ -12,6 +12,7 @@ import io.vertx.core.logging.Logger
 import io.vertx.core.logging.LoggerFactory
 import io.vertx.junit5.VertxExtension
 import io.vertx.junit5.VertxTestContext
+import java.util.Collections
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
@@ -23,7 +24,6 @@ import org.mikand.autonomous.services.storage.gen.TestModelReceiverImpl
 import org.mikand.autonomous.services.storage.gen.models.TestModel
 import org.mikand.autonomous.services.storage.receivers.Receiver
 import org.mikand.autonomous.services.storage.utils.DynamoDBTestClass
-import java.util.Collections
 
 @Execution(ExecutionMode.SAME_THREAD)
 @ExtendWith(VertxExtension::class)

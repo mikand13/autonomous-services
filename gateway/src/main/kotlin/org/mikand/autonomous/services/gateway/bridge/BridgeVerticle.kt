@@ -53,8 +53,8 @@ import io.vertx.ext.web.handler.sockjs.BridgeEvent
 import io.vertx.ext.web.handler.sockjs.BridgeOptions
 import io.vertx.ext.web.handler.sockjs.SockJSHandler
 import io.vertx.ext.web.handler.sockjs.SockJSHandlerOptions
-import org.mikand.autonomous.services.gateway.GatewayDeploymentVerticle.Companion.GATEWAY_HEARTBEAT_ADDRESS
 import java.util.ArrayList
+import org.mikand.autonomous.services.gateway.GatewayDeploymentVerticle.Companion.GATEWAY_HEARTBEAT_ADDRESS
 
 internal class BridgeVerticle() : AbstractVerticle() {
     @Suppress("unused")
@@ -123,18 +123,18 @@ internal class BridgeVerticle() : AbstractVerticle() {
                     result.succeeded() -> result.result().ping(Handler {
                         when {
                             it.succeeded() && it.result() ->
-                                if (!future.isComplete) future.complete(Status.OK(JsonObject().put("bridge", "UP")))
+                                if (!future.future().isComplete) future.complete(Status.OK(JsonObject().put("bridge", "UP")))
                             else -> {
                                 logger.error("Failed heartbeat ping!", it.cause())
 
-                                if (!future.isComplete) future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
+                                if (!future.future().isComplete) future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
                             }
                         }
                     })
                     else -> {
                         logger.error("Failed fetching HeartBeatService!", result.cause())
 
-                        if (!future.isComplete) future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
+                        if (!future.future().isComplete) future.complete(Status.KO(JsonObject().put("bridge", "DOWN")))
                     }
                 }
             })
